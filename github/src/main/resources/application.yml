@@ -1,0 +1,19 @@
+graphql:
+  packages:
+    - "gropius"
+spring:
+  neo4j:
+    uri: "bolt://localhost:7687"
+  data:
+    mongodb:
+      host: "localhost"
+      port: 27017
+      database: "gropius"
+      username: "root"
+      password: "root"
+      "authentication-database": admin
+      "auto-index-creation": true
+logging:
+  level:
+    org.springframework.data.neo4j: ERROR
+    io.github.graphglue: ERROR

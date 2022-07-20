@@ -1,0 +1,21 @@
+fragment IssueDataExtensive on Issue {
+    ...IssueData
+    number
+    body
+    lastEditedAt
+    updatedAt
+}
+query IssueRead($repoOwner: String!, $repoName: String!, $since: DateTime, $issueCount: Int!,$cursor:String) {
+    ...MetaData
+    repository(owner: $repoOwner, name: $repoName) {
+        issues(first: $issueCount, filterBy: {since: $since},after: $cursor) {
+            nodes {
+                ...IssueDataExtensive
+            }
+            totalCount
+            pageInfo {
+                ...PageInfoData
+            }
+        }
+    }
+}

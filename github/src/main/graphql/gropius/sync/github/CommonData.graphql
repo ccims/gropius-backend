@@ -1,0 +1,39 @@
+fragment MetaData on Query {
+    viewer {
+        login
+    }
+    rateLimit {
+        cost
+        limit
+        nodeCount
+        remaining
+        resetAt
+        used
+    }
+}
+fragment PageInfoData on PageInfo {
+    startCursor
+    endCursor
+    hasNextPage
+    hasPreviousPage
+}
+fragment UserData on Actor {
+    login
+}
+fragment LabelData on Label {
+    id
+    name
+    isDefault
+    createdAt
+}
+fragment IssueData on Issue {
+    id
+    title
+    createdAt
+    author {
+        ...UserData
+    }
+}
+query CurrentMetaData {
+    ...MetaData
+}

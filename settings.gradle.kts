@@ -11,3 +11,5 @@ pluginManagement {
 
 include(":core")
 include(":api")
+include(":github")
+include(":sync")

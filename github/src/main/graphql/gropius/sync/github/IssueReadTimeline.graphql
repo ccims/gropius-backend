@@ -1,0 +1,223 @@
+fragment LabelDataExtensive on Label {
+    ...LabelData
+    color
+    description
+    updatedAt
+}
+fragment ReferencedSubject on ReferencedSubject {
+    ...on Issue {
+        ...IssueData
+    }
+}
+fragment TimelineItemData on IssueTimelineItems {
+    ...on Node {
+        id
+    }
+    ...on AddedToProjectEvent {
+        createdAt
+    }
+    ...on AssignedEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+        assignee {
+            ...UserData
+        }
+    }
+    ...on ClosedEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+    }
+    ...on CommentDeletedEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+    }
+    ...on ConnectedEvent {
+        createdAt
+    }
+    ...on ConvertedNoteToIssueEvent {
+        createdAt
+    }
+    ...on ConvertedToDiscussionEvent {
+        createdAt
+    }
+    ...on CrossReferencedEvent {
+        createdAt
+    }
+    ...on DemilestonedEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+        milestoneTitle
+    }
+    ...on DisconnectedEvent {
+        createdAt
+    }
+    ...on IssueComment {
+        id
+        createdAt
+        body
+        lastEditedAt
+        updatedAt
+        editor {
+            ...UserData
+        }
+    }
+    ...on LabeledEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+        label {
+            ...LabelData
+        }
+    }
+    ...on LockedEvent {
+        createdAt
+    }
+    ...on MarkedAsDuplicateEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+        isCrossRepository
+        canonical {
+            ...on Issue {
+                ...IssueData
+            }
+        }
+        duplicate {
+            ...on Issue {
+                ...IssueData
+            }
+        }
+    }
+    ...on MentionedEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+    }
+    ...on MilestonedEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+        milestoneTitle
+    }
+    ...on MovedColumnsInProjectEvent {
+        createdAt
+    }
+    ...on PinnedEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+    }
+    ...on ReferencedEvent {
+        createdAt
+    }
+    ...on RemovedFromProjectEvent {
+        createdAt
+    }
+    ...on RenamedTitleEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+        currentTitle
+        previousTitle
+    }
+    ...on ReopenedEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+    }
+    ...on TransferredEvent {
+        createdAt
+    }
+    ...on UnassignedEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+        assignee {
+            ...UserData
+        }
+    }
+    ...on UnlabeledEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+        label {
+            ...LabelData
+        }
+    }
+    ...on UnlockedEvent {
+        createdAt
+    }
+    ...on UnmarkedAsDuplicateEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+        isCrossRepository
+        canonical {
+            ...on Issue {
+                ...IssueData
+            }
+        }
+        duplicate {
+            ...on Issue {
+                ...IssueData
+            }
+        }
+    }
+    ...on UnpinnedEvent {
+        id
+        createdAt
+        actor {
+            ...UserData
+        }
+    }
+    ...on SubscribedEvent { createdAt }
+    ...on UnsubscribedEvent { createdAt }
+}
+query TimelineRead($issue: ID! $since: DateTime, $issueCount: Int!,$cursor:String) {
+    ...MetaData
+    node(id: $issue) {
+        ...on Issue {
+            timelineItems(since: $since,after: $cursor,first: $issueCount) {
+                nodes {
+                    ...TimelineItemData
+                }
+                totalCount
+                pageInfo {
+                    ...PageInfoData
+                }
+            }
+        }
+    }
+}
