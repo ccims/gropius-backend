@@ -532,7 +532,9 @@ class Outgoing(
         }
         val collectedMutations = mutableListOf<suspend () -> Unit>()
         for ((label, relevantTimeline) in groups) {
-            handleSingleLabel(relevantTimeline, collectedMutations, imsProjectConfig, issueInfo, label)
+            if (label != null) {
+                handleSingleLabel(relevantTimeline, collectedMutations, imsProjectConfig, issueInfo, label)
+            }
         }
         return collectedMutations
     }

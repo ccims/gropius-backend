@@ -21,9 +21,8 @@ class RemovedArtefactEvent(
     }
 
     @NodeRelationship(REMOVED_ARTEFACT, Direction.OUTGOING)
-    @GraphQLDescription("The Artefact which was removed from the Issue.")
-    @GraphQLNullable
+    @GraphQLDescription("The Artefact which was removed from the Issue, null if deleted.")
     @FilterProperty
-    val removedArtefact by NodeProperty<Artefact>()
+    val removedArtefact by NodeProperty<Artefact?>()
 
 }

@@ -21,9 +21,8 @@ class AddedToPinnedIssuesEvent(
     }
 
     @NodeRelationship(PINNED_ON, Direction.OUTGOING)
-    @GraphQLDescription("The Trackable the Issue is now pinned on.")
-    @GraphQLNullable
+    @GraphQLDescription("The Trackable the Issue is now pinned on, null if deleted.")
     @FilterProperty
-    val pinnedOn by NodeProperty<Trackable>()
+    val pinnedOn by NodeProperty<Trackable?>()
 
 }

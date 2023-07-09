@@ -11,17 +11,31 @@ import com.expediagroup.graphql.server.types.GraphQLServerError
 import com.expediagroup.graphql.server.types.GraphQLServerResponse
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import graphql.Scalars
 import graphql.scalars.regex.RegexScalar
 import graphql.schema.*
+import gropius.authorization.gropiusAuthorizationContext
+import gropius.model.common.PERMISSION_FIELD_BEAN
 import gropius.model.template.TEMPLATED_FIELDS_FILTER_BEAN
 import gropius.model.template.TemplatedNode
 import gropius.model.user.GropiusUser
 import gropius.model.user.IMSUser
 import gropius.model.user.USERNAME_FILTER_BEAN
+import gropius.model.user.permission.ALL_PERMISSION_ENTRY_NAME
 import gropius.util.JsonNodeMapper
+import io.github.graphglue.authorization.Permission
 import io.github.graphglue.connection.filter.TypeFilterDefinitionEntry
 import io.github.graphglue.connection.filter.definition.scalars.StringFilterDefinition
+import io.github.graphglue.definition.ExtensionFieldDefinition
+import io.github.graphglue.definition.NodeDefinition
+import io.github.graphglue.definition.NodeDefinitionCollection
+import io.github.graphglue.model.Node
+import org.neo4j.cypherdsl.core.Cypher
+import org.neo4j.cypherdsl.core.Expression
+import org.neo4j.cypherdsl.core.SymbolicName
 import org.neo4j.driver.Driver
+import org.neo4j.driver.Value
+import org.springframework.beans.factory.BeanFactory
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -144,6 +158,54 @@ class GraphQLConfiguration {
     fun templatedFieldsFilter(jsonNodeMapper: JsonNodeMapper) = TemplatedFieldsFilterEntryDefinition(jsonNodeMapper)
 
     /**
+     * Provides the permission field for all nodes
+     *
+     * @param beanFactory used to get the [NodeDefinitionCollection]
+     * @return the generated field definition
+     */
+    @Bean(PERMISSION_FIELD_BEAN)
+    fun permissionField(beanFactory: BeanFactory): ExtensionFieldDefinition {
+        val field = GraphQLFieldDefinition.newFieldDefinition().name("hasPermission")
+            .description("Checks if the current user has a specific permission on this Node").argument {
+                it.name("permission").description("The permission to check for").type(
+                    GraphQLTypeReference(
+                        ALL_PERMISSION_ENTRY_NAME
+                    )
+                )
+            }.type(Scalars.GraphQLBoolean).build()
+
+        val nodeDefinitionCollection by lazy {
+            beanFactory.getBean(NodeDefinitionCollection::class.java)
+        }
+
+        return object : ExtensionFieldDefinition(field) {
+            override fun generateFetcher(
+                dfe: DataFetchingEnvironment,
+                arguments: Map<String, Any?>,
+                node: org.neo4j.cypherdsl.core.Node,
+                nodeDefinition: NodeDefinition
+            ): Expression {
+                val context = dfe.gropiusAuthorizationContext
+                return if (context.checkPermission) {
+                    val conditionGenerator = nodeDefinitionCollection.generateAuthorizationCondition(
+                        nodeDefinition,
+                        Permission(arguments["permission"] as String, context)
+                    )
+                    val condition = conditionGenerator.generateCondition(node)
+                    condition
+                } else {
+                    Cypher.literalTrue()
+                }
+            }
+
+            override fun transformResult(result: Value): Any {
+                return result.asBoolean()
+            }
+
+        }
+    }
+
+    /**
      * Provides the [KotlinDataFetcherFactoryProvider] which generates a FunctionDataFetcher which handles
      * JSON input value injecting correctly.
      *
@@ -179,7 +241,8 @@ class GraphQLConfiguration {
                 GraphQLResponse<Any?>(
                     errors = listOf(
                         GraphQLServerError(
-                            e.reason ?: "No error message provided", extensions = mapOf("status" to e.statusCode.value())
+                            e.reason ?: "No error message provided",
+                            extensions = mapOf("status" to e.statusCode.value())
                         )
                     )
                 )

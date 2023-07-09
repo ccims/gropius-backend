@@ -23,8 +23,8 @@ abstract class RemovedRelationEvent(
     }
 
     @NodeRelationship(REMOVED_RELATION, Direction.OUTGOING)
-    @GraphQLDescription("The removed IssueRelation.")
+    @GraphQLDescription("The removed IssueRelation, null if deleted.")
     @FilterProperty
-    val removedRelation by NodeProperty<IssueRelation>()
+    val removedRelation by NodeProperty<IssueRelation?>()
 
 }

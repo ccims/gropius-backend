@@ -28,7 +28,10 @@ class IssueCleaner(
         issue.labels().clear()
         for (item in issue.timelineItems().sortedBy { it.createdAt }) {
             if (item is AddedLabelEvent) {
-                issue.labels().add(item.addedLabel().value)
+                val label = item.addedLabel().value
+                if (label != null) {
+                    issue.labels().add(label)
+                }
             }
             if (item is RemovedLabelEvent) {
                 issue.labels().remove(item.removedLabel().value)

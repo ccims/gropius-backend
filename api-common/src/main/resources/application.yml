@@ -1,3 +1,5 @@
 graphql:
   packages:
     - "gropius"
+graphglue:
+  includeSkipField: true

@@ -8,12 +8,19 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import gropius.model.template.JSONField
 import io.github.graphglue.model.DomainNode
+import io.github.graphglue.model.ExtensionField
 import io.github.graphglue.model.Node
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 
+/**
+ * Name of the bean which provides the permission extension field
+ */
+const val PERMISSION_FIELD_BEAN = "permissionFieldBean"
+
 @DomainNode
 @GraphQLDescription("Entity which provides dynamic extension fields.")
+@ExtensionField(PERMISSION_FIELD_BEAN)
 abstract class ExtensibleNode : Node() {
 
     /**

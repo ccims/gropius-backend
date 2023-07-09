@@ -23,6 +23,7 @@ import gropius.model.user.permission.TrackablePermission
 import gropius.repository.GropiusRepository
 import gropius.repository.architecture.AffectedByIssueRepository
 import gropius.repository.architecture.TrackableRepository
+import gropius.repository.common.NodeRepository
 import gropius.repository.findAllById
 import gropius.repository.findById
 import gropius.repository.issue.ArtefactRepository
@@ -37,6 +38,7 @@ import gropius.util.JsonNodeMapper
 import io.github.graphglue.authorization.Permission
 import io.github.graphglue.model.Node
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.OffsetDateTime
@@ -66,6 +68,7 @@ import kotlin.reflect.KMutableProperty0
  * @param bodyRepository used to find [Body]s by id
  * @param commentRepository used to find [Comment]s by id
  * @param issueTemplateRepository used to find [IssueTemplate]s by id
+ * @param nodeRepository used to delete [Node]s
  */
 @Service
 class IssueService(
@@ -88,7 +91,8 @@ class IssueService(
     private val issueCommentRepository: IssueCommentRepository,
     private val bodyRepository: BodyRepository,
     private val commentRepository: CommentRepository,
-    private val issueTemplateRepository: IssueTemplateRepository
+    private val issueTemplateRepository: IssueTemplateRepository,
+    private val nodeRepository: NodeRepository
 ) : AuditedNodeService<Issue, IssueRepository>(repository) {
 
     /**
@@ -462,29 +466,30 @@ class IssueService(
                 "delete Issues on a Trackable the Issue is on"
             )
         }
-        deleteIssueAndSave(issue)
+        nodeRepository.deleteAll(prepareIssueDeletion(issue)).awaitSingleOrNull()
     }
 
     /**
-     * Deletes an [Issue]
-     * Does not check the authorization status
+     * Gets all nodes to delete when this [Issue] is deleted, including the [Issue] itself.
+     * Also performs other updates necessary when deleting an [Issue].
      *
-     * @param node the Issue to delete
+     * @param node the [Issue] to delete
+     * @return all nodes to delete when this [Issue] is deleted, including the [Issue] itself
      */
-    suspend fun deleteIssueAndSave(node: Issue) {
-        deleteIssue(node)
-        repository.save(node).awaitSingle()
-    }
-
-    /**
-     * Deletes an [Issue]
-     * Does not check the authorization status
-     * Does not save the [node]. It is required to save [node] afterwards.
-     *
-     * @param node the Issue to delete
-     */
-    suspend fun deleteIssue(node: Issue) {
-        node.isDeleted = true
+    suspend fun prepareIssueDeletion(node: Issue): Collection<Node> {
+        val issuesToSave = mutableSetOf<Issue>()
+        node.outgoingRelations().forEach {
+            val issue = it.relatedIssue().value!!
+            issue.incomingRelations().remove(it)
+            issuesToSave += issue
+        }
+        node.incomingRelations().forEach {
+            val issue = it.issue().value
+            issue.outgoingRelations().remove(it)
+            issuesToSave += issue
+        }
+        repository.saveAll(issuesToSave).collectList().awaitSingle()
+        return node.timelineItems() + node
     }
 
     /**
@@ -1801,7 +1806,7 @@ class IssueService(
             val event = changeIssueRelationType(
                 issueRelation, oldType, newType, OffsetDateTime.now(), getUser(authorizationContext)
             )
-            repository.save(issueRelation.relatedIssue().value).awaitSingle()
+            repository.save(issueRelation.relatedIssue().value!!).awaitSingle()
             timelineItemRepository.save(event).awaitSingle()
         } else {
             null
@@ -1849,7 +1854,7 @@ class IssueService(
         relatedEvent.issueRelation().value = issueRelation
         relatedEvent.oldType().value = oldType
         relatedEvent.newType().value = newType
-        createdTimelineItemOnRelatedIssue(issueRelation.relatedIssue().value, relatedEvent, atTime, byUser)
+        createdTimelineItemOnRelatedIssue(issueRelation.relatedIssue().value!!, relatedEvent, atTime, byUser)
         if (!existsNewerTimelineItem<OutgoingRelationTypeChangedEvent>(issue, atTime) {
                 it.issueRelation().value == issueRelation
             } && issueRelation.type().value != newType) {
@@ -1876,7 +1881,7 @@ class IssueService(
         checkManageIssuesPermission(issue, authorizationContext)
         return if (issueRelation in issue.outgoingRelations()) {
             val event = removeIssueRelation(issueRelation, OffsetDateTime.now(), getUser(authorizationContext))
-            repository.save(issueRelation.relatedIssue().value).awaitSingle()
+            repository.save(issueRelation.relatedIssue().value!!).awaitSingle()
             timelineItemRepository.save(event).awaitSingle()
         } else {
             null
@@ -1907,7 +1912,7 @@ class IssueService(
         createdTimelineItem(issue, event, atTime, byUser)
         val relatedEvent = RemovedIncomingRelationEvent(atTime, atTime)
         relatedEvent.removedRelation().value = issueRelation
-        createdTimelineItemOnRelatedIssue(relatedIssue, relatedEvent, atTime, byUser)
+        createdTimelineItemOnRelatedIssue(relatedIssue!!, relatedEvent, atTime, byUser)
         issue.outgoingRelations() -= issueRelation
         relatedIssue.incomingRelations() -= issueRelation
         return event

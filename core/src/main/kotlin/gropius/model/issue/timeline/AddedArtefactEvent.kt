@@ -21,9 +21,8 @@ class AddedArtefactEvent(
     }
 
     @NodeRelationship(ADDED_ARTEFACT, Direction.OUTGOING)
-    @GraphQLDescription("The Artefact added to the Issue.")
-    @GraphQLNullable
+    @GraphQLDescription("The Artefact added to the Issue, null if deleted.")
     @FilterProperty
-    val addedArtefact by NodeProperty<Artefact>()
+    val addedArtefact by NodeProperty<Artefact?>()
 
 }

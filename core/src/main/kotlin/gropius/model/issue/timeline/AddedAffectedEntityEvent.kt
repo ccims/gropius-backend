@@ -21,9 +21,8 @@ class AddedAffectedEntityEvent(
     }
 
     @NodeRelationship(ADDED_AFFECTED, Direction.OUTGOING)
-    @GraphQLDescription("The entity affected by the Issue.")
-    @GraphQLNullable
+    @GraphQLDescription("The entity affected by the Issue, null if deleted.")
     @FilterProperty
-    val addedAffectedEntity by NodeProperty<AffectedByIssue>()
+    val addedAffectedEntity by NodeProperty<AffectedByIssue?>()
 
 }

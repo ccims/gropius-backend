@@ -19,6 +19,7 @@ import gropius.service.common.AuditedNodeService
 import gropius.service.template.TemplatedNodeService
 import io.github.graphglue.authorization.Permission
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
 
@@ -103,7 +104,6 @@ class ArtefactService(
     suspend fun deleteArtefact(authorizationContext: GropiusAuthorizationContext, input: DeleteNodeInput) {
         input.validate()
         val artefact = repository.findById(input.id)
-        artefact.isDeleted = true
         artefact.referencingComments().clear()
         val now = OffsetDateTime.now()
         val user = getUser(authorizationContext)
@@ -111,7 +111,7 @@ class ArtefactService(
             issueService.removeArtefactFromIssue(issue, artefact, now, user)
         }
         issueService.repository.saveAll(artefact.issues()).collectList().awaitSingle()
-        repository.save(artefact).awaitSingle()
+        repository.delete(artefact).awaitSingleOrNull()
     }
 
 }

@@ -21,9 +21,8 @@ class RemovedFromPinnedIssuesEvent(
     }
 
     @NodeRelationship(UNPINNED_ON, Direction.OUTGOING)
-    @GraphQLDescription("The Trackable the Issue is no longer pinned on.")
-    @GraphQLNullable
+    @GraphQLDescription("The Trackable the Issue is no longer pinned on, null if deleted.")
     @FilterProperty
-    val unpinnedOn by NodeProperty<Trackable>()
+    val unpinnedOn by NodeProperty<Trackable?>()
 
 }

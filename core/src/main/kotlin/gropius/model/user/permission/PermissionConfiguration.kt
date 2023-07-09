@@ -5,6 +5,11 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 /**
+ * Name of the GraphQL enum providing all non-global permission entries
+ */
+const val ALL_PERMISSION_ENTRY_NAME = "AllPermissionEntry"
+
+/**
  * Configuration used to provide Permission entry enums
  */
 @Configuration
@@ -236,6 +241,27 @@ class PermissionConfiguration {
     }
 
     /**
+     * Entry for all permissions used on nodes
+     * Generates the enum with name [ALL_PERMISSION_ENTRY_NAME]
+     *
+     * @param componentEntries all [ComponentPermission] entry defining collections
+     * @param imsEntries all [IMSPermission] entry defining collections
+     * @param projectEntries all [ProjectPermission] entry defining collections
+     * @return the generated enum type
+     */
+    @Bean
+    fun allPermissionEntryType(
+        componentEntries: List<PermissionEntryCollection<ComponentPermission>>,
+        imsEntries: List<PermissionEntryCollection<IMSPermission>>,
+        projectEntries: List<PermissionEntryCollection<ProjectPermission>>,
+    ): GraphQLEnumType {
+        return generatePermissionEntryEnum(ALL_PERMISSION_ENTRY_NAME,
+            "Non global permission entries",
+            listOf(PermissionEntryCollection<BasePermission>((componentEntries + imsEntries + projectEntries).flatMap { it.entries }
+                .toSet())))
+    }
+
+    /**
      * Generates a [GraphQLEnumType] based on a list of [PermissionEntryCollection]
      *
      * @param name the name of the enum type
@@ -245,7 +271,7 @@ class PermissionConfiguration {
      * @throws IllegalArgumentException if duplicate names are found
      */
     private fun generatePermissionEntryEnum(
-        name: String, description: String, entryCollections: List<PermissionEntryCollection<*>>
+        name: String, description: String, entryCollections: Collection<PermissionEntryCollection<*>>
     ): GraphQLEnumType {
         val entries = entryCollections.flatMap { it.entries }
         entries.groupBy { it.name }.entries.firstOrNull { it.value.size > 1 }?.also {

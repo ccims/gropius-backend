@@ -15,10 +15,12 @@ import gropius.repository.architecture.IMSIssueRepository
 import gropius.repository.architecture.IMSProjectRepository
 import gropius.repository.architecture.IMSRepository
 import gropius.repository.architecture.TrackableRepository
+import gropius.repository.common.NodeRepository
 import gropius.repository.findById
 import gropius.service.common.AbstractExtensibleNodeService
 import gropius.service.template.TemplatedNodeService
 import io.github.graphglue.authorization.Permission
+import io.github.graphglue.model.Node
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
@@ -31,6 +33,7 @@ import org.springframework.stereotype.Service
  * @param trackableRepository used to get [Trackable]s by id
  * @param imsIssueRepository used to delete [IMSIssue]s when project is deleted
  * @param templatedNodeService service used to update templatedFields
+ * @param nodeRepository used to delete [Node]s
  */
 @Service
 class IMSProjectService(
@@ -38,7 +41,8 @@ class IMSProjectService(
     private val imsRepository: IMSRepository,
     private val trackableRepository: TrackableRepository,
     private val imsIssueRepository: IMSIssueRepository,
-    private val templatedNodeService: TemplatedNodeService
+    private val templatedNodeService: TemplatedNodeService,
+    private val nodeRepository: NodeRepository
 ) : AbstractExtensibleNodeService<IMSProject, IMSProjectRepository>(repository) {
 
     /**
@@ -130,11 +134,18 @@ class IMSProjectService(
      *
      * @param imsProject the [IMSProject] to delete
      */
-    suspend fun deleteIMSProject(
-        imsProject: IMSProject
-    ) {
-        repository.delete(imsProject).awaitSingleOrNull()
-        imsIssueRepository.deleteAll(imsProject.imsIssues()).awaitSingleOrNull()
+    suspend fun deleteIMSProject(imsProject: IMSProject) {
+        nodeRepository.deleteAll(getNodesToDelete(imsProject)).awaitSingleOrNull()
+    }
+
+    /**
+     * Gets all nodes to delete when this [IMSProject] is deleted, including the [IMSProject] itself.
+     *
+     * @param node the [IMSProject] to delete
+     * @return all nodes to delete when this [IMSProject] is deleted, including the [IMSProject] itself
+     */
+    suspend fun getNodesToDelete(node: IMSProject): Collection<Node> {
+        return node.imsIssues() + node
     }
 
 }

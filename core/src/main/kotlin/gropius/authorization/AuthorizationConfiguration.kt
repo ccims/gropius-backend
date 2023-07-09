@@ -58,14 +58,6 @@ class AuthorizationConfiguration {
     }
 
     /**
-     * Creates the [IsDeletedRuleGenerator] to check that an [AuditedNode] is deleted
-     *
-     * @return the generated [IsDeletedRuleGenerator]
-     */
-    @Bean(IS_DELETED_RULE)
-    fun isDeletedRule(): DisallowRuleGenerator = IsDeletedRuleGenerator()
-
-    /**
      * Creates a new [RelatedToNodePermissionRuleGenerator] which can be used to check for permissions
      * on [IMS], [Component] and [Project]
      *

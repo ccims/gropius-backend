@@ -26,7 +26,7 @@ abstract class CreateBasePermissionInput : Input() {
     /**
      * Entries granted to the users
      */
-    internal abstract val entries: List<String>
+    abstract val entries: List<String>
 
     override fun validate() {
         super.validate()

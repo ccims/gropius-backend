@@ -34,13 +34,6 @@ abstract class AuditedNode(
         const val LAST_MODIFIED_BY = "LAST_MODIFIED_BY"
     }
 
-    /**
-     * If true, this entity is marked as deleted and should never be returned by the API.
-     * However, it cannot be deleted completely as is still may be synced.
-     */
-    @GraphQLIgnore
-    var isDeleted: Boolean = false
-
     @NodeRelationship(CREATED_BY, Direction.OUTGOING)
     @GraphQLDescription("The User who created this entity.")
     @FilterProperty

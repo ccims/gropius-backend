@@ -21,9 +21,8 @@ class RemovedFromTrackableEvent(
     }
 
     @NodeRelationship(REMOVED_FROM, Direction.OUTGOING)
-    @GraphQLDescription("The Trackable the Issue was removed from.")
-    @GraphQLNullable
+    @GraphQLDescription("The Trackable the Issue was removed from, null if deleted.")
     @FilterProperty
-    val removedFromTrackable by NodeProperty<Trackable>()
+    val removedFromTrackable by NodeProperty<Trackable?>()
 
 }

@@ -3,11 +3,13 @@ package gropius.service.architecture
 import gropius.dto.input.architecture.UpdateTrackableInput
 import gropius.dto.input.ifPresent
 import gropius.model.architecture.Trackable
+import gropius.repository.GropiusRepository
+import gropius.repository.common.NodeRepository
 import gropius.repository.issue.ArtefactRepository
 import gropius.repository.issue.LabelRepository
 import gropius.service.issue.IssueService
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Autowired
-import gropius.repository.GropiusRepository
 
 /**
  * Base class for services for subclasses of [Trackable]
@@ -43,6 +45,12 @@ abstract class TrackableService<T : Trackable, R : GropiusRepository<T, String>>
     lateinit var imsProjectService: IMSProjectService
 
     /**
+     * Injected [NodeRepository]
+     */
+    @Autowired
+    lateinit var nodeRepository: NodeRepository
+
+    /**
      * Updates [node] based on [input]
      * Calls [updateNamedNode]
      * Updates repositoryURL
@@ -65,19 +73,18 @@ abstract class TrackableService<T : Trackable, R : GropiusRepository<T, String>>
      * @param node the [Trackable] which will be deleted
      */
     suspend fun beforeDeleteTrackable(node: Trackable) {
-        artefactRepository.deleteAll(node.artefacts())
         val labelsToDelete = node.labels().filter {
             it.trackables().size == 1
         }
-        labelRepository.deleteAll(labelsToDelete)
-        node.issues().forEach {
-            if (it.trackables().size == 1) {
-                issueService.deleteIssueAndSave(it)
-            }
-        }
+        val issuesToDelete = node.issues().filter {
+            it.trackables().size == 1
+        }.flatMap { issueService.prepareIssueDeletion(it) }
+        val imsProjectsToDelete = node.syncsTo().flatMap { imsProjectService.getNodesToDelete(it) }
         node.syncsTo().forEach {
             imsProjectService.deleteIMSProject(it)
         }
+        nodeRepository.deleteAll(labelsToDelete + imsProjectsToDelete + issuesToDelete + node.artefacts() + node)
+            .awaitSingleOrNull()
     }
 
 }

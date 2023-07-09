@@ -32,9 +32,8 @@ class IssueRelation(
     val type by NodeProperty<IssueRelationType?>()
 
     @NodeRelationship(RELATED_ISSUE, Direction.OUTGOING)
-    @GraphQLDescription("The end of the relation.")
-    @GraphQLNullable
+    @GraphQLDescription("The end of the relation, null if deleted.")
     @FilterProperty
-    val relatedIssue by NodeProperty<Issue>()
+    val relatedIssue by NodeProperty<Issue?>()
 
 }

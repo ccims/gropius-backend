@@ -21,9 +21,8 @@ class AddedToTrackableEvent(
     }
 
     @NodeRelationship(ADDED_TO, Direction.OUTGOING)
-    @GraphQLDescription("The Trackable the Issue was added to.")
-    @GraphQLNullable
+    @GraphQLDescription("The Trackable the Issue was added to, null if deleted.")
     @FilterProperty
-    val addedToTrackable by NodeProperty<Trackable>()
+    val addedToTrackable by NodeProperty<Trackable?>()
 
 }

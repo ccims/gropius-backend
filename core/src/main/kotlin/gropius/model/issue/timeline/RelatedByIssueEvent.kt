@@ -24,9 +24,8 @@ class RelatedByIssueEvent(
     }
 
     @NodeRelationship(RELATION, Direction.OUTGOING)
-    @GraphQLDescription("The IssueRelation the Issue is related at.")
-    @GraphQLNullable
+    @GraphQLDescription("The IssueRelation the Issue is related at, null if deleted.")
     @FilterProperty
-    val relation by NodeProperty<IssueRelation>()
+    val relation by NodeProperty<IssueRelation?>()
 
 }

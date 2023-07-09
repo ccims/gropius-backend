@@ -3,7 +3,6 @@ package gropius.model.issue.timeline
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import gropius.model.issue.Label
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 import java.time.OffsetDateTime
 
 @DomainNode
@@ -21,9 +20,8 @@ class RemovedLabelEvent(
     }
 
     @NodeRelationship(REMOVED_LABEL, Direction.OUTGOING)
-    @GraphQLDescription("The Label removed from the Issue.")
-    @GraphQLNullable
+    @GraphQLDescription("The Label removed from the Issue, null if deleted.")
     @FilterProperty
-    val removedLabel by NodeProperty<Label>()
+    val removedLabel by NodeProperty<Label?>()
 
 }
