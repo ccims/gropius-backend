@@ -40,7 +40,7 @@ class IMSUserService(
         val ims = imsRepository.findById(input.ims)
         val template = ims.template().value.imsUserTemplate().value
         val templatedFields = templatedNodeService.validateInitialTemplatedFields(template, input)
-        val imsUser = IMSUser(input.displayName, input.email, input.username, templatedFields)
+        val imsUser = IMSUser(input.displayName, input.email, null, input.username, templatedFields)
         imsUser.template().value = template
         imsUser.ims().value = ims
         if (input.gropiusUser != null) {

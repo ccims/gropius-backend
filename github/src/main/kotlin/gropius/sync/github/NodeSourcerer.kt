@@ -188,6 +188,7 @@ class NodeSourcerer(
             var user = IMSUser(
                 username,
                 null,
+                null,
                 username,
                 mutableMapOf("github_id" to (helper.objectMapper.writeValueAsString(githubId) ?: "null"))
             )

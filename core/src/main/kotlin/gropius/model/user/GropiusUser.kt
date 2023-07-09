@@ -7,6 +7,7 @@ import gropius.model.user.permission.BasePermission
 import gropius.model.user.permission.GlobalPermission
 import io.github.graphglue.model.*
 import org.springframework.data.annotation.Transient
+import java.net.URI
 
 @DomainNode
 @GraphQLDescription(
@@ -25,11 +26,12 @@ import org.springframework.data.annotation.Transient
 class GropiusUser(
     displayName: String,
     email: String?,
+    avatar: URI?,
     @property:GraphQLIgnore
     val username: String,
     @GraphQLDescription("True if the user is an admin")
     var isAdmin: Boolean
-) : User(displayName, email) {
+) : User(displayName, email, avatar) {
 
     companion object {
         const val PERMISSION = "PERMISSION"
