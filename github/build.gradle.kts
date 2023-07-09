@@ -1,5 +1,4 @@
 val graphglueVersion: String by project
-val springBootVersion: String by project
 val apolloVersion: String by project
 val kosonVersion: String by project
 
@@ -13,7 +12,6 @@ dependencies {
     implementation(project(path = ":sync"))
     implementation("com.apollographql.apollo3", "apollo-runtime", apolloVersion)
     implementation("com.apollographql.apollo3", "apollo-adapters", apolloVersion)
-    implementation("org.springframework.boot", "spring-boot-starter-data-mongodb-reactive", springBootVersion)
     implementation("com.lectra", "koson", kosonVersion)
 }
 
@@ -24,7 +22,11 @@ apollo {
         introspection {
             endpointUrl.set("https://api.github.com/graphql")
             schemaFile.set(file("src/main/graphql/gropius/sync/github/schema.graphqls"))
-            mapScalar("DateTime", "java.time.OffsetDateTime", "com.apollographql.apollo3.adapter.JavaOffsetDateTimeAdapter")
+            mapScalar(
+                "DateTime",
+                "java.time.OffsetDateTime",
+                "com.apollographql.apollo3.adapter.JavaOffsetDateTimeAdapter"
+            )
         }
         generateOptionalOperationVariables.set(false)
         codegenModels.set("responseBased")

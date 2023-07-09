@@ -1,11 +1,8 @@
 package gropius.sync.github
 
-import gropius.sync.TokenManager
 import com.apollographql.apollo3.ApolloClient
 import gropius.repository.architecture.IMSIssueRepository
-import gropius.sync.IssueCleaner
-import gropius.sync.JsonHelper
-import gropius.sync.SyncNotificator
+import gropius.sync.*
 import gropius.sync.github.config.IMSConfig
 import gropius.sync.github.config.IMSConfigManager
 import gropius.sync.github.config.IMSProjectConfig
@@ -39,6 +36,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class SyncSelector(
+    val cursorResourceWalkerDataService: CursorResourceWalkerDataService,
     private val repositoryInfoRepository: RepositoryInfoRepository,
     private val issueInfoRepository: IssueInfoRepository,
     private val mongoOperations: ReactiveMongoOperations,
@@ -65,7 +63,7 @@ class SyncSelector(
      * Sync GitHub to Gropius
      */
     suspend fun sync() {
-        logger.info("Sync started")
+        /*logger.info("Sync started")
         imsConfigManager.findTemplates()
         for (imsTemplate in imsConfigManager.findTemplates()) {
             logger.trace("Iterating IMSTemplate ${imsTemplate.rawId}")
@@ -83,7 +81,18 @@ class SyncSelector(
                 }
             }
         }
-        logger.info("Sync exited without exception")
+        logger.info("Sync exited without exception")*/
+        val budget = GithubResourceWalkerBudget()
+        val walker = IssueWalker(
+            "a",
+            CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
+                1.0,
+                0.1, GithubGithubResourceWalkerEstimatedBudgetUsageType(), GithubGithubResourceWalkerBudgetUsageType()
+            ),
+            budget,
+            cursorResourceWalkerDataService
+        )
+
     }
 
     /**

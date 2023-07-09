@@ -5,10 +5,7 @@ import gropius.model.architecture.IMSIssue
 import gropius.model.architecture.IMSProject
 import gropius.model.issue.Issue
 import gropius.repository.architecture.IMSIssueRepository
-import gropius.sync.IssueCleaner
-import gropius.sync.JsonHelper
-import gropius.sync.SyncNotificator
-import gropius.sync.TokenManager
+import gropius.sync.*
 import gropius.sync.github.config.IMSConfigManager
 import gropius.sync.github.config.IMSProjectConfig
 import gropius.sync.github.generated.fragment.IssueData
