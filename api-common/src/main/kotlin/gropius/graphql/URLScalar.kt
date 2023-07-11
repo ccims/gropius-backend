@@ -1,16 +1,20 @@
 package gropius.graphql
 
+import graphql.GraphQLContext
+import graphql.execution.CoercedVariables
 import graphql.language.StringValue
+import graphql.language.Value
 import graphql.schema.*
 import java.net.URI
 import java.net.URISyntaxException
+import java.util.*
 
 /**
  * Coercing for the [URLScalar]
  */
 private val URLCoercing = object : Coercing<URI, String> {
 
-    override fun serialize(input: Any): String {
+    override fun serialize(input: Any, graphQLContext: GraphQLContext, locale: Locale): String {
         if (input !is URI) {
             throw CoercingSerializeException("Expected URI")
         }
@@ -20,7 +24,7 @@ private val URLCoercing = object : Coercing<URI, String> {
         return input.toString()
     }
 
-    override fun parseValue(input: Any): URI {
+    override fun parseValue(input: Any, graphQLContext: GraphQLContext, locale: Locale): URI {
         val uri = when (input) {
             is String -> {
                 try {
@@ -29,6 +33,7 @@ private val URLCoercing = object : Coercing<URI, String> {
                     throw CoercingParseValueException(e)
                 }
             }
+
             is URI -> input
             else -> throw CoercingParseValueException("unsupported type")
         }
@@ -38,7 +43,12 @@ private val URLCoercing = object : Coercing<URI, String> {
         return uri
     }
 
-    override fun parseLiteral(input: Any): URI {
+    override fun parseLiteral(
+        input: Value<*>,
+        variables: CoercedVariables,
+        graphQLContext: GraphQLContext,
+        locale: Locale
+    ): URI {
         if (input !is StringValue) {
             throw CoercingParseLiteralException("Expected AST type 'StringValue'")
         }

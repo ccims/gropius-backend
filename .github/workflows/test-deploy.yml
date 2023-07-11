@@ -4,8 +4,6 @@ on:
   pull_request:
     branches:
       - main
-  schedule:
-    - cron: '42 14 * * 3' # every thursday at 2:42 pm
 
 env:
   NODE_OPTIONS: '--max_old_space_size=4096'
