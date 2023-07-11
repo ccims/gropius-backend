@@ -12,31 +12,31 @@ import org.springframework.stereotype.Service
 abstract class CursorResourceWalker<BudgetUsageType, EstimatedBudgetUsageType, Budget : ResourceWalkerBudget<BudgetUsageType, EstimatedBudgetUsageType>>(
     val imsProject: String,
     val resource: String,
-    val config: CursorResourceWalkerConfig<BudgetUsageType, EstimatedBudgetUsageType>,
+    val resourceWalkerConfig: CursorResourceWalkerConfig<BudgetUsageType, EstimatedBudgetUsageType>,
     val budget: Budget,
     val cursorResourceWalkerDataService: CursorResourceWalkerDataService
 ) {
     suspend fun getPriority(): Double {
         val data = cursorResourceWalkerDataService.findByImsProjectAndResource(imsProject, resource)
-        return data?.currentPriority ?: config.basePriority
+        return data?.currentPriority ?: resourceWalkerConfig.basePriority
     }
 
     abstract suspend fun execute(): BudgetUsageType;
 
     suspend fun process() {
-        if (budget.mayExecute(config.estimatedBudget)) {
-            var usage = config.failureBudget;
+        if (budget.mayExecute(resourceWalkerConfig.estimatedBudget)) {
+            var usage = resourceWalkerConfig.failureBudget;
             try {
                 usage = execute()
             } finally {
                 budget.integrate(usage)
                 cursorResourceWalkerDataService.changePriority(
-                    imsProject, resource, { config.basePriority }, config.basePriority
+                    imsProject, resource, { resourceWalkerConfig.basePriority }, resourceWalkerConfig.basePriority
                 );
             }
         } else {
             cursorResourceWalkerDataService.changePriority(
-                imsProject, resource, { it + config.priorityIncrease }, config.basePriority
+                imsProject, resource, { it + resourceWalkerConfig.priorityIncrease }, resourceWalkerConfig.basePriority
             );
         }
     }

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.neo4j.core.ReactiveNeo4jOperations
 import org.springframework.stereotype.Component
+import java.net.URI
 
 /**
  * Stateless component for the management part of the sync
@@ -82,14 +83,20 @@ class SyncSelector(
             }
         }
         logger.info("Sync exited without exception")*/
+        val apolloClient = ApolloClient.Builder().serverUrl(URI("").toString())
+            .addHttpHeader("Authorization", "bearer ").build()
         val budget = GithubResourceWalkerBudget()
         val walker = IssueWalker(
             "a",
-            CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
-                1.0,
-                0.1, GithubGithubResourceWalkerEstimatedBudgetUsageType(), GithubGithubResourceWalkerBudgetUsageType()
+            GitHubResourceWalkerConfig(
+                CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
+                    1.0,
+                    0.1,
+                    GithubGithubResourceWalkerEstimatedBudgetUsageType(),
+                    GithubGithubResourceWalkerBudgetUsageType()
+                ), "nodejs", "node", 10
             ),
-            budget,
+            budget, apolloClient,
             cursorResourceWalkerDataService
         )
 
