@@ -3,6 +3,8 @@ package gropius.service.user
 
 import org.springframework.stereotype.Service
 import java.util.*
+import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.pow
 
 private const val SIZE = 36
@@ -27,7 +29,7 @@ class AvatarGenerationService {
      * @return The avatar as Base64 encoded SVG data url
      */
     fun generateAvatar(id: String): String {
-        val numFromName = id.hashCode()
+        val numFromName = max(abs(id.hashCode()), 0)
         val range = colors.size
         val preTranslateX = getUnit(numFromName, 10, 1)
         val wrapperTranslateX = if (preTranslateX < 5) preTranslateX + SIZE / 9.0 else preTranslateX.toDouble()
