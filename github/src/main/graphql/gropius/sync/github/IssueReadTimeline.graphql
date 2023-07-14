@@ -211,12 +211,15 @@ fragment TimelineItemData on IssueTimelineItems {
     ...on SubscribedEvent { createdAt }
     ...on UnsubscribedEvent { createdAt }
 }
-query TimelineRead($issue: ID! $since: DateTime, $issueCount: Int!,$cursor:String) {
+query TimelineRead($issue: ID!, $since: DateTime, $issueCount: Int!,$cursor:String) {
     ...MetaData
     node(id: $issue) {
         ...on Issue {
             timelineItems(since: $since,after: $cursor,first: $issueCount) {
                 nodes {
+                    ...on Node {
+                        id
+                    }
                     ...TimelineItemData
                 }
                 totalCount

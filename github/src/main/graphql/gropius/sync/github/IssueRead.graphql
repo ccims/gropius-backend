@@ -10,7 +10,10 @@ fragment IssueDataExtensive on Issue {
 query IssueRead($repoOwner: String!, $repoName: String!, $since: DateTime, $issueCount: Int!,$cursor:String) {
     ...MetaData
     repository(owner: $repoOwner, name: $repoName) {
-        issues(first: $issueCount, filterBy: {since: $since},after: $cursor) {
+        issues(first: $issueCount, filterBy: {since: $since},after: $cursor, orderBy: {
+            field:UPDATED_AT,
+            direction:ASC
+        }) {
             nodes {
                 ...IssueDataExtensive
             }

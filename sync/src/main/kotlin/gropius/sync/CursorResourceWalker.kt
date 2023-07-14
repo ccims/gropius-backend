@@ -1,6 +1,7 @@
 package gropius.sync
 
 import jakarta.transaction.Transactional
+import kotlinx.coroutines.reactor.awaitSingle
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.index.Indexed
@@ -68,7 +69,7 @@ class CursorResourceWalkerDataService(val cursorResourceWalkerDataRepository: Cu
         val data = cursorResourceWalkerDataRepository.findByImsProjectAndResource(imsProject, resource)
             ?: CursorResourceWalkerData(imsProject, resource, basePriority)
         data.currentPriority = operator(data.currentPriority)
-        cursorResourceWalkerDataRepository.save(data)
+        cursorResourceWalkerDataRepository.save(data).awaitSingle()
     }
 }
 

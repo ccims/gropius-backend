@@ -53,7 +53,8 @@ class SyncSelector(
     private val tokenManager: TokenManager,
     private val imsIssueRepository: IMSIssueRepository,
     private val incoming: Incoming,
-    private val outgoing: Outgoing
+    private val outgoing: Outgoing,
+    val issuePileService: IssuePileService
 ) {
     /**
      * Logger used to print notifications
@@ -63,8 +64,7 @@ class SyncSelector(
     /**
      * Sync GitHub to Gropius
      */
-    suspend fun sync() {
-        /*logger.info("Sync started")
+    suspend fun sync() {/*logger.info("Sync started")
         imsConfigManager.findTemplates()
         for (imsTemplate in imsConfigManager.findTemplates()) {
             logger.trace("Iterating IMSTemplate ${imsTemplate.rawId}")
@@ -83,22 +83,42 @@ class SyncSelector(
             }
         }
         logger.info("Sync exited without exception")*/
-        val apolloClient = ApolloClient.Builder().serverUrl(URI("").toString())
-            .addHttpHeader("Authorization", "bearer ").build()
+        val token = System.getenv("GITHUB_DUMMY_PAT")
+        val apolloClient = ApolloClient.Builder().serverUrl(URI("https://api.github.com/graphql").toString())
+            .addHttpHeader("Authorization", "bearer $token").build()
         val budget = GithubResourceWalkerBudget()
         val walker = IssueWalker(
-            "a",
-            GitHubResourceWalkerConfig(
+            "a", GitHubResourceWalkerConfig(
                 CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
                     1.0,
                     0.1,
                     GithubGithubResourceWalkerEstimatedBudgetUsageType(),
                     GithubGithubResourceWalkerBudgetUsageType()
-                ), "nodejs", "node", 10
-            ),
-            budget, apolloClient,
-            cursorResourceWalkerDataService
+                ), "terralang", "terra", 100
+            ), budget, apolloClient, issuePileService, cursorResourceWalkerDataService
         )
+        walker.execute()
+
+        val dirtyIssues = issuePileService.findByImsProjectAndNeedsTimelineRequest("a", true)
+        val walkerPairs = mutableListOf<Pair<Double, TimelineWalker>>()
+        for (walker in dirtyIssues.map {
+            TimelineWalker(
+                "a", it.id!!, GitHubResourceWalkerConfig(
+                    CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
+                        1.0,
+                        0.1,
+                        GithubGithubResourceWalkerEstimatedBudgetUsageType(),
+                        GithubGithubResourceWalkerBudgetUsageType()
+                    ), "terralang", "terra", 100
+                ), budget, apolloClient, issuePileService, cursorResourceWalkerDataService
+            )
+        }) {
+            walkerPairs += walker.getPriority() to walker
+        }
+        val walkers = walkerPairs.sortedBy { it.first }.map { it.second }
+        for (walker in walkers) {
+            walker.execute()
+        }
 
     }
 

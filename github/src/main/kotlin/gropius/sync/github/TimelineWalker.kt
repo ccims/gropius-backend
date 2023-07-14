@@ -4,10 +4,14 @@ import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.exception.ApolloException
 import gropius.sync.CursorResourceWalker
 import gropius.sync.CursorResourceWalkerDataService
-import gropius.sync.github.generated.IssueReadQuery
+import gropius.sync.github.generated.TimelineReadQuery
+import gropius.sync.github.generated.TimelineReadQuery.Data.Node.Companion.asIssue
+import kotlinx.coroutines.reactor.awaitSingle
+import org.bson.types.ObjectId
 
-class IssueWalker(
+class TimelineWalker(
     imsProject: String,
+    val issue: ObjectId,
     val config: GitHubResourceWalkerConfig,
     budget: GithubResourceWalkerBudget,
     val apolloClient: ApolloClient,
@@ -18,20 +22,16 @@ class IssueWalker(
 ) {
     override suspend fun execute(): GithubGithubResourceWalkerBudgetUsageType {
         try {
-            val newestIssue = issuePileService.findFirstByImsProjectOrderByLastUpdateDesc(imsProject)
-            val since = newestIssue?.lastUpdate
+            val issuePile = issuePileService.findById(issue).awaitSingle()
+            val since = issuePile?.timelineItems?.maxOfOrNull { it.createdAt }
             var cursor: String? = null
             do {
-                val query = IssueReadQuery(
-                    repoOwner = config.remoteOwner,
-                    repoName = config.remoteRepo,
-                    since = since,
-                    cursor = cursor,
-                    issueCount = config.count
+                val query = TimelineReadQuery(
+                    issue = issuePile.githubId, since = since, cursor = cursor, issueCount = config.count
                 )
                 val response = apolloClient.query(query).execute()
                 cursor =
-                    if (response.data?.repository?.issues?.pageInfo?.hasNextPage == true) response.data?.repository?.issues?.pageInfo?.endCursor
+                    if (response.data?.node?.asIssue()?.timelineItems?.pageInfo?.hasNextPage == true) response.data?.node?.asIssue()?.timelineItems?.pageInfo?.endCursor
                     else null;
                 var isRateLimited = false
                 response.errors?.forEach {
@@ -43,17 +43,17 @@ class IssueWalker(
                     return GithubGithubResourceWalkerBudgetUsageType()//TODO: rate limit max err
                 }
                 if (response.errors?.isEmpty() != false) {
-                    response.data?.repository?.issues?.nodes?.forEach {
-                        issuePileService.integrateIssue(
-                            imsProject, it!!
+                    response.data?.node?.asIssue()?.timelineItems?.nodes?.forEach {
+                        issuePileService.integrateTimelineItem(
+                            issue, it!!
                         )
                     }
                 }
             } while (cursor != null);
+            issuePileService.markIssueTimelineDone(issue)
         } catch (e: ApolloException) {
             e.printStackTrace()
         }
         return GithubGithubResourceWalkerBudgetUsageType();
     }
 }
-
