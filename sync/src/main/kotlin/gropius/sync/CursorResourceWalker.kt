@@ -10,21 +10,26 @@ import org.springframework.data.mongodb.repository.ReactiveMongoRepository
 import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
 
+abstract class ResourceWalker {
+    abstract suspend fun getPriority(): Double;
+    abstract suspend fun process();
+}
+
 abstract class CursorResourceWalker<BudgetUsageType, EstimatedBudgetUsageType, Budget : ResourceWalkerBudget<BudgetUsageType, EstimatedBudgetUsageType>>(
     val imsProject: String,
     val resource: String,
     val resourceWalkerConfig: CursorResourceWalkerConfig<BudgetUsageType, EstimatedBudgetUsageType>,
     val budget: Budget,
     val cursorResourceWalkerDataService: CursorResourceWalkerDataService
-) {
-    suspend fun getPriority(): Double {
+) : ResourceWalker() {
+    override suspend fun getPriority(): Double {
         val data = cursorResourceWalkerDataService.findByImsProjectAndResource(imsProject, resource)
         return data?.currentPriority ?: resourceWalkerConfig.basePriority
     }
 
-    abstract suspend fun execute(): BudgetUsageType;
+    protected abstract suspend fun execute(): BudgetUsageType;
 
-    suspend fun process() {
+    override suspend fun process() {
         if (budget.mayExecute(resourceWalkerConfig.estimatedBudget)) {
             var usage = resourceWalkerConfig.failureBudget;
             try {

@@ -2,6 +2,7 @@ package gropius.sync.github
 
 import com.apollographql.apollo3.ApolloClient
 import gropius.repository.architecture.IMSIssueRepository
+import gropius.repository.issue.IssueRepository
 import gropius.sync.*
 import gropius.sync.github.config.IMSConfig
 import gropius.sync.github.config.IMSConfigManager
@@ -10,6 +11,7 @@ import gropius.sync.github.repository.IssueInfoRepository
 import gropius.sync.github.repository.RepositoryInfoRepository
 import gropius.sync.github.repository.TimelineEventInfoRepository
 import gropius.sync.github.utils.TimelineItemHandler
+import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
@@ -54,7 +56,11 @@ class SyncSelector(
     private val imsIssueRepository: IMSIssueRepository,
     private val incoming: Incoming,
     private val outgoing: Outgoing,
-    val issuePileService: IssuePileService
+    val issuePileService: IssuePileService,
+    val issueRepository: IssueRepository,
+    val timelineItemConversionInformationService: TimelineItemConversionInformationService,
+    val issueConversionInformationService: IssueConversionInformationService,
+    val githubDataService: GithubDataService
 ) {
     /**
      * Logger used to print notifications
@@ -83,27 +89,13 @@ class SyncSelector(
             }
         }
         logger.info("Sync exited without exception")*/
-        val token = System.getenv("GITHUB_DUMMY_PAT")
-        val apolloClient = ApolloClient.Builder().serverUrl(URI("https://api.github.com/graphql").toString())
-            .addHttpHeader("Authorization", "bearer $token").build()
-        val budget = GithubResourceWalkerBudget()
-        val walker = IssueWalker(
-            "a", GitHubResourceWalkerConfig(
-                CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
-                    1.0,
-                    0.1,
-                    GithubGithubResourceWalkerEstimatedBudgetUsageType(),
-                    GithubGithubResourceWalkerBudgetUsageType()
-                ), "terralang", "terra", 100
-            ), budget, apolloClient, issuePileService, cursorResourceWalkerDataService
-        )
-        walker.execute()
-
-        val dirtyIssues = issuePileService.findByImsProjectAndNeedsTimelineRequest("a", true)
-        val walkerPairs = mutableListOf<Pair<Double, TimelineWalker>>()
-        for (walker in dirtyIssues.map {
-            TimelineWalker(
-                "a", it.id!!, GitHubResourceWalkerConfig(
+        try {
+            val token = System.getenv("GITHUB_DUMMY_PAT")
+            val apolloClient = ApolloClient.Builder().serverUrl(URI("https://api.github.com/graphql").toString())
+                .addHttpHeader("Authorization", "bearer $token").build()
+            val budget = GithubResourceWalkerBudget()
+            val walker = IssueWalker(
+                "a", GitHubResourceWalkerConfig(
                     CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
                         1.0,
                         0.1,
@@ -112,14 +104,84 @@ class SyncSelector(
                     ), "terralang", "terra", 100
                 ), budget, apolloClient, issuePileService, cursorResourceWalkerDataService
             )
-        }) {
-            walkerPairs += walker.getPriority() to walker
-        }
-        val walkers = walkerPairs.sortedBy { it.first }.map { it.second }
-        for (walker in walkers) {
-            walker.execute()
-        }
+            println("A1")
+            walker.process()
+            println("B1")
 
+            val walkerPairs = mutableListOf<Pair<Double, ResourceWalker>>()
+            for (walker in issuePileService.findByImsProjectAndNeedsTimelineRequest("a", true).map {
+                TimelineWalker(
+                    "a", it.id!!, GitHubResourceWalkerConfig(
+                        CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
+                            1.0,
+                            0.1,
+                            GithubGithubResourceWalkerEstimatedBudgetUsageType(),
+                            GithubGithubResourceWalkerBudgetUsageType()
+                        ), "terralang", "terra", 100
+                    ), budget, apolloClient, issuePileService, cursorResourceWalkerDataService
+                )
+            }) {
+                walkerPairs += walker.getPriority() to walker
+            }
+            for (dityIssue in issuePileService.findByImsProjectAndNeedsCommentRequest("a", true)) {
+                for (comment in dityIssue.timelineItems.mapNotNull { it as? IssueCommentTimelineItem }) {
+                    val walker = CommentWalker(
+                        "a", dityIssue.id!!, comment.githubId, GitHubResourceWalkerConfig(
+                            CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
+                                1.0,
+                                0.1,
+                                GithubGithubResourceWalkerEstimatedBudgetUsageType(),
+                                GithubGithubResourceWalkerBudgetUsageType()
+                            ), "terralang", "terra", 100
+                        ), budget, apolloClient, issuePileService, cursorResourceWalkerDataService
+                    )
+                    walkerPairs += walker.getPriority() to walker
+                }
+            }
+            val walkers = walkerPairs.sortedBy { it.first }.map { it.second }
+            for (walker in walkers) {
+                println("A2")
+                walker.process()
+                println("B2")
+            }
+
+            println("DOWNLOAD DONE");
+
+            issuePileService.findByImsProjectAndHasUnsyncedData("a", true).forEach {
+                println("USI 1");
+                val issueInfo = issueConversionInformationService.findByImsProjectAndGithubId("a", it.identification())
+                    ?: IssueConversionInformation("a", it.identification(), null)
+                println("USI 2");
+                val issue = if (issueInfo.gropiusId != null) issueRepository.findById(issueInfo.gropiusId!!)
+                    .awaitSingle() else it.createIssue()
+                println("USI 3");
+                val timelineItems = it.incomingTimelineItems()
+                println("USI 4");
+                for (timelineItem in timelineItems) {
+                    println("USI 5.1");
+                    val oldInfo = timelineItemConversionInformationService.findByImsProjectAndGithubId(
+                        "a", timelineItem.identification()
+                    )
+                    println("USI 5.2");
+                    val (timelineItem, newInfo) = timelineItem.gropiusTimelineItem("a", githubDataService, oldInfo)
+                    println("USI 5.3");
+                    if (timelineItem != null) {
+                        timelineItem.issue().value = issue;
+                        newInfo.gropiusId = neoOperations.save(timelineItem).awaitSingle()!!.rawId
+                    }
+                    println("USI 5.4");
+                    timelineItemConversionInformationService.save(newInfo).awaitSingle()
+                    println("USI 5.5");
+                }
+                println("USI 6");
+                it.markDone(githubDataService)
+            }
+        } catch (e: Exception) {
+            println("ERROR")
+            e.printStackTrace()
+        } finally {
+            println("END")
+        }
     }
 
     /**
@@ -137,6 +199,7 @@ class SyncSelector(
                 val imsProjectConfig = IMSProjectConfig(helper, imsConfig, project)
                 syncProject(imsProjectConfig, apolloClient)
             } catch (e: SyncNotificator.NotificatedError) {
+                logger.warn("Error in IMS sync", e)
                 syncNotificator.sendNotification(
                     project, SyncNotificator.NotificationDummy(e)
                 )

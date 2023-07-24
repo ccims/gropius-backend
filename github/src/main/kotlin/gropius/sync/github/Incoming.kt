@@ -15,10 +15,10 @@ import gropius.sync.github.generated.fragment.TimelineItemData.Companion.asIssue
 import gropius.sync.github.generated.fragment.TimelineItemData.Companion.asNode
 import gropius.sync.github.model.IssueInfo
 import gropius.sync.github.model.TimelineEventInfo
-import gropius.sync.github.repository.IssueInfoRepository
+<import gropius.sync.github.repository.IssueInfoRepository
 import gropius.sync.github.repository.RepositoryInfoRepository
 import gropius.sync.github.repository.TimelineEventInfoRepository
-import gropius.sync.github.utils.IssueGrabber
+>import gropius.sync.github.utils.IssueGrabber
 import gropius.sync.github.utils.TimelineGrabber
 import gropius.sync.github.utils.TimelineItemHandler
 import kotlinx.coroutines.flow.toList

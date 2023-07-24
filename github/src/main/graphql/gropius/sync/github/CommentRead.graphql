@@ -1,0 +1,8 @@
+query CommentRead($comment: ID!) {
+    node(id: $comment) {
+        ...on IssueComment {
+            id
+            ...IssueCommentData
+        }
+    }
+}

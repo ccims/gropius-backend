@@ -21,6 +21,7 @@ class TimelineWalker(
     imsProject, imsProject, config.resourceWalkerConfig, budget, cursorResourceWalkerDataService
 ) {
     override suspend fun execute(): GithubGithubResourceWalkerBudgetUsageType {
+        println("EXECUTE TimelineWalker")
         try {
             val issuePile = issuePileService.findById(issue).awaitSingle()
             val since = issuePile?.timelineItems?.maxOfOrNull { it.createdAt }

@@ -27,6 +27,7 @@ fragment TimelineItemData on IssueTimelineItems {
         id
     }
     ...on AddedToProjectEvent {
+        id
         createdAt
     }
     ...on AssignedEvent {
@@ -54,15 +55,19 @@ fragment TimelineItemData on IssueTimelineItems {
         }
     }
     ...on ConnectedEvent {
+        id
         createdAt
     }
     ...on ConvertedNoteToIssueEvent {
+        id
         createdAt
     }
     ...on ConvertedToDiscussionEvent {
+        id
         createdAt
     }
     ...on CrossReferencedEvent {
+        id
         createdAt
     }
     ...on DemilestonedEvent {
@@ -74,9 +79,11 @@ fragment TimelineItemData on IssueTimelineItems {
         milestoneTitle
     }
     ...on DisconnectedEvent {
+        id
         createdAt
     }
     ...on IssueComment {
+        id
         ...IssueCommentData
     }
     ...on LabeledEvent {
@@ -90,6 +97,7 @@ fragment TimelineItemData on IssueTimelineItems {
         }
     }
     ...on LockedEvent {
+        id
         createdAt
     }
     ...on MarkedAsDuplicateEvent {
@@ -126,6 +134,7 @@ fragment TimelineItemData on IssueTimelineItems {
         milestoneTitle
     }
     ...on MovedColumnsInProjectEvent {
+        id
         createdAt
     }
     ...on PinnedEvent {
@@ -136,9 +145,11 @@ fragment TimelineItemData on IssueTimelineItems {
         }
     }
     ...on ReferencedEvent {
+        id
         createdAt
     }
     ...on RemovedFromProjectEvent {
+        id
         createdAt
     }
     ...on RenamedTitleEvent {
@@ -158,6 +169,7 @@ fragment TimelineItemData on IssueTimelineItems {
         }
     }
     ...on TransferredEvent {
+        id
         createdAt
     }
     ...on UnassignedEvent {
@@ -181,6 +193,7 @@ fragment TimelineItemData on IssueTimelineItems {
         }
     }
     ...on UnlockedEvent {
+        id
         createdAt
     }
     ...on UnmarkedAsDuplicateEvent {
@@ -208,8 +221,14 @@ fragment TimelineItemData on IssueTimelineItems {
             ...UserData
         }
     }
-    ...on SubscribedEvent { createdAt }
-    ...on UnsubscribedEvent { createdAt }
+    ...on SubscribedEvent {
+        id
+        createdAt
+    }
+    ...on UnsubscribedEvent {
+        id
+        createdAt
+    }
 }
 query TimelineRead($issue: ID!, $since: DateTime, $issueCount: Int!,$cursor:String) {
     ...MetaData

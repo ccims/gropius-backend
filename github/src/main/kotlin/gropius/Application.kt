@@ -4,6 +4,7 @@ import gropius.sync.github.SyncSelector
 import io.github.graphglue.data.repositories.EnableGraphglueRepositories
 import kotlinx.coroutines.runBlocking
 import org.neo4j.driver.Driver
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -16,7 +17,6 @@ import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRep
 import org.springframework.data.neo4j.core.ReactiveDatabaseSelectionProvider
 import org.springframework.data.neo4j.core.transaction.ReactiveNeo4jTransactionManager
 import kotlin.system.exitProcess
-import org.slf4j.LoggerFactory
 
 /**
  * Configuration provider for the neo4j transaction manager
@@ -67,6 +67,10 @@ class Application : CommandLineRunner {
             }
         } catch (e: Exception) {
             logger.error("Error in sync", e)
+        } catch (e: Error) {
+            e.printStackTrace()
+            logger.error("Throwable in sync", e)
+            exitProcess(1)//TODO: remove ASAP
         } finally {
             exitProcess(0)//TODO: remove ASAP
         }
