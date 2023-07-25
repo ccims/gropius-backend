@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import graphql.Scalars
 import graphql.scalars.regex.RegexScalar
 import graphql.schema.*
+import gropius.authorization.checkPermission
 import gropius.authorization.gropiusAuthorizationContext
 import gropius.model.common.PERMISSION_FIELD_BEAN
 import gropius.model.template.TEMPLATED_FIELDS_FILTER_BEAN
@@ -185,11 +186,10 @@ class GraphQLConfiguration {
                 node: org.neo4j.cypherdsl.core.Node,
                 nodeDefinition: NodeDefinition
             ): Expression {
-                val context = dfe.gropiusAuthorizationContext
-                return if (context.checkPermission) {
+                return if (dfe.checkPermission) {
                     val conditionGenerator = nodeDefinitionCollection.generateAuthorizationCondition(
                         nodeDefinition,
-                        Permission(arguments["permission"] as String, context)
+                        Permission(arguments["permission"] as String, dfe.gropiusAuthorizationContext)
                     )
                     val condition = conditionGenerator.generateCondition(node)
                     condition

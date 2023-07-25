@@ -32,3 +32,14 @@ val DataFetchingEnvironment.gropiusAuthorizationContext: GropiusAuthorizationCon
     }
     return tempAuthorizationContext
 }
+
+/**
+ * Gets checkPermission of a possibly set [GropiusAuthorizationContext] and evaluates to false otherwise
+ */
+val DataFetchingEnvironment.checkPermission: Boolean get() {
+    return if (this.authorizationContext is GropiusAuthorizationContext) {
+        this.gropiusAuthorizationContext.checkPermission
+    } else {
+        false
+    }
+}
