@@ -2,6 +2,7 @@ package gropius.sync.github
 
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.exception.ApolloException
+import gropius.model.architecture.IMSProject
 import gropius.sync.CursorResourceWalker
 import gropius.sync.CursorResourceWalkerDataService
 import gropius.sync.github.generated.CommentReadQuery
@@ -10,7 +11,7 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.bson.types.ObjectId
 
 class CommentWalker(
-    imsProject: String,
+    imsProject: IMSProject,
     val issue: ObjectId,
     val comment: String,
     val config: GitHubResourceWalkerConfig,
@@ -19,7 +20,7 @@ class CommentWalker(
     val issuePileService: IssuePileService,
     cursorResourceWalkerDataService: CursorResourceWalkerDataService
 ) : CursorResourceWalker<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType, GithubResourceWalkerBudget>(
-    imsProject, imsProject, config.resourceWalkerConfig, budget, cursorResourceWalkerDataService
+    imsProject, issue.toHexString(), config.resourceWalkerConfig, budget, cursorResourceWalkerDataService
 ) {
     override suspend fun execute(): GithubGithubResourceWalkerBudgetUsageType {
         println("EXECUTE CommentWalker")

@@ -188,7 +188,7 @@ class Outgoing(
             val response = client.mutation(MutateReopenIssueMutation(issueInfo.githubId)).execute()
             val item = response.data?.reopenIssue?.issue?.timelineItems?.nodes?.lastOrNull()
             if (item != null) {
-                incoming.handleTimelineEvent(imsProjectConfig, issueInfo, item)
+                //incoming.handleTimelineEvent(imsProjectConfig, issueInfo, item)
             }
         }
     }
@@ -209,7 +209,7 @@ class Outgoing(
             val response = client.mutation(MutateCloseIssueMutation(issueInfo.githubId)).execute()
             val item = response.data?.closeIssue?.issue?.timelineItems?.nodes?.lastOrNull()
             if (item != null) {
-                incoming.handleTimelineEvent(imsProjectConfig, issueInfo, item)
+                //incoming.handleTimelineEvent(imsProjectConfig, issueInfo, item)
             }
         }
     }
@@ -270,7 +270,7 @@ class Outgoing(
                 }
                 val item = response.data?.addLabelsToLabelable?.labelable?.asIssue()?.timelineItems?.nodes?.lastOrNull()
                 if (item != null) {
-                    incoming.handleTimelineEvent(imsProjectConfig, issueInfo, item)
+                    //incoming.handleTimelineEvent(imsProjectConfig, issueInfo, item)
                 }
             }
         }
@@ -292,7 +292,7 @@ class Outgoing(
             val response = client.mutation(MutateAddLabelMutation(issueInfo.githubId, labelInfo.githubId)).execute()
             val item = response.data?.addLabelsToLabelable?.labelable?.asIssue()?.timelineItems?.nodes?.lastOrNull()
             if (item != null) {
-                incoming.handleTimelineEvent(imsProjectConfig, issueInfo, item)
+                //incoming.handleTimelineEvent(imsProjectConfig, issueInfo, item)
             }
         }
     }
@@ -318,7 +318,7 @@ class Outgoing(
                 val item =
                     response.data?.removeLabelsFromLabelable?.labelable?.asIssue()?.timelineItems?.nodes?.lastOrNull()
                 if (item != null) {
-                    incoming.handleTimelineEvent(imsProjectConfig, issueInfo, item)
+                    //incoming.handleTimelineEvent(imsProjectConfig, issueInfo, item)
                 }
             }
         }
@@ -341,7 +341,7 @@ class Outgoing(
             val response = client.mutation(MutateCreateCommentMutation(issueInfo.githubId, comment.body)).execute()
             val item = response.data?.addComment?.commentEdge?.node?.asIssueTimelineItems()
             if (item != null) {
-                incoming.handleTimelineEventIssueComment(imsProjectConfig, issueInfo, item, comment.rawId)
+                //incoming.handleTimelineEventIssueComment(imsProjectConfig, issueInfo, item, comment.rawId)
             }
         }
     }
@@ -421,7 +421,8 @@ class Outgoing(
         imsProjectConfig: IMSProjectConfig,
         issueInfo: IssueInfo
     ): List<suspend () -> Unit> {
-        return if (shouldSyncType({ it is StateChangedEvent && it.newState().value.isOpen },
+        return if (shouldSyncType(
+                { it is StateChangedEvent && it.newState().value.isOpen },
                 { it is StateChangedEvent && !it.newState().value.isOpen },
                 finalBlock,
                 relevantTimeline,
@@ -449,7 +450,8 @@ class Outgoing(
         imsProjectConfig: IMSProjectConfig,
         issueInfo: IssueInfo
     ): List<suspend () -> Unit> {
-        return if (shouldSyncType({ it is StateChangedEvent && !it.newState().value.isOpen },
+        return if (shouldSyncType(
+                { it is StateChangedEvent && !it.newState().value.isOpen },
                 { it is StateChangedEvent && it.newState().value.isOpen },
                 finalBlock,
                 relevantTimeline,
@@ -474,7 +476,8 @@ class Outgoing(
     private suspend inline fun <reified AddingItem : TimelineItem, reified RemovingItem : TimelineItem> shouldSyncType(
         finalBlock: List<TimelineItem>, relevantTimeline: List<TimelineItem>, restoresDefaultState: Boolean
     ): Boolean {
-        return shouldSyncType({ it is AddingItem },
+        return shouldSyncType(
+            { it is AddingItem },
             { it is RemovingItem },
             finalBlock,
             relevantTimeline,
@@ -565,7 +568,8 @@ class Outgoing(
                 finalBlock, relevantTimeline, false
             )
         ) {
-            collectedMutations += githubAddLabel(imsProjectConfig,
+            collectedMutations += githubAddLabel(
+                imsProjectConfig,
                 issueInfo,
                 label,
                 finalBlock.map { it.lastModifiedBy().value })
@@ -574,7 +578,8 @@ class Outgoing(
                 finalBlock, relevantTimeline, true
             )
         ) {
-            collectedMutations += githubRemoveLabel(imsProjectConfig,
+            collectedMutations += githubRemoveLabel(
+                imsProjectConfig,
                 issueInfo,
                 label,
                 finalBlock.map { it.lastModifiedBy().value })

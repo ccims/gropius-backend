@@ -1,6 +1,7 @@
 package gropius.sync
 
 import org.bson.types.ObjectId
+import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository
@@ -15,7 +16,13 @@ abstract class TimelineItemConversionInformation(
     val githubId: String,
     @Indexed
     var gropiusId: String?
-) {}
+) {
+    /**
+     * MongoDB ID
+     */
+    @Id
+    var id: ObjectId? = null
+}
 
 @Repository
 interface TimelineItemConversionInformationRepository :

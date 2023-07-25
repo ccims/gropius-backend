@@ -2,23 +2,24 @@ package gropius.sync.github
 
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.exception.ApolloException
+import gropius.model.architecture.IMSProject
 import gropius.sync.CursorResourceWalker
 import gropius.sync.CursorResourceWalkerDataService
 import gropius.sync.github.generated.IssueReadQuery
 
 class IssueWalker(
-    imsProject: String,
+    imsProject: IMSProject,
     val config: GitHubResourceWalkerConfig,
     budget: GithubResourceWalkerBudget,
     val apolloClient: ApolloClient,
     val issuePileService: IssuePileService,
     cursorResourceWalkerDataService: CursorResourceWalkerDataService
 ) : CursorResourceWalker<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType, GithubResourceWalkerBudget>(
-    imsProject, imsProject, config.resourceWalkerConfig, budget, cursorResourceWalkerDataService
+    imsProject, imsProject.rawId!!, config.resourceWalkerConfig, budget, cursorResourceWalkerDataService
 ) {
     override suspend fun execute(): GithubGithubResourceWalkerBudgetUsageType {
         try {
-            val newestIssue = issuePileService.findFirstByImsProjectOrderByLastUpdateDesc(imsProject)
+            val newestIssue = issuePileService.findFirstByImsProjectOrderByLastUpdateDesc(imsProject.rawId!!)
             val since = newestIssue?.lastUpdate
             var cursor: String? = null
             do {

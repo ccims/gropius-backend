@@ -1,5 +1,6 @@
 package gropius.sync
 
+import gropius.model.architecture.IMSProject
 import jakarta.transaction.Transactional
 import kotlinx.coroutines.reactor.awaitSingle
 import org.bson.types.ObjectId
@@ -16,14 +17,14 @@ abstract class ResourceWalker {
 }
 
 abstract class CursorResourceWalker<BudgetUsageType, EstimatedBudgetUsageType, Budget : ResourceWalkerBudget<BudgetUsageType, EstimatedBudgetUsageType>>(
-    val imsProject: String,
+    val imsProject: IMSProject,
     val resource: String,
     val resourceWalkerConfig: CursorResourceWalkerConfig<BudgetUsageType, EstimatedBudgetUsageType>,
     val budget: Budget,
     val cursorResourceWalkerDataService: CursorResourceWalkerDataService
 ) : ResourceWalker() {
     override suspend fun getPriority(): Double {
-        val data = cursorResourceWalkerDataService.findByImsProjectAndResource(imsProject, resource)
+        val data = cursorResourceWalkerDataService.findByImsProjectAndResource(imsProject.rawId!!, resource)
         return data?.currentPriority ?: resourceWalkerConfig.basePriority
     }
 
@@ -55,6 +56,9 @@ data class CursorResourceWalkerData(
     @Indexed
     val resource: String, var currentPriority: Double
 ) {
+    /**
+     * MongoDB ID
+     */
     @Id
     var id: ObjectId? = null
 }
@@ -69,10 +73,10 @@ class CursorResourceWalkerDataService(val cursorResourceWalkerDataRepository: Cu
     CursorResourceWalkerDataRepository by cursorResourceWalkerDataRepository {
     @Transactional
     suspend fun changePriority(
-        imsProject: String, resource: String, operator: (Double) -> Double, basePriority: Double
+        imsProject: IMSProject, resource: String, operator: (Double) -> Double, basePriority: Double
     ) {
-        val data = cursorResourceWalkerDataRepository.findByImsProjectAndResource(imsProject, resource)
-            ?: CursorResourceWalkerData(imsProject, resource, basePriority)
+        val data = cursorResourceWalkerDataRepository.findByImsProjectAndResource(imsProject.rawId!!, resource)
+            ?: CursorResourceWalkerData(imsProject.rawId!!, resource, basePriority)
         data.currentPriority = operator(data.currentPriority)
         cursorResourceWalkerDataRepository.save(data).awaitSingle()
     }

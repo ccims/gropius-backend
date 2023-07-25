@@ -2,6 +2,7 @@ package gropius.sync.github
 
 import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.exception.ApolloException
+import gropius.model.architecture.IMSProject
 import gropius.sync.CursorResourceWalker
 import gropius.sync.CursorResourceWalkerDataService
 import gropius.sync.github.generated.TimelineReadQuery
@@ -10,7 +11,7 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.bson.types.ObjectId
 
 class TimelineWalker(
-    imsProject: String,
+    imsProject: IMSProject,
     val issue: ObjectId,
     val config: GitHubResourceWalkerConfig,
     budget: GithubResourceWalkerBudget,
@@ -18,7 +19,7 @@ class TimelineWalker(
     val issuePileService: IssuePileService,
     cursorResourceWalkerDataService: CursorResourceWalkerDataService
 ) : CursorResourceWalker<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType, GithubResourceWalkerBudget>(
-    imsProject, imsProject, config.resourceWalkerConfig, budget, cursorResourceWalkerDataService
+    imsProject, issue.toHexString(), config.resourceWalkerConfig, budget, cursorResourceWalkerDataService
 ) {
     override suspend fun execute(): GithubGithubResourceWalkerBudgetUsageType {
         println("EXECUTE TimelineWalker")

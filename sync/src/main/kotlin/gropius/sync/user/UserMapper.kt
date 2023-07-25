@@ -1,5 +1,6 @@
 package gropius.sync.user
 
+import gropius.model.architecture.IMSProject
 import gropius.model.user.GropiusUser
 import gropius.model.user.User
 import gropius.sync.*
@@ -25,12 +26,15 @@ data class UserInfoData(
     @Indexed
     val gropiusId: String
 ) {
+    /**
+     * MongoDB ID
+     */
     @Id
     var id: ObjectId? = null
 }
 
 @Repository
-interface UserInfoRepository : ReactiveMongoRepository<UserInfoData, ObjectId> {
+interface NUserInfoRepository : ReactiveMongoRepository<UserInfoData, ObjectId> {
     suspend fun findByImsProjectAndGithubId(
         imsProject: String, githubId: String
     ): UserInfoData?
@@ -43,31 +47,31 @@ interface UserInfoRepository : ReactiveMongoRepository<UserInfoData, ObjectId> {
 @Service
 class UserMapper(
     @Qualifier("graphglueNeo4jOperations")
-    private val neoOperations: ReactiveNeo4jOperations, val userInfoRepository: UserInfoRepository
-) : UserInfoRepository by userInfoRepository {
+    private val neoOperations: ReactiveNeo4jOperations, val nuserInfoRepository: NUserInfoRepository
+) : NUserInfoRepository by nuserInfoRepository {
     @Transactional
     suspend fun saveUser(
-        imsProject: String, githubId: String, gropiusId: String
+        imsProject: IMSProject, githubId: String, gropiusId: String
     ) {
-        val pile = userInfoRepository.findByImsProjectAndGithubId(imsProject, githubId) ?: UserInfoData(
-            imsProject, githubId, gropiusId
+        val pile = nuserInfoRepository.findByImsProjectAndGithubId(imsProject.rawId!!, githubId) ?: UserInfoData(
+            imsProject.rawId!!, githubId, gropiusId
         )
-        userInfoRepository.save(pile).awaitSingle()
+        nuserInfoRepository.save(pile).awaitSingle()
     }
 
     @Transactional
-    suspend fun mapUser(imsProject: String, name: String): User {
-        var pile = userInfoRepository.findByImsProjectAndGithubId(imsProject, name)
-        if (pile != null) {
-            return neoOperations.findById<User>(pile.gropiusId)!!
+    suspend fun mapUser(imsProject: IMSProject, name: String): User {
+        val pile = nuserInfoRepository.findByImsProjectAndGithubId(imsProject.rawId!!, name)
+        return if (pile != null) {
+            neoOperations.findById<User>(pile.gropiusId)!!
         } else {
             val gropiusUser = neoOperations.save(GropiusUser(name, null, null, name, false)).awaitSingle()
-            userInfoRepository.save(
+            nuserInfoRepository.save(
                 UserInfoData(
-                    imsProject, name, gropiusUser.rawId!!
+                    imsProject.rawId!!, name, gropiusUser.rawId!!
                 )
             ).awaitSingle()
-            return gropiusUser
+            gropiusUser
         }
     }
 }
