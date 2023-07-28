@@ -9,7 +9,7 @@ abstract class IncomingTimelineItem() {
         imsProject: IMSProject,
         service: SyncDataService,
         timelineItemConversionInformation: TimelineItemConversionInformation?
-    ): Pair<TimelineItem?, TimelineItemConversionInformation>;
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation>;
 
     abstract suspend fun identification(): String;
 }

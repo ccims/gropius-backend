@@ -20,6 +20,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository
+import org.springframework.data.neo4j.core.findById
 import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
@@ -83,7 +84,7 @@ data class IssuePileData(
     override suspend fun createIssue(imsProject: IMSProject, service: SyncDataService): Issue {
         val githubService = (service as GithubDataService)
         val issue = Issue(lastUpdate, lastUpdate, mutableMapOf(), initialTitle, lastUpdate, null, null, null, null)
-        issue.body().value = Body(lastUpdate, lastUpdate, "TODO", lastUpdate)
+        issue.body().value = Body(lastUpdate, lastUpdate, initialDescription, lastUpdate)
         issue.body().value.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, "todo user")
         issue.body().value.bodyLastEditedBy().value = githubService.userMapper.mapUser(imsProject, "todo user")
         issue.body().value.createdBy().value = githubService.userMapper.mapUser(imsProject, "todo user")
@@ -242,16 +243,23 @@ class RenamedTitleEventTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
         timelineItemConversionInformation: TimelineItemConversionInformation?
-    ): Pair<TimelineItem?, TimelineItemConversionInformation> {
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
+        val githubService = service as GithubDataService
         if ((createdBy != null)) {
-            val event = TitleChangedEvent(createdAt, createdAt, oldTitle, newTitle)
-            event.createdBy().value = (service as GithubDataService).userMapper.mapUser(imsProject, createdBy)
-            event.lastModifiedBy().value = (service as GithubDataService).userMapper.mapUser(imsProject, createdBy)
-            return event to convInfo;
+            val gropiusId = convInfo.gropiusId
+            val event = if (gropiusId != null) githubService.neoOperations.findById<TitleChangedEvent>(
+                gropiusId
+            ) else TitleChangedEvent(createdAt, createdAt, oldTitle, newTitle)
+            if (event == null) {
+                return listOf<TimelineItem>() to convInfo;
+            }
+            event.createdBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            return listOf<TimelineItem>(event) to convInfo;
         }
-        return null to convInfo;
+        return listOf<TimelineItem>() to convInfo;
     }
 
 }
@@ -264,10 +272,10 @@ class UnlabeledEventTimelineItem(githubId: String, createdAt: OffsetDateTime) :
         imsProject: IMSProject,
         service: SyncDataService,
         timelineItemConversionInformation: TimelineItemConversionInformation?
-    ): Pair<TimelineItem?, TimelineItemConversionInformation> {
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
-        return null to convInfo;
+        return listOf<TimelineItem>() to convInfo;
     }
 }
 
@@ -279,10 +287,10 @@ class LabeledEventTimelineItem(githubId: String, createdAt: OffsetDateTime) :
         imsProject: IMSProject,
         service: SyncDataService,
         timelineItemConversionInformation: TimelineItemConversionInformation?
-    ): Pair<TimelineItem?, TimelineItemConversionInformation> {
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
-        return null to convInfo;
+        return listOf<TimelineItem>() to convInfo;
     }
 }
 
@@ -294,10 +302,10 @@ class ReopenedEventTimelineItem(githubId: String, createdAt: OffsetDateTime) :
         imsProject: IMSProject,
         service: SyncDataService,
         timelineItemConversionInformation: TimelineItemConversionInformation?
-    ): Pair<TimelineItem?, TimelineItemConversionInformation> {
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
-        return null to convInfo;
+        return listOf<TimelineItem>() to convInfo;
     }
 }
 
@@ -309,10 +317,10 @@ class ClosedEventTimelineItem(githubId: String, createdAt: OffsetDateTime) :
         imsProject: IMSProject,
         service: SyncDataService,
         timelineItemConversionInformation: TimelineItemConversionInformation?
-    ): Pair<TimelineItem?, TimelineItemConversionInformation> {
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
-        return null to convInfo;
+        return listOf<TimelineItem>() to convInfo;
     }
 }
 
@@ -332,17 +340,24 @@ class IssueCommentTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
         timelineItemConversionInformation: TimelineItemConversionInformation?
-    ): Pair<TimelineItem?, TimelineItemConversionInformation> {
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
+        val githubService = service as GithubDataService
         if ((createdBy != null)) {
-            val event = IssueComment(createdAt, createdAt, body, createdAt, false)
-            event.createdBy().value = (service as GithubDataService).userMapper.mapUser(imsProject, createdBy)
-            event.lastModifiedBy().value = (service as GithubDataService).userMapper.mapUser(imsProject, createdBy)
-            event.bodyLastEditedBy().value = (service as GithubDataService).userMapper.mapUser(imsProject, createdBy)
-            return event to convInfo;
+            val gropiusId = convInfo.gropiusId
+            val event = if (gropiusId != null) githubService.neoOperations.findById<IssueComment>(
+                gropiusId
+            ) else IssueComment(createdAt, createdAt, body, createdAt, false)
+            if (event == null) {
+                return listOf<TimelineItem>() to convInfo;
+            }
+            event.createdBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.bodyLastEditedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            return listOf<TimelineItem>(event) to convInfo;
         }
-        return null to convInfo;
+        return listOf<TimelineItem>() to convInfo;
     }
 }
 
@@ -353,9 +368,9 @@ class UnknownTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
         timelineItemConversionInformation: TimelineItemConversionInformation?
-    ): Pair<TimelineItem?, TimelineItemConversionInformation> {
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
-        return null to convInfo;
+        return listOf<TimelineItem>() to convInfo;
     }
 }

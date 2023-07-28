@@ -3,6 +3,7 @@ package gropius.sync
 import gropius.model.architecture.IMS
 import gropius.model.architecture.IMSProject
 import gropius.model.architecture.Project
+import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSIssueTemplate
 import gropius.model.template.IMSProjectTemplate
 import gropius.model.template.IMSTemplate
@@ -93,6 +94,10 @@ abstract class AbstractSync(
                     if (issueInfo.gropiusId != null) collectedSyncInfo.issueRepository.findById(issueInfo.gropiusId!!)
                         .awaitSingle() else it.createIssue(imsProject, syncDataService())
                 if (issue.rawId == null) issue = collectedSyncInfo.neoOperations.save(issue).awaitSingle()
+                if (issueInfo.gropiusId == null) {
+                    issueInfo.gropiusId = issue.rawId!!
+                    collectedSyncInfo.issueConversionInformationService.save(issueInfo).awaitSingle()
+                }
                 //try {
                 val timelineItems = it.incomingTimelineItems(syncDataService())
                 for (timelineItem in timelineItems) {
@@ -103,9 +108,12 @@ abstract class AbstractSync(
                     val (timelineItem, newInfo) = timelineItem.gropiusTimelineItem(
                         imsProject, syncDataService(), oldInfo
                     )
-                    if (timelineItem != null) {
-                        timelineItem.issue().value = issue;
-                        newInfo.gropiusId = collectedSyncInfo.neoOperations.save(timelineItem).awaitSingle()!!.rawId
+                    if (timelineItem.isNotEmpty()) {//TODO: Handle multiple
+                        timelineItem.forEach { it.issue().value = issue }
+                        newInfo.gropiusId =
+                            collectedSyncInfo.neoOperations.save(timelineItem.single()).awaitSingle()!!.rawId
+                        issue.issueComments() += timelineItem.mapNotNull { it as? IssueComment }
+                        issue = collectedSyncInfo.neoOperations.save(issue).awaitSingle()
                     }
                     if (oldInfo?.id != null) {
                         newInfo.id = oldInfo.id;
