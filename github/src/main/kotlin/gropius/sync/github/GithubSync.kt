@@ -2,7 +2,10 @@ package gropius.sync.github
 
 import com.apollographql.apollo3.ApolloClient
 import gropius.model.architecture.IMSProject
+import gropius.model.template.IMSTemplate
 import gropius.sync.*
+import gropius.sync.github.config.IMSConfigManager
+import gropius.sync.github.config.IMSProjectConfig
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.URI
@@ -11,7 +14,9 @@ import java.net.URI
 final class GithubSync(
     val githubDataService: GithubDataService,
     val issuePileService: IssuePileService,
+    val helper: JsonHelper,
     val cursorResourceWalkerDataService: CursorResourceWalkerDataService,
+    val imsConfigManager: IMSConfigManager,
     collectedSyncInfo: CollectedSyncInfo,
     val loadBalancedDataFetcher: LoadBalancedDataFetcher = LoadBalancedDataFetcher()
 ) : AbstractSync(collectedSyncInfo), LoadBalancedDataFetcherImplementation, DataFetcher by loadBalancedDataFetcher {
@@ -36,9 +41,14 @@ final class GithubSync(
         return githubDataService
     }
 
+    override suspend fun findTemplates(): Set<IMSTemplate> {
+        return imsConfigManager.findTemplates()
+    }
+
     override suspend fun balancedFetchData(
         imsProject: IMSProject, generalBudget: GeneralResourceWalkerBudget
     ): List<ResourceWalker> {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         val budget = generalBudget as GithubResourceWalkerBudget
 
         val walkers = mutableListOf<ResourceWalker>()
@@ -49,7 +59,7 @@ final class GithubSync(
                     1.0,
                     GithubGithubResourceWalkerEstimatedBudgetUsageType(),
                     GithubGithubResourceWalkerBudgetUsageType()
-                ), "terralang", "terra", 100
+                ), imsProjectConfig.repo.owner, imsProjectConfig.repo.repo, 100
             ), budget, apolloClient, issuePileService, cursorResourceWalkerDataService
         )
 
@@ -63,7 +73,7 @@ final class GithubSync(
                         0.1,
                         GithubGithubResourceWalkerEstimatedBudgetUsageType(),
                         GithubGithubResourceWalkerBudgetUsageType()
-                    ), "terralang", "terra", 100
+                    ), imsProjectConfig.repo.owner, imsProjectConfig.repo.repo, 100
                 ), budget, apolloClient, issuePileService, cursorResourceWalkerDataService
             )
         }
@@ -78,7 +88,7 @@ final class GithubSync(
                             0.1,
                             GithubGithubResourceWalkerEstimatedBudgetUsageType(),
                             GithubGithubResourceWalkerBudgetUsageType()
-                        ), "terralang", "terra", 100
+                        ), imsProjectConfig.repo.owner, imsProjectConfig.repo.repo, 100
                     ), budget, apolloClient, issuePileService, cursorResourceWalkerDataService
                 )
             }

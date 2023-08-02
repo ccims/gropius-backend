@@ -25,12 +25,12 @@ class IMSConfigManager(
         /**
          * JSON schema version to include
          */
-        private const val SCHEMA = "https://json-schema.org/draft/2020-12/schema"
+        const val SCHEMA = "https://json-schema.org/draft/2020-12/schema"
 
         /**
          * Template fields for IMSTemplate and IMSProjectTemplate
          */
-        private val COMMON_TEMPLATE_FIELDS = mapOf("bot-user" to obj {
+        val COMMON_TEMPLATE_FIELDS = mapOf("bot-user" to obj {
             "\$schema" to SCHEMA
             "type" to arr["null", "string"]
         }.toString(), "last-notification" to obj {
@@ -49,50 +49,6 @@ class IMSConfigManager(
                 "gropius-type" to "notification"
             }]
         }.toString())
-
-        /**
-         * Name of the requested IMSTemplate
-         */
-        private const val IMS_TEMPLATE_NAME = "Github"
-
-        /**
-         * Fields of the requested IMSTemplate
-         */
-        private val IMS_TEMPLATE_FIELDS = mapOf("read-user" to obj {
-            "\$schema" to SCHEMA
-            "type" to arr["null", obj {
-                "type" to "string"
-                "gropius-node" to "IMSUser"
-                "gropius-type" to "github-user"
-            }]
-        }.toString(), "graphql-url" to obj {
-            "\$schema" to SCHEMA
-            "type" to "string"
-            "format" to "uri"
-        }.toString()) + COMMON_TEMPLATE_FIELDS
-
-        /**
-         * Name of requested IMSProjectTemplate
-         */
-        private const val IMS_PROJECT_TEMPLATE_NAME = "Github"
-
-        /**
-         * Fields of the requested IMSProjectTemplate
-         */
-        private val IMS_PROJECT_TEMPLATE_FIELDS = mapOf("repo" to obj {
-            "\$schema" to SCHEMA
-            "type" to "object"
-            "properties" to obj {
-                "owner" to obj {
-                    "type" to "string"
-                }
-                "repo" to obj {
-                    "type" to "string"
-                }
-            }
-            "required" to arr["owner", "repo"]
-            "gropius-type" to "github-owner"
-        }.toString()) + COMMON_TEMPLATE_FIELDS
 
         /**
          * Name of the ensured IMSIssueTemplate
@@ -167,19 +123,24 @@ class IMSConfigManager(
     suspend fun findTemplates(): Set<IMSTemplate> {
         val acceptableTemplates = neoOperations.findAll<IMSTemplate>().filter {
             (!it.isDeprecated) && isContentCompatible(
-                it, IMS_TEMPLATE_NAME, IMS_TEMPLATE_FIELDS
+                it, IMSConfig.IMS_TEMPLATE_NAME, IMSConfig.IMS_TEMPLATE_FIELDS
             ) && isContentCompatible(
-                it.imsProjectTemplate().value, IMS_PROJECT_TEMPLATE_NAME, IMS_PROJECT_TEMPLATE_FIELDS
+                it.imsProjectTemplate().value,
+                IMSProjectConfig.IMS_PROJECT_TEMPLATE_NAME,
+                IMSProjectConfig.IMS_PROJECT_TEMPLATE_FIELDS
             ) && isContentCompatible(
                 it.imsIssueTemplate().value, IMS_ISSUE_TEMPLATE_NAME, IMS_ISSUE_TEMPLATE_FIELDS
             ) && isContentCompatible(
                 it.imsUserTemplate().value, IMS_USER_TEMPLATE_NAME, IMS_USER_TEMPLATE_FIELDS
             )
-        }.toSet()
+        }.toSet().toMutableSet()
         if (acceptableTemplates.isEmpty()) {
-            val imsTemplate = IMSTemplate(IMS_TEMPLATE_NAME, "", IMS_TEMPLATE_FIELDS.toMutableMap(), false)
+            val imsTemplate =
+                IMSTemplate(IMSConfig.IMS_TEMPLATE_NAME, "", IMSConfig.IMS_TEMPLATE_FIELDS.toMutableMap(), false)
             imsTemplate.imsProjectTemplate().value = IMSProjectTemplate(
-                IMS_PROJECT_TEMPLATE_NAME, "", IMS_PROJECT_TEMPLATE_FIELDS.toMutableMap()
+                IMSProjectConfig.IMS_PROJECT_TEMPLATE_NAME,
+                "",
+                IMSProjectConfig.IMS_PROJECT_TEMPLATE_FIELDS.toMutableMap()
             )
             imsTemplate.imsIssueTemplate().value = IMSIssueTemplate(
                 IMS_ISSUE_TEMPLATE_NAME, "", IMS_ISSUE_TEMPLATE_FIELDS.toMutableMap()
@@ -188,7 +149,7 @@ class IMSConfigManager(
                 IMS_USER_TEMPLATE_NAME, "", IMS_USER_TEMPLATE_FIELDS.toMutableMap()
             )
             imsTemplate.imsUserTemplate().value.partOf().value = imsTemplate
-            acceptableTemplates.plus(neoOperations.save(imsTemplate).awaitSingle())
+            acceptableTemplates += (neoOperations.save(imsTemplate).awaitSingle())
         }
         return acceptableTemplates
     }

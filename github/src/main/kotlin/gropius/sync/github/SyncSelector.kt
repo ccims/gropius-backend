@@ -1,12 +1,10 @@
 package gropius.sync.github
 
-import com.apollographql.apollo3.ApolloClient
 import gropius.model.template.*
 import gropius.repository.architecture.IMSIssueRepository
 import gropius.sync.*
 import gropius.sync.github.config.IMSConfig
 import gropius.sync.github.config.IMSConfigManager
-import gropius.sync.github.config.IMSProjectConfig
 import gropius.sync.github.repository.IssueInfoRepository
 import gropius.sync.github.repository.RepositoryInfoRepository
 import gropius.sync.github.repository.TimelineEventInfoRepository
@@ -101,7 +99,7 @@ class SyncSelector(
      * @param imsConfig the config of the IMS
      */
     private suspend fun syncIMS(imsConfig: IMSConfig) {
-        logger.trace("Iterating IMS ${imsConfig.ims.rawId}")
+        /*logger.trace("Iterating IMS ${imsConfig.ims.rawId}")
         val token = tokenManager.getTokenForIMSUser(imsConfig.ims, imsConfig.readUser, null)
         val apolloClient = ApolloClient.Builder().serverUrl(imsConfig.graphQLUrl.toString())
             .addHttpHeader("Authorization", "bearer $token").build()
@@ -118,6 +116,6 @@ class SyncSelector(
             } catch (e: Exception) {
                 logger.warn("Error in IMS sync", e)
             }
-        }
+        }*/
     }
 }

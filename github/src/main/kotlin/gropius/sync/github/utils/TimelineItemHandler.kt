@@ -131,7 +131,7 @@ class TimelineItemHandler(
         addedLabelEvent.issue().value = issue.load(neoOperations)
         addedLabelEvent.createdBy().value = nodeSourcerer.ensureUser(imsProjectConfig, event.actor!!)
         addedLabelEvent.lastModifiedBy().value = nodeSourcerer.ensureUser(imsProjectConfig, event.actor!!)
-        addedLabelEvent.addedLabel().value = nodeSourcerer.ensureLabel(imsProjectConfig, event.label)
+        //addedLabelEvent.addedLabel().value = nodeSourcerer.ensureLabel(imsProjectConfig, event.label)
         addedLabelEvent = neoOperations.save(addedLabelEvent).awaitSingle()
         return Pair(addedLabelEvent.rawId, event.createdAt)
     }
@@ -151,7 +151,7 @@ class TimelineItemHandler(
         removedLabelEvent.issue().value = issue.load(neoOperations)
         removedLabelEvent.createdBy().value = nodeSourcerer.ensureUser(imsProjectConfig, event.actor!!)
         removedLabelEvent.lastModifiedBy().value = nodeSourcerer.ensureUser(imsProjectConfig, event.actor!!)
-        removedLabelEvent.removedLabel().value = nodeSourcerer.ensureLabel(imsProjectConfig, event.label)
+        //removedLabelEvent.removedLabel().value = nodeSourcerer.ensureLabel(imsProjectConfig, event.label)
         removedLabelEvent = neoOperations.save(removedLabelEvent).awaitSingle()
         return Pair(removedLabelEvent.rawId, event.createdAt)
     }

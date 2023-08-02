@@ -2,14 +2,9 @@ package gropius.sync
 
 import gropius.model.architecture.IMS
 import gropius.model.architecture.IMSProject
-import gropius.model.architecture.Project
 import gropius.model.issue.timeline.IssueComment
-import gropius.model.template.IMSIssueTemplate
-import gropius.model.template.IMSProjectTemplate
 import gropius.model.template.IMSTemplate
-import gropius.model.template.IMSUserTemplate
 import gropius.repository.issue.IssueRepository
-import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
@@ -35,54 +30,10 @@ abstract class AbstractSync(
 ) : DataFetcher {
     private val logger = LoggerFactory.getLogger(AbstractSync::class.java)
 
-    suspend fun imsTemplate(): IMSTemplate {
-        val newImsTemplate = IMSTemplate(
-            "noims", "", mutableMapOf(), false
-        )
-        newImsTemplate.imsProjectTemplate().value = IMSProjectTemplate("noimsproject", "", mutableMapOf())
-        newImsTemplate.imsIssueTemplate().value = IMSIssueTemplate("noimsuser", "", mutableMapOf())
-        newImsTemplate.imsUserTemplate().value = IMSUserTemplate("noimsuser", "", mutableMapOf())
-        return collectedSyncInfo.neoOperations.findAll(IMSTemplate::class.java).awaitFirstOrNull()
-            ?: collectedSyncInfo.neoOperations.save(
-                newImsTemplate
-            ).awaitSingle()
-    }
-
-    suspend fun imsProjectTemplate(): IMSProjectTemplate {
-        return imsTemplate().imsProjectTemplate().value
-    }
-
-    suspend fun ims(): IMS {
-        val newIms = IMS(
-            "noims", "", mutableMapOf()
-        )
-        newIms.template().value = imsTemplate()
-        return collectedSyncInfo.neoOperations.findAll(IMS::class.java).awaitFirstOrNull()
-            ?: collectedSyncInfo.neoOperations.save(
-                newIms
-            ).awaitSingle()
-    }
-
-    suspend fun project(): Project {
-        return collectedSyncInfo.neoOperations.findAll(Project::class.java).awaitFirstOrNull()
-            ?: collectedSyncInfo.neoOperations.save(
-                Project(
-                    "noproject", "", null
-                )
-            ).awaitSingle()
-    }
-
-    suspend fun imsProject(): IMSProject {
-        val newImsProject = IMSProject(mutableMapOf())
-        newImsProject.ims().value = ims()
-        newImsProject.trackable().value = project()
-        newImsProject.template().value = imsProjectTemplate()
-        return collectedSyncInfo.neoOperations.findAll(IMSProject::class.java).awaitFirstOrNull()
-            ?: collectedSyncInfo.neoOperations.save(newImsProject).awaitSingle()
-    }
-
     abstract suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue>;
     abstract fun syncDataService(): SyncDataService
+
+    abstract suspend fun findTemplates(): Set<IMSTemplate>
 
     suspend fun doIncoming(imsProject: IMSProject) {
         try {
@@ -141,7 +92,15 @@ abstract class AbstractSync(
     }
 
     suspend fun sync() {
-        fetchData(listOf(imsProject()))
-        doIncoming(imsProject())
+        val imsTemplates = findTemplates()
+        logger.info("Found ${imsTemplates.size} IMSTemplate")
+        val imss = mutableListOf<IMS>()
+        for (imsTemplate in imsTemplates) imss += imsTemplate.usedIn()
+        logger.info("Found ${imss.size} IMS")
+        val imsProjects = mutableListOf<IMSProject>()
+        for (ims in imss) imsProjects += ims.projects()
+        logger.info("Found ${imsProjects.size} IMSProject")
+        fetchData(imsProjects)
+        for (imsProject in imsProjects) doIncoming(imsProject)
     }
 }

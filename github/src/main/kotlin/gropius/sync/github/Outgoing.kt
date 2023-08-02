@@ -2,7 +2,6 @@ package gropius.sync.github
 
 import com.apollographql.apollo3.ApolloClient
 import gropius.GithubConfigurationProperties
-import gropius.model.architecture.IMS
 import gropius.model.issue.Issue
 import gropius.model.issue.Label
 import gropius.model.issue.timeline.*
@@ -12,7 +11,6 @@ import gropius.model.user.User
 import gropius.repository.issue.IssueRepository
 import gropius.repository.user.IMSUserRepository
 import gropius.sync.JsonHelper
-import gropius.sync.SyncNotificator
 import gropius.sync.TokenManager
 import gropius.sync.github.config.IMSProjectConfig
 import gropius.sync.github.generated.*
@@ -26,8 +24,6 @@ import gropius.sync.github.repository.IssueInfoRepository
 import gropius.sync.github.repository.LabelInfoRepository
 import gropius.sync.github.repository.TimelineEventInfoRepository
 import gropius.sync.github.utils.TimelineItemHandler
-import kotlinx.coroutines.reactor.awaitSingle
-import org.neo4j.cypherdsl.core.Cypher
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -98,12 +94,12 @@ class Outgoing(
      * @return string if token found, null otherwise
      */
     private suspend fun extractIMSUserToken(imsProjectConfig: IMSProjectConfig, user: IMSUser): String? {
-        if (user.ims().value == imsProjectConfig.imsConfig.ims) {
+        /*if (user.ims().value == imsProjectConfig.imsConfig.ims) {
             val token = tokenManager.getGithubUserToken(user)
             if (token != null) {
                 return token
             }
-        }
+        }*/
         return null
     }
 
@@ -113,7 +109,7 @@ class Outgoing(
      * @param imsProjectConfig active config
      * @return list of all IMSUsers
      */
-    private suspend fun findAllIMSUsers(imsProjectConfig: IMSProjectConfig, user: User): List<IMSUser> {
+    /*private suspend fun findAllIMSUsers(imsProjectConfig: IMSProjectConfig, user: User): List<IMSUser> {
         val node = Cypher.node(IMSUser::class.simpleName).named("iMSUser")
         val imsNode = Cypher.node(IMS::class.simpleName)
             .withProperties(mapOf("id" to Cypher.anonParameter(imsProjectConfig.imsConfig.ims.rawId!!)))
@@ -124,7 +120,7 @@ class Outgoing(
         return imsUserRepository.findAll(
             imsCondition.and(userCondition)
         ).collectList().awaitSingle()
-    }
+    }*/
 
     /**
      * Find token for a User or any similar enough user
@@ -142,12 +138,12 @@ class Outgoing(
         } else {
             user as GropiusUser
         }
-        for (imsUser in findAllIMSUsers(imsProjectConfig, activeGropiusUser)) {
+        /*for (imsUser in findAllIMSUsers(imsProjectConfig, activeGropiusUser)) {
             val imsUserToken = extractIMSUserToken(imsProjectConfig, imsUser)
             if (imsUserToken != null) {
                 return imsUserToken
             }
-        }
+        }*/
         return null
     }
 
@@ -159,15 +155,15 @@ class Outgoing(
      */
     private suspend fun createClient(imsProjectConfig: IMSProjectConfig, userList: Iterable<User>): ApolloClient {
         var token: String? = null
-        for (user in userList) {
+        /*for (user in userList) {
             token = extractUserToken(imsProjectConfig, user)
         }
         if (token == null) {
             token = tokenManager.getTokenForIMSUser(
                 imsProjectConfig.imsConfig.ims, imsProjectConfig.imsConfig.readUser, null
             )
-        }
-        return ApolloClient.Builder().serverUrl(imsProjectConfig.imsConfig.graphQLUrl.toString())
+        }*/
+        return ApolloClient.Builder().serverUrl(/*imsProjectConfig.imsConfig.graphQLUrl.toString()*/"")
             .addHttpHeader("Authorization", "bearer $token")
             .addHttpHeader("Accept", "application/json, application/vnd.github.bane-preview+json").build()
     }
@@ -263,7 +259,7 @@ class Outgoing(
             }
             val newLabel = createLabelResponse.data?.createLabel?.label?.labelData()
             if (newLabel != null) {
-                nodeSourcerer.ensureLabel(imsProjectConfig, newLabel, label.rawId)
+                //nodeSourcerer.ensureLabel(imsProjectConfig, newLabel, label.rawId)
                 val response = client.mutation(MutateAddLabelMutation(issueInfo.githubId, newLabel.id)).execute()
                 if (response.errors != null) {
                     logger.warn("Errors while syncing label: ${createLabelResponse.errors}")
@@ -287,14 +283,14 @@ class Outgoing(
     private suspend fun addExistingLabel(
         labelInfo: LabelInfo, imsProjectConfig: IMSProjectConfig, userList: Iterable<User>, issueInfo: IssueInfo
     ) {
-        if (labelInfo.url == imsProjectConfig.url) {
+        /*if (labelInfo.url == imsProjectConfig.url) {
             val client = createClient(imsProjectConfig, userList)
             val response = client.mutation(MutateAddLabelMutation(issueInfo.githubId, labelInfo.githubId)).execute()
             val item = response.data?.addLabelsToLabelable?.labelable?.asIssue()?.timelineItems?.nodes?.lastOrNull()
             if (item != null) {
                 //incoming.handleTimelineEvent(imsProjectConfig, issueInfo, item)
             }
-        }
+        }*/
     }
 
     /**
@@ -637,7 +633,7 @@ class Outgoing(
      * @param imsProjectConfig the config of the IMSProject
      */
     suspend fun syncIssues(imsProjectConfig: IMSProjectConfig) {
-        val collectedMutations = mutableListOf<suspend () -> Unit>()
+        /*val collectedMutations = mutableListOf<suspend () -> Unit>()
         for (issue in imsProjectConfig.imsProject.trackable().value.issues()) {
             val issueInfo = issueInfoRepository.findByUrlAndNeo4jId(imsProjectConfig.url, issue.rawId!!)
             if (issueInfo?.githubId != null) {
@@ -656,6 +652,6 @@ class Outgoing(
         logger.info("Pushing ${collectedMutations.size} mutations")
         for (mutation in collectedMutations) {
             mutation()
-        }
+        }*/
     }
 }

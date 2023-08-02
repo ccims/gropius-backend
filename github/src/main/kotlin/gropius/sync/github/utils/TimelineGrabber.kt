@@ -7,18 +7,10 @@ import gropius.sync.github.generated.TimelineReadQuery.Data.Companion.metaData
 import gropius.sync.github.generated.TimelineReadQuery.Data.Node.Companion.asIssue
 import gropius.sync.github.generated.fragment.TimelineItemData
 import gropius.sync.github.generated.fragment.TimelineItemData.Companion.asNode
-import gropius.sync.github.model.IssueInfo
-import gropius.sync.github.model.TimelineItemDataCache
 import gropius.sync.github.repository.IssueInfoRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactor.awaitSingle
 import org.bson.types.ObjectId
-import org.springframework.data.mongodb.core.*
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import java.time.OffsetDateTime
 
 /**
@@ -57,54 +49,58 @@ class TimelineGrabber(
     }
 
     override suspend fun writeTimestamp(time: OffsetDateTime) {
-        mongoOperations.update<IssueInfo>().matching(
+        /*mongoOperations.update<IssueInfo>().matching(
             Query.query(
                 Criteria.where(TimelineItemDataCache::url.name).`is`(imsProjectConfig.url)
                     .and(IssueInfo::githubId.name).`is`(id)
             )
         ).apply(
             Update().max(IssueInfo::lastAccess.name, time)
-        ).firstAndAwait()
+        ).firstAndAwait()*/
     }
 
     override suspend fun readTimestamp(): OffsetDateTime? {
-        return issueInfoRepository.findByUrlAndGithubId(imsProjectConfig.url, id)?.lastAccess
+        return null;//issueInfoRepository.findByUrlAndGithubId(imsProjectConfig.url, id)?.lastAccess
     }
 
     override suspend fun addToCache(node: TimelineItemData): ObjectId {
-        return mongoOperations.update<TimelineItemDataCache>().matching(
+        /*return mongoOperations.update<TimelineItemDataCache>().matching(
             Query.query(
                 Criteria.where(TimelineItemDataCache::url.name).`is`(imsProjectConfig.url)
                     .and(TimelineItemDataCache::githubId.name).`is`(node.asNode()!!.id)
             )
         ).apply(Update.update(TimelineItemDataCache::data.name, node).set(TimelineItemDataCache::issue.name, id))
-            .withOptions(FindAndModifyOptions.options().upsert(true).returnNew(true)).findAndModify().awaitSingle().id!!
+            .withOptions(FindAndModifyOptions.options().upsert(true).returnNew(true)).findAndModify().awaitSingle().id!!*/
+        TODO("SHIT")
     }
 
     override suspend fun iterateCache(): Flow<TimelineItemData> {
-        return mongoOperations.query<TimelineItemDataCache>().matching(
+        /*return mongoOperations.query<TimelineItemDataCache>().matching(
             Query.query(
                 Criteria.where(TimelineItemDataCache::url.name).`is`(imsProjectConfig.url)
                     .and(TimelineItemDataCache::issue.name).`is`(id)
             ).addCriteria(Criteria.where(TimelineItemDataCache::attempts.name).not().gte(7))
-        ).all().asFlow().map { it.data }
+        ).all().asFlow().map { it.data }*/
+        TODO()
     }
 
     override suspend fun removeFromCache(node: String) {
-        mongoOperations.remove<TimelineItemDataCache>(
+        /*mongoOperations.remove<TimelineItemDataCache>(
             Query.query(
                 Criteria.where(TimelineItemDataCache::url.name).`is`(imsProjectConfig.url)
                     .and(TimelineItemDataCache::issue.name).`is`(id)
             ).addCriteria(Criteria.where(TimelineItemDataCache::githubId.name).`is`(node))
-        ).awaitSingle()
+        ).awaitSingle()*/
+        TODO()
     }
 
     override suspend fun increaseFailedCache(node: String) {
-        mongoOperations.update<TimelineItemDataCache>().matching(
+        /*mongoOperations.update<TimelineItemDataCache>().matching(
             Query.query(
                 Criteria.where(TimelineItemDataCache::url.name).`is`(imsProjectConfig.url).and("data.id").`is`(node)
             )
-        ).apply(Update().inc(TimelineItemDataCache::attempts.name, 1)).firstAndAwait()
+        ).apply(Update().inc(TimelineItemDataCache::attempts.name, 1)).firstAndAwait()*/
+        TODO()
     }
 
     override fun nodeId(node: TimelineItemData): String {

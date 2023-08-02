@@ -1,7 +1,6 @@
 package gropius.sync.github
 
 import gropius.model.issue.Issue
-import gropius.model.issue.Label
 import gropius.model.issue.timeline.Body
 import gropius.model.template.IssueState
 import gropius.model.template.IssueTemplate
@@ -14,8 +13,6 @@ import gropius.sync.github.config.IMSProjectConfig
 import gropius.sync.github.generated.fragment.*
 import gropius.sync.github.generated.fragment.UserData.Companion.asNode
 import gropius.sync.github.model.IssueInfo
-import gropius.sync.github.model.LabelInfo
-import gropius.sync.github.model.UserInfo
 import gropius.sync.github.repository.IssueInfoRepository
 import gropius.sync.github.repository.LabelInfoRepository
 import gropius.sync.github.repository.UserInfoRepository
@@ -26,6 +23,7 @@ import org.springframework.data.neo4j.core.ReactiveNeo4jOperations
 import org.springframework.data.neo4j.core.findAll
 import org.springframework.data.neo4j.core.findById
 import org.springframework.stereotype.Component
+import java.net.URI
 import java.time.OffsetDateTime
 
 /**
@@ -114,7 +112,7 @@ class NodeSourcerer(
             }
             issue.body().value = issueBody
         }
-        issue.trackables().add(imsProjectConfig.imsProject.trackable().value)
+        //issue.trackables().add(imsProjectConfig.imsProject.trackable().value)
         neoOperations.save(issue).awaitSingle()
         return bodyChanged
     }
@@ -150,7 +148,7 @@ class NodeSourcerer(
     suspend fun ensureIssue(
         imsProjectConfig: IMSProjectConfig, info: IssueData, neo4jID: String? = null
     ): Pair<Issue, IssueInfo> {
-        var issueInfo = issueInfoRepository.findByUrlAndGithubId(imsProjectConfig.url, info.id)
+        var issueInfo = issueInfoRepository.findByUrlAndGithubId(/*imsProjectConfig.url*/URI("SHIT"), info.id)
         val issue: Issue = if ((neo4jID == null) && (issueInfo == null)) {
             prepareIssueFromIssueData(imsProjectConfig, info)
         } else {
@@ -160,7 +158,7 @@ class NodeSourcerer(
         if ((issueInfo == null) || bodyChanged) {
             issueInfo = issueInfoRepository.save(
                 issueInfo ?: IssueInfo(
-                    info.id, imsProjectConfig.url, issue.rawId!!, true, null, info, null
+                    info.id, /*imsProjectConfig.url*/URI("SHIT"), issue.rawId!!, true, null, info, null
                 )
             ).awaitSingle()
         }
@@ -183,7 +181,7 @@ class NodeSourcerer(
      * @return a Gropius user
      */
     suspend fun ensureUser(imsProjectConfig: IMSProjectConfig, username: String, githubId: String? = null): User {
-        val userInfo = userInfoRepository.findByUrlAndLogin(imsProjectConfig.url, username)
+        val userInfo = userInfoRepository.findByUrlAndLogin(/*imsProjectConfig.url*/URI("SHIT"), username)
         return if (userInfo == null) {
             var user = IMSUser(
                 username,
@@ -192,10 +190,10 @@ class NodeSourcerer(
                 username,
                 mutableMapOf("github_id" to (helper.objectMapper.writeValueAsString(githubId) ?: "null"))
             )
-            user.ims().value = imsProjectConfig.imsConfig.ims
+            //user.ims().value = imsProjectConfig.imsConfig.ims
             user.template().value = user.ims().value.template().value.imsUserTemplate().value
             user = neoOperations.save(user).awaitSingle()
-            userInfoRepository.save(UserInfo(username, user.rawId!!, imsProjectConfig.url)).awaitSingle()
+            //userInfoRepository.save(UserInfo(username, user.rawId!!, imsProjectConfig.url)).awaitSingle()
             tokenManager.advertiseIMSUser(user)
             user
         } else {
@@ -210,7 +208,7 @@ class NodeSourcerer(
      * @param neo4jID Id of existing label
      * @return a Gropius label
      */
-    suspend fun ensureLabel(
+    /*suspend fun ensureLabel(
         imsProjectConfig: IMSProjectConfig, info: LabelData, neo4jID: String? = null
     ): Label {
         val labelInfo = labelInfoRepository.findByUrlAndGithubId(imsProjectConfig.url, info.id)
@@ -235,5 +233,5 @@ class NodeSourcerer(
         } else {
             neoOperations.findById(labelInfo.neo4jId)!!
         }
-    }
+    }*/
 }

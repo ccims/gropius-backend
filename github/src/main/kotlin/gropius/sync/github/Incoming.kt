@@ -70,9 +70,10 @@ class Incoming(
     suspend fun ensureIMSIssue(
         imsProjectConfig: IMSProjectConfig, issue: Issue, issueData: IssueData
     ): IMSIssue {
+        val imsProject: IMSProject? = null
         val node = Cypher.node(IMSIssue::class.simpleName).named("iMSIssue")
         val imsProjectNode = Cypher.node(IMSProject::class.simpleName)
-            .withProperties(mapOf("id" to Cypher.anonParameter(imsProjectConfig.imsProject.rawId!!)))
+            .withProperties(mapOf("id" to Cypher.anonParameter(imsProject?.rawId!!)))
         val issueNode =
             Cypher.node(Issue::class.simpleName).withProperties(mapOf("id" to Cypher.anonParameter(issue.rawId!!)))
         val imsProjectCondition = node.relationshipTo(imsProjectNode, IMSIssue.PROJECT).asCondition()
@@ -83,7 +84,7 @@ class Incoming(
         if (imsIssueList.size == 0) {
             imsIssue = IMSIssue(mutableMapOf())
             imsIssue.issue().value = issue
-            imsIssue.imsProject().value = imsProjectConfig.imsProject
+            imsIssue.imsProject().value = imsProject!!
         } else {
             imsIssue = imsIssueList.removeFirst()
             neoOperations.deleteAllById<IMSIssue>(imsIssueList.map { it.rawId!! }).awaitSingleOrNull()
@@ -91,7 +92,7 @@ class Incoming(
         imsIssue.templatedFields["url"] = helper.objectMapper.writeValueAsString(issueData.url)
         imsIssue.templatedFields["id"] = helper.objectMapper.writeValueAsString(issueData.number)
         imsIssue.templatedFields["number"] = helper.objectMapper.writeValueAsString(issueData.number)
-        imsIssue.template().value = imsProjectConfig.imsConfig.imsTemplate.imsIssueTemplate().value
+        //imsIssue.template().value = imsProjectConfig.imsConfig.imsTemplate.imsIssueTemplate().value
         imsIssue = neoOperations.save(imsIssue).awaitSingle()
         return imsIssue
     }

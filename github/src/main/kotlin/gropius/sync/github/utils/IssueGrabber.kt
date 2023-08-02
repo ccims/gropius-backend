@@ -6,20 +6,11 @@ import gropius.sync.github.generated.IssueReadQuery
 import gropius.sync.github.generated.IssueReadQuery.Data.Companion.metaData
 import gropius.sync.github.generated.IssueReadQuery.Data.Repository.Issues.PageInfo.Companion.pageInfoData
 import gropius.sync.github.generated.fragment.IssueDataExtensive
-import gropius.sync.github.model.IssueDataCache
 import gropius.sync.github.model.RepoDescription
-import gropius.sync.github.model.RepositoryInfo
 import gropius.sync.github.repository.RepositoryInfoRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactor.awaitSingle
 import org.bson.types.ObjectId
-import org.springframework.data.mongodb.core.*
-import org.springframework.data.mongodb.core.query.Criteria.where
-import org.springframework.data.mongodb.core.query.Query.query
-import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.mongodb.core.query.Update.update
+import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import java.time.OffsetDateTime
 
 /**
@@ -51,53 +42,57 @@ class IssueGrabber(
     }
 
     override suspend fun writeTimestamp(time: OffsetDateTime) {
-        mongoOperations.update<RepositoryInfo>().matching(
+        /*mongoOperations.update<RepositoryInfo>().matching(
             query(where(RepositoryInfo::url.name).`is`(imsProjectConfig.url))
         ).apply(
             Update().max(RepositoryInfo::lastAccess.name, time).set(RepositoryInfo::user.name, remote.owner)
                 .set(RepositoryInfo::repo.name, remote.repo)
-        ).upsertAndAwait()
+        ).upsertAndAwait()*/
     }
 
     override suspend fun readTimestamp(): OffsetDateTime? {
-        return repositoryInfoRepository.findByUrl(imsProjectConfig.url)?.lastAccess
+        return null;//repositoryInfoRepository.findByUrl(imsProjectConfig.url)?.lastAccess
     }
 
     override suspend fun addToCache(node: IssueDataExtensive): ObjectId {
-        return mongoOperations.update<IssueDataCache>().matching(
+        /*return mongoOperations.update<IssueDataCache>().matching(
             query(
                 where(IssueDataCache::githubId.name).`is`(node.id).and(IssueDataCache::url.name)
                     .`is`(imsProjectConfig.url)
             )
         ).apply(
             update(IssueDataCache::data.name, node)
-        ).withOptions(FindAndModifyOptions.options().upsert(true).returnNew(true)).findAndModify().awaitSingle().id!!
+        ).withOptions(FindAndModifyOptions.options().upsert(true).returnNew(true)).findAndModify().awaitSingle().id!!*/
+        return null!!
     }
 
     override suspend fun iterateCache(): Flow<IssueDataExtensive> {
-        return mongoOperations.query<IssueDataCache>().matching(
+        /*return mongoOperations.query<IssueDataCache>().matching(
             query(
                 where(IssueDataCache::url.name).`is`(imsProjectConfig.url)
             ).addCriteria(where(IssueDataCache::attempts.name).not().gte(7))
-        ).all().asFlow().map { it.data }
+        ).all().asFlow().map { it.data }*/
+        TODO();
     }
 
     override suspend fun removeFromCache(node: String) {
-        mongoOperations.remove<IssueDataCache>(
+        /*mongoOperations.remove<IssueDataCache>(
             query(
                 where(IssueDataCache::url.name).`is`(
                     imsProjectConfig.url
                 )
             ).addCriteria(where("data.id").`is`(node))
-        ).awaitSingle()
+        ).awaitSingle()*/
+        TODO()
     }
 
     override suspend fun increaseFailedCache(node: String) {
-        mongoOperations.update<IssueDataCache>().matching(
+        /*mongoOperations.update<IssueDataCache>().matching(
             query(
                 where("data.id").`is`(node).and(IssueDataCache::url.name).`is`(imsProjectConfig.url)
             )
-        ).apply(Update().inc(IssueDataCache::attempts.name, 1)).firstAndAwait()
+        ).apply(Update().inc(IssueDataCache::attempts.name, 1)).firstAndAwait()*/
+        TODO()
     }
 
     override fun nodeId(node: IssueDataExtensive): String {

@@ -1,5 +1,7 @@
 package gropius.sync.github.config
 
+import com.lectra.koson.arr
+import com.lectra.koson.obj
 import gropius.model.architecture.IMSProject
 import gropius.sync.JsonHelper
 import gropius.sync.github.model.RepoDescription
@@ -13,11 +15,7 @@ import gropius.sync.github.model.RepoDescription
  * @param repo repository url
  */
 data class IMSProjectConfig(
-    val imsProject: IMSProject,
-    val imsConfig: IMSConfig,
-    val botUser: String,
-    val readUser: String,
-    val repo: RepoDescription
+    val botUser: String?, val repo: RepoDescription
 ) {
     /**
      * @param imsProject the Gropius IMSProject to use as input
@@ -25,16 +23,36 @@ data class IMSProjectConfig(
      * @param imsConfig the config of the parent IMS
      */
     constructor(
-        helper: JsonHelper, imsConfig: IMSConfig, imsProject: IMSProject
+        helper: JsonHelper, imsProject: IMSProject
     ) : this(
-        imsProject,
-        imsConfig,
-        helper.parseString(imsProject.templatedFields["bot-user"]) ?: imsConfig.botUser,
-        imsConfig.readUser,
-        helper.objectMapper.readValue<RepoDescription>(
+        botUser = helper.parseString(imsProject.templatedFields["bot-user"]),
+        repo = helper.objectMapper.readValue<RepoDescription>(
             imsProject.templatedFields["repo"]!!, RepoDescription::class.java
         )
     )
 
-    val url get() = imsConfig.graphQLUrl
+    companion object {
+        /**
+         * Name of requested IMSProjectTemplate
+         */
+        const val IMS_PROJECT_TEMPLATE_NAME = "Github"
+
+        /**
+         * Fields of the requested IMSProjectTemplate
+         */
+        val IMS_PROJECT_TEMPLATE_FIELDS = mapOf("repo" to obj {
+            "\$schema" to IMSConfigManager.SCHEMA
+            "type" to "object"
+            "properties" to obj {
+                "owner" to obj {
+                    "type" to "string"
+                }
+                "repo" to obj {
+                    "type" to "string"
+                }
+            }
+            "required" to arr["owner", "repo"]
+            "gropius-type" to "github-owner"
+        }.toString()) + IMSConfigManager.COMMON_TEMPLATE_FIELDS
+    }
 }
