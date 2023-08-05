@@ -2,10 +2,13 @@ package gropius.sync.github
 
 import com.apollographql.apollo3.ApolloClient
 import gropius.model.architecture.IMSProject
+import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
 import gropius.sync.*
 import gropius.sync.github.config.IMSConfigManager
 import gropius.sync.github.config.IMSProjectConfig
+import gropius.sync.github.generated.MutateCreateCommentMutation
+import gropius.sync.github.generated.MutateCreateCommentMutation.Data.AddComment.CommentEdge.Node.Companion.asIssueTimelineItems
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.URI
@@ -98,5 +101,16 @@ final class GithubSync(
 
     override suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue> {
         return issuePileService.findByImsProjectAndHasUnsyncedData(imsProject.rawId!!, true)
+    }
+
+    override suspend fun syncComment(
+        imsProject: IMSProject, issueId: String, issueComment: IssueComment
+    ): TimelineItemConversionInformation? {
+        val response = apolloClient.mutation(MutateCreateCommentMutation(issueId, issueComment.body)).execute()
+        val item = response.data?.addComment?.commentEdge?.node?.asIssueTimelineItems()
+        if (item != null) {
+            return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)
+        }
+        return null
     }
 }

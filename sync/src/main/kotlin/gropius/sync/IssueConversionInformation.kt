@@ -29,6 +29,10 @@ interface IssueConversionInformationRepository : ReactiveMongoRepository<IssueCo
     suspend fun findByImsProjectAndGithubId(
         imsProject: String, githubId: String
     ): IssueConversionInformation?
+
+    suspend fun findByImsProjectAndGropiusId(
+        imsProject: String, gropiusId: String
+    ): IssueConversionInformation?
 }
 
 @Service

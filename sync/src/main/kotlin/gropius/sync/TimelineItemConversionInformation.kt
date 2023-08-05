@@ -13,7 +13,7 @@ abstract class TimelineItemConversionInformation(
     @Indexed
     val imsProject: String,
     @Indexed
-    val githubId: String,
+    val githubId: String?,
     @Indexed
     var gropiusId: String?
 ) {
@@ -29,6 +29,10 @@ interface TimelineItemConversionInformationRepository :
     ReactiveMongoRepository<TimelineItemConversionInformation, ObjectId> {
     suspend fun findByImsProjectAndGithubId(
         imsProject: String, githubId: String
+    ): TimelineItemConversionInformation?
+
+    suspend fun findByImsProjectAndGropiusId(
+        imsProject: String, gropiusId: String
     ): TimelineItemConversionInformation?
 }
 

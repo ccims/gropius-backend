@@ -88,7 +88,29 @@ abstract class AbstractSync(
         } catch (e: Exception) {
             logger.warn("Error in IMS sync", e)
         }
+    }
 
+    abstract suspend fun syncComment(
+        imsProject: IMSProject, issueId: String, issueComment: IssueComment
+    ): TimelineItemConversionInformation?
+
+    open suspend fun doOutgoing(imsProject: IMSProject) {
+        imsProject.trackable().value.issues().forEach { issue ->
+            val timeline = issue.timelineItems().toList().sortedBy { it.createdAt }
+            timeline.mapNotNull { it as? IssueComment }.filter {
+                collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
+                    imsProject.rawId!!, it.rawId!!
+                ) == null
+            }.forEach {
+                val issue = collectedSyncInfo.issueConversionInformationService.findByImsProjectAndGropiusId(
+                    imsProject.rawId!!, it.issue().value.rawId!!
+                )!!
+                val conversionInformation = syncComment(imsProject, issue.githubId, it)
+                if (conversionInformation != null) {
+                    collectedSyncInfo.timelineItemConversionInformationService.save(conversionInformation).awaitSingle()
+                }
+            }
+        }
     }
 
     suspend fun sync() {
@@ -101,6 +123,9 @@ abstract class AbstractSync(
         for (ims in imss) imsProjects += ims.projects()
         logger.info("Found ${imsProjects.size} IMSProject")
         fetchData(imsProjects)
-        for (imsProject in imsProjects) doIncoming(imsProject)
+        for (imsProject in imsProjects) {
+            doIncoming(imsProject)
+            doOutgoing(imsProject)
+        }
     }
 }
