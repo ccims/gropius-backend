@@ -107,6 +107,7 @@ abstract class AbstractSync(
                 )!!
                 val conversionInformation = syncComment(imsProject, issue.githubId, it)
                 if (conversionInformation != null) {
+                    conversionInformation.gropiusId = it.rawId!!
                     collectedSyncInfo.timelineItemConversionInformationService.save(conversionInformation).awaitSingle()
                 }
             }
