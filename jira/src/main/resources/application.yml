@@ -1,0 +1,13 @@
+graphql:
+  packages:
+    - "gropius"
+spring:
+  data:
+    mongodb:
+      "authentication-database": admin
+      "auto-index-creation": true
+logging:
+  level:
+    org.springframework.data.neo4j: ERROR
+    io.github.graphglue: ERROR
+    gropius.sync: TRACE

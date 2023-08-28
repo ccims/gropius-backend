@@ -1,4 +1,4 @@
-package gropius.sync.github.config
+package gropius.sync.config
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

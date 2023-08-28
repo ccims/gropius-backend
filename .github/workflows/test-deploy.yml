@@ -48,6 +48,7 @@ jobs:
             api-internal
             sync
             github
+            jira
           dest: "website/docs"
           folder: "api"
       - name: Install website dependencies

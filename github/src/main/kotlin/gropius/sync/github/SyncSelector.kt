@@ -83,15 +83,6 @@ class SyncSelector(
             }
         }
         logger.info("Sync exited without exception")*/
-        try {
-            githubSync.sync()
-        } catch (e: Exception) {
-            println("ERROR")
-            e.printStackTrace()
-            throw e;
-        } finally {
-            println("END")
-        }
     }
 
     /**

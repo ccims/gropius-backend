@@ -1,6 +1,6 @@
 package gropius
 
-import gropius.sync.github.GithubSync
+import gropius.sync.jira.JiraSync
 import io.github.graphglue.data.repositories.EnableGraphglueRepositories
 import kotlinx.coroutines.runBlocking
 import org.neo4j.driver.Driver
@@ -53,7 +53,7 @@ class Application : CommandLineRunner {
      * Reference for the spring instance of GithubSync
      */
     @Autowired
-    lateinit var githubSync: GithubSync
+    lateinit var jiraSync: JiraSync
 
     /**
      * Logger used to print notifications
@@ -64,7 +64,7 @@ class Application : CommandLineRunner {
         try {
             runBlocking {
                 try {
-                    githubSync.sync()
+                    jiraSync.sync()
                 } catch (e: Exception) {
                     println("ERROR")
                     e.printStackTrace()

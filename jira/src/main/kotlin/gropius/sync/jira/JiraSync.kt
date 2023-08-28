@@ -1,22 +1,18 @@
-package gropius.sync.github
+package gropius.sync.jira
 
-import com.apollographql.apollo3.ApolloClient
+//import gropius.sync.github.config.IMSConfigManager
+//import gropius.sync.github.config.IMSProjectConfig
 import gropius.model.architecture.IMSProject
 import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
 import gropius.sync.*
-import gropius.sync.github.config.IMSConfigManager
-import gropius.sync.github.config.IMSProjectConfig
-import gropius.sync.github.generated.MutateCreateCommentMutation
-import gropius.sync.github.generated.MutateCreateCommentMutation.Data.AddComment.CommentEdge.Node.Companion.asIssueTimelineItems
+import gropius.sync.jira.config.IMSConfigManager
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.net.URI
 
 @Component
-final class GithubSync(
-    val githubDataService: GithubDataService,
-    val issuePileService: IssuePileService,
+final class JiraSync(
+    val jiraDataService: JiraDataService,
     val helper: JsonHelper,
     val cursorResourceWalkerDataService: CursorResourceWalkerDataService,
     val imsConfigManager: IMSConfigManager,
@@ -28,20 +24,17 @@ final class GithubSync(
         loadBalancedDataFetcher.start(this)
     }
 
-    val apolloClient = ApolloClient.Builder().serverUrl(URI("https://api.github.com/graphql").toString())
-        .addHttpHeader("Authorization", "bearer " + System.getenv("GITHUB_DUMMY_PAT")).build()
-
     /**
      * Logger used to print notifications
      */
-    private val logger = LoggerFactory.getLogger(GithubSync::class.java)
+    private val logger = LoggerFactory.getLogger(JiraSync::class.java)
 
     override suspend fun createBudget(): GeneralResourceWalkerBudget {
         return GithubResourceWalkerBudget()
     }
 
     override fun syncDataService(): SyncDataService {
-        return githubDataService
+        return jiraDataService
     }
 
     override suspend fun findTemplates(): Set<IMSTemplate> {
@@ -51,7 +44,7 @@ final class GithubSync(
     override suspend fun balancedFetchData(
         imsProject: IMSProject, generalBudget: GeneralResourceWalkerBudget
     ): List<ResourceWalker> {
-        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        /*val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         val budget = generalBudget as GithubResourceWalkerBudget
 
         val walkers = mutableListOf<ResourceWalker>()
@@ -96,22 +89,25 @@ final class GithubSync(
                 )
             }
         }
-        return walkers
+        return walkers*/
+        TODO()
     }
 
     override suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue> {
-        return issuePileService.findByImsProjectAndHasUnsyncedData(imsProject.rawId!!, true)
+        //return issuePileService.findByImsProjectAndHasUnsyncedData(imsProject.rawId!!, true)
+        TODO()
     }
 
     override suspend fun syncComment(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment
     ): TimelineItemConversionInformation? {
-        val response = apolloClient.mutation(MutateCreateCommentMutation(issueId, issueComment.body)).execute()
+        TODO()
+        /*val response = apolloClient.mutation(MutateCreateCommentMutation(issueId, issueComment.body)).execute()
         val item = response.data?.addComment?.commentEdge?.node?.asIssueTimelineItems()
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)
         }
         TODO("ERROR HANDLING")
-        return null
+        return null*/
     }
 }
