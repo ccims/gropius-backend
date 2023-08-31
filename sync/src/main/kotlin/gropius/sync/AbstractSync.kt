@@ -104,12 +104,15 @@ abstract class AbstractSync(
             }.forEach {
                 val issue = collectedSyncInfo.issueConversionInformationService.findByImsProjectAndGropiusId(
                     imsProject.rawId!!, it.issue().value.rawId!!
-                )!!
-                val conversionInformation = syncComment(imsProject, issue.githubId, it)
-                if (conversionInformation != null) {
-                    conversionInformation.gropiusId = it.rawId!!
-                    collectedSyncInfo.timelineItemConversionInformationService.save(conversionInformation).awaitSingle()
-                }
+                )
+                if (issue != null) {
+                    val conversionInformation = syncComment(imsProject, issue.githubId, it)
+                    if (conversionInformation != null) {
+                        conversionInformation.gropiusId = it.rawId!!
+                        collectedSyncInfo.timelineItemConversionInformationService.save(conversionInformation)
+                            .awaitSingle()
+                    }
+                } else TODO("Create Issue")
             }
         }
     }

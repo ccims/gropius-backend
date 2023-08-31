@@ -13,6 +13,7 @@ import org.springframework.boot.runApplication
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.mongodb.core.convert.MappingMongoConverter
 import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRepositories
 import org.springframework.data.neo4j.core.ReactiveDatabaseSelectionProvider
 import org.springframework.data.neo4j.core.transaction.ReactiveNeo4jTransactionManager
@@ -26,6 +27,11 @@ import kotlin.system.exitProcess
 class SyncConfiguration(
     val configurableApplicationContext: ConfigurableApplicationContext
 ) {
+    @Autowired
+    fun setMapKeyDotReplacement(mappingMongoConverter: MappingMongoConverter) {
+        mappingMongoConverter.setMapKeyDotReplacement("_FUCKDOT_")
+    }
+
     /**
      * Necessary transaction manager
      *

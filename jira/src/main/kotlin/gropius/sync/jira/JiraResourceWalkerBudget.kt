@@ -2,13 +2,13 @@ package gropius.sync.jira
 
 import gropius.sync.ResourceWalkerBudget
 
-class GithubGithubResourceWalkerBudgetUsageType {}
-class GithubGithubResourceWalkerEstimatedBudgetUsageType {}
+class JiraGithubResourceWalkerBudgetUsageType {}
+class JiraGithubResourceWalkerEstimatedBudgetUsageType {}
 
-class GithubResourceWalkerBudget :
-    ResourceWalkerBudget<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType> {
-    override suspend fun integrate(usage: GithubGithubResourceWalkerBudgetUsageType) {}
-    override suspend fun mayExecute(expectedUsage: GithubGithubResourceWalkerEstimatedBudgetUsageType): Boolean {
+class JiraResourceWalkerBudget :
+    ResourceWalkerBudget<JiraGithubResourceWalkerBudgetUsageType, JiraGithubResourceWalkerEstimatedBudgetUsageType> {
+    override suspend fun integrate(usage: JiraGithubResourceWalkerBudgetUsageType) {}
+    override suspend fun mayExecute(expectedUsage: JiraGithubResourceWalkerEstimatedBudgetUsageType): Boolean {
         return true;
     }
 }

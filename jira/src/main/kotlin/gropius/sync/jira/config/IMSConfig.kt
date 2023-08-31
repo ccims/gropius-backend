@@ -26,7 +26,7 @@ data class IMSConfig(
     constructor(
         helper: JsonHelper, ims: IMS, imsTemplate: IMSTemplate
     ) : this(
-        botUser = helper.parseString(ims.templatedFields["bot-user"]) ?: "github-bot",
+        botUser = helper.parseString(ims.templatedFields["bot-user"]) ?: "jira-bot",
         readUser = helper.parseString(ims.templatedFields["read-user"])!!,
         graphQLUrl = URI(helper.parseString(ims.templatedFields["graphql-url"])!!),
         imsTemplate = imsTemplate
@@ -36,7 +36,7 @@ data class IMSConfig(
         /**
          * Name of the requested IMSTemplate
          */
-        const val IMS_TEMPLATE_NAME = "Github"
+        const val IMS_TEMPLATE_NAME = "jira"
 
         /**
          * Fields of the requested IMSTemplate
@@ -46,7 +46,7 @@ data class IMSConfig(
             "type" to arr["null", obj {
                 "type" to "string"
                 "gropius-node" to "IMSUser"
-                "gropius-type" to "github-user"
+                "gropius-type" to "jira-user"
             }]
         }.toString(), "graphql-url" to obj {
             "\$schema" to IMSConfigManager.SCHEMA

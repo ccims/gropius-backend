@@ -11,10 +11,10 @@ plugins {
 
 dependencies {
     api(project(path = ":core"))
-    implementation("io.ktor", "ktor-client-core", ktorVersion)
-    implementation("io.ktor", "ktor-client-okhttp", ktorVersion)
-    implementation("io.ktor", "ktor-client-content-negotiation", ktorVersion)
-    implementation("org.jetbrains.kotlinx", "kotlinx-serialization-json", kotlinxSerializationVersion)
-    implementation("io.ktor", "ktor-serialization-kotlinx-json", ktorVersion)
+    api("io.ktor", "ktor-client-core", ktorVersion)
+    api("io.ktor", "ktor-client-okhttp", ktorVersion)
+    api("io.ktor", "ktor-client-content-negotiation", ktorVersion)
+    api("org.jetbrains.kotlinx", "kotlinx-serialization-json", kotlinxSerializationVersion)
+    api("io.ktor", "ktor-serialization-kotlinx-json", ktorVersion)
     api("org.springframework.boot", "spring-boot-starter-data-mongodb-reactive", springBootVersion)
 }

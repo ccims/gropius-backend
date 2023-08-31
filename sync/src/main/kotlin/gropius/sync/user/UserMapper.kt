@@ -60,12 +60,15 @@ class UserMapper(
     }
 
     @Transactional
-    suspend fun mapUser(imsProject: IMSProject, name: String): User {
+    suspend fun mapUser(
+        imsProject: IMSProject, name: String, displayName: String? = null, email: String? = null
+    ): User {
         val pile = nuserInfoRepository.findByImsProjectAndGithubId(imsProject.rawId!!, name)
         return if (pile != null) {
             neoOperations.findById<User>(pile.gropiusId)!!
         } else {
-            val gropiusUser = neoOperations.save(GropiusUser(name, null, null, name, false)).awaitSingle()
+            val gropiusUser =
+                neoOperations.save(GropiusUser(displayName ?: name, email, null, name, false)).awaitSingle()
             nuserInfoRepository.save(
                 UserInfoData(
                     imsProject.rawId!!, name, gropiusUser.rawId!!

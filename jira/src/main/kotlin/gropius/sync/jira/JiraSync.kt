@@ -7,6 +7,16 @@ import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
 import gropius.sync.*
 import gropius.sync.jira.config.IMSConfigManager
+import gropius.sync.jira.model.IssueDataService
+import gropius.sync.jira.model.ProjectQuery
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -17,21 +27,24 @@ final class JiraSync(
     val cursorResourceWalkerDataService: CursorResourceWalkerDataService,
     val imsConfigManager: IMSConfigManager,
     collectedSyncInfo: CollectedSyncInfo,
-    val loadBalancedDataFetcher: LoadBalancedDataFetcher = LoadBalancedDataFetcher()
-) : AbstractSync(collectedSyncInfo), LoadBalancedDataFetcherImplementation, DataFetcher by loadBalancedDataFetcher {
+    val loadBalancedDataFetcher: LoadBalancedDataFetcher = LoadBalancedDataFetcher(),
+    val issueDataService: IssueDataService
+) : AbstractSync(collectedSyncInfo) {
 
-    init {
-        loadBalancedDataFetcher.start(this)
+    val client = HttpClient() {
+        expectSuccess = true
+        install(Logging)
+        install(ContentNegotiation) {
+            json(Json {
+                ignoreUnknownKeys = true
+            }, contentType = ContentType.parse("application/json; charset=utf-8"))
+        }
     }
 
     /**
      * Logger used to print notifications
      */
     private val logger = LoggerFactory.getLogger(JiraSync::class.java)
-
-    override suspend fun createBudget(): GeneralResourceWalkerBudget {
-        return GithubResourceWalkerBudget()
-    }
 
     override fun syncDataService(): SyncDataService {
         return jiraDataService
@@ -41,68 +54,37 @@ final class JiraSync(
         return imsConfigManager.findTemplates()
     }
 
-    override suspend fun balancedFetchData(
-        imsProject: IMSProject, generalBudget: GeneralResourceWalkerBudget
-    ): List<ResourceWalker> {
-        /*val imsProjectConfig = IMSProjectConfig(helper, imsProject)
-        val budget = generalBudget as GithubResourceWalkerBudget
-
-        val walkers = mutableListOf<ResourceWalker>()
-        walkers += IssueWalker(
-            imsProject, GitHubResourceWalkerConfig(
-                CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
-                    10.0,
-                    1.0,
-                    GithubGithubResourceWalkerEstimatedBudgetUsageType(),
-                    GithubGithubResourceWalkerBudgetUsageType()
-                ), imsProjectConfig.repo.owner, imsProjectConfig.repo.repo, 100
-            ), budget, apolloClient, issuePileService, cursorResourceWalkerDataService
-        )
-
-        walkers += issuePileService.findByImsProjectAndNeedsTimelineRequest(
-            imsProject.rawId!!, true
-        ).map {
-            TimelineWalker(
-                imsProject, it.id!!, GitHubResourceWalkerConfig(
-                    CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
-                        1.0,
-                        0.1,
-                        GithubGithubResourceWalkerEstimatedBudgetUsageType(),
-                        GithubGithubResourceWalkerBudgetUsageType()
-                    ), imsProjectConfig.repo.owner, imsProjectConfig.repo.repo, 100
-                ), budget, apolloClient, issuePileService, cursorResourceWalkerDataService
-            )
-        }
-        for (dirtyIssue in issuePileService.findByImsProjectAndNeedsCommentRequest(
-            imsProject.rawId!!, true
-        )) {
-            for (comment in dirtyIssue.timelineItems.mapNotNull { it as? IssueCommentTimelineItem }) {
-                walkers += CommentWalker(
-                    imsProject, dirtyIssue.id!!, comment.githubId, GitHubResourceWalkerConfig(
-                        CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
-                            1.0,
-                            0.1,
-                            GithubGithubResourceWalkerEstimatedBudgetUsageType(),
-                            GithubGithubResourceWalkerBudgetUsageType()
-                        ), imsProjectConfig.repo.owner, imsProjectConfig.repo.repo, 100
-                    ), budget, apolloClient, issuePileService, cursorResourceWalkerDataService
-                )
+    override suspend fun fetchData(imsProjects: List<IMSProject>) {
+        for (imsProject in imsProjects) {
+            val q = client.get("https://itscalledccims.atlassian.net/rest/api/2/") {
+                url {
+                    appendPathSegments("search")
+                    parameters.append("jql", "project=FUCK")
+                    parameters.append("expand", "names,schema,editmeta,changelog")
+                }
+                headers {
+                    append(
+                        HttpHeaders.Authorization,
+                        "Basic Y2hyaWt1dmVsbGJlcmdAZ21haWwuY29tOkFUQVRUM3hGZkdGMFBZcWhIcUlCU25kaTk3NFg0N2Zv" + "NmRIVHRFbjF4eVJtS2o4REJIbUtBLTZrS0pNNHBXYkJvS0p4SFN1Z09mSWtocVJIdkdZazUwT0RX" + "cmMxRmZJN2VNNExNdEd1SExpZDctcllHTDRqNk5ZRnFFd01CVm82TnI5dTB0NC0ySXlfNXlOQXk3" + "QWxuTFJ4SzliM3hEWFZpLXNDSmZWTjAwanBTWC1icURmRUNNMD0zNDNBOEJCQQ=="
+                    )
+                }
+            }.body<ProjectQuery>()
+            q.issues[0].fields.forEach({ println("${it.key}: ${it.value}") })
+            q.issues(imsProject).forEach {
+                println(it)
+                issueDataService.insertIssue(imsProject, it)
             }
         }
-        return walkers*/
-        TODO()
     }
 
     override suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue> {
-        //return issuePileService.findByImsProjectAndHasUnsyncedData(imsProject.rawId!!, true)
-        TODO()
+        return issueDataService.findByImsProject(imsProject.rawId!!)
     }
 
     override suspend fun syncComment(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment
     ): TimelineItemConversionInformation? {
-        TODO()
-        /*val response = apolloClient.mutation(MutateCreateCommentMutation(issueId, issueComment.body)).execute()
+        TODO()/*val response = apolloClient.mutation(MutateCreateCommentMutation(issueId, issueComment.body)).execute()
         val item = response.data?.addComment?.commentEdge?.node?.asIssueTimelineItems()
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)

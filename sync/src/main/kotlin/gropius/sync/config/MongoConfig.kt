@@ -1,5 +1,9 @@
 package gropius.sync.config
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.convert.converter.Converter
@@ -23,7 +27,11 @@ class MongoConfig {
         return MongoCustomConversions(
             listOf(
                 OffsetDateTimeReadConverter(),
-                OffsetDateTimeWriteConverter()
+                OffsetDateTimeWriteConverter(),
+                JsonElementReadConverter(),
+                JsonElementWriteConverter(),
+                JsonObjectReadConverter(),
+                JsonObjectWriteConverter()
             )
         )
     }
@@ -43,6 +51,42 @@ class MongoConfig {
     internal class OffsetDateTimeReadConverter : Converter<Date, OffsetDateTime?> {
         override fun convert(source: Date): OffsetDateTime? {
             return source.toInstant()?.atOffset(ZoneOffset.UTC)
+        }
+    }
+
+    /**
+     * MongoDB write type converter
+     */
+    internal class JsonElementWriteConverter : Converter<JsonElement, String> {
+        override fun convert(source: JsonElement): String {
+            return source.toString()
+        }
+    }
+
+    /**
+     * MongoDB read type converter
+     */
+    internal class JsonElementReadConverter : Converter<String, JsonElement> {
+        override fun convert(source: String): JsonElement {
+            return Json.parseToJsonElement(source)
+        }
+    }
+
+    /**
+     * MongoDB write type converter
+     */
+    internal class JsonObjectWriteConverter : Converter<JsonObject, String> {
+        override fun convert(source: JsonObject): String {
+            return source.toString()
+        }
+    }
+
+    /**
+     * MongoDB read type converter
+     */
+    internal class JsonObjectReadConverter : Converter<String, JsonObject> {
+        override fun convert(source: String): JsonObject {
+            return Json.parseToJsonElement(source).jsonObject
         }
     }
 }
