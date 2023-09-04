@@ -6,7 +6,9 @@ import gropius.model.architecture.IMSProject
 import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
 import gropius.sync.*
+import gropius.sync.jira.config.IMSConfig
 import gropius.sync.jira.config.IMSConfigManager
+import gropius.sync.jira.config.IMSProjectConfig
 import gropius.sync.jira.model.IssueDataService
 import gropius.sync.jira.model.ProjectQuery
 import io.ktor.client.*
@@ -19,6 +21,8 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 @Component
 final class JiraSync(
@@ -54,9 +58,14 @@ final class JiraSync(
         return imsConfigManager.findTemplates()
     }
 
+    @OptIn(ExperimentalEncodingApi::class)
     override suspend fun fetchData(imsProjects: List<IMSProject>) {
         for (imsProject in imsProjects) {
-            val q = client.get("https://itscalledccims.atlassian.net/rest/api/2/") {
+            val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+            val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+            val basicContent: String = System.getenv("JIRA_DUMMY_EMAIL") + ":" + System.getenv("JIRA_DUMMY_TOKEN")
+            val basicToken = Base64.encode(basicContent.toByteArray())
+            val q = client.get(imsConfig.rootUrl.toString()) {
                 url {
                     appendPathSegments("search")
                     parameters.append("jql", "project=FUCK")
@@ -64,8 +73,7 @@ final class JiraSync(
                 }
                 headers {
                     append(
-                        HttpHeaders.Authorization,
-                        "Basic Y2hyaWt1dmVsbGJlcmdAZ21haWwuY29tOkFUQVRUM3hGZkdGMFBZcWhIcUlCU25kaTk3NFg0N2Zv" + "NmRIVHRFbjF4eVJtS2o4REJIbUtBLTZrS0pNNHBXYkJvS0p4SFN1Z09mSWtocVJIdkdZazUwT0RX" + "cmMxRmZJN2VNNExNdEd1SExpZDctcllHTDRqNk5ZRnFFd01CVm82TnI5dTB0NC0ySXlfNXlOQXk3" + "QWxuTFJ4SzliM3hEWFZpLXNDSmZWTjAwanBTWC1icURmRUNNMD0zNDNBOEJCQQ=="
+                        HttpHeaders.Authorization, "Basic ${basicToken}"
                     )
                 }
             }.body<ProjectQuery>()

@@ -12,11 +12,11 @@ import java.net.URI
  * @param ims the Gropius ims to use as input
  * @param botUser the bot user string extracted from the template
  * @param readUser the read user string extracted from the template
- * @param graphQLUrl the read url extracted from the template
+ * @param rootUrl the read url extracted from the template
  * @param imsTemplate the template of the current IMS
  */
 data class IMSConfig(
-    val botUser: String, val readUser: String, val graphQLUrl: URI, val imsTemplate: IMSTemplate
+    val botUser: String, val readUser: String, val rootUrl: URI, val imsTemplate: IMSTemplate
 ) {
     /**
      * @param ims the Gropius ims to use as input
@@ -28,7 +28,7 @@ data class IMSConfig(
     ) : this(
         botUser = helper.parseString(ims.templatedFields["bot-user"]) ?: "jira-bot",
         readUser = helper.parseString(ims.templatedFields["read-user"])!!,
-        graphQLUrl = URI(helper.parseString(ims.templatedFields["graphql-url"])!!),
+        rootUrl = URI(helper.parseString(ims.templatedFields["root-url"])!!),
         imsTemplate = imsTemplate
     )
 
@@ -36,7 +36,7 @@ data class IMSConfig(
         /**
          * Name of the requested IMSTemplate
          */
-        const val IMS_TEMPLATE_NAME = "jira"
+        const val IMS_TEMPLATE_NAME = "Jira"
 
         /**
          * Fields of the requested IMSTemplate
@@ -48,7 +48,7 @@ data class IMSConfig(
                 "gropius-node" to "IMSUser"
                 "gropius-type" to "jira-user"
             }]
-        }.toString(), "graphql-url" to obj {
+        }.toString(), "root-url" to obj {
             "\$schema" to IMSConfigManager.SCHEMA
             "type" to "string"
             "format" to "uri"

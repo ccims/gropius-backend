@@ -53,7 +53,7 @@ class IMSConfigManager(
         /**
          * Name of the ensured IMSIssueTemplate
          */
-        private const val IMS_ISSUE_TEMPLATE_NAME = "Github Issue"
+        private const val IMS_ISSUE_TEMPLATE_NAME = "Jira Issue"
 
         /**
          * Fields of the required IMSIssueTemplate
@@ -89,7 +89,7 @@ class IMSConfigManager(
         /**
          * Name of the ensured IMSIssueTemplate
          */
-        private const val IMS_USER_TEMPLATE_NAME = "Github User"
+        private const val IMS_USER_TEMPLATE_NAME = "Jira User"
 
         /**
          * Fields of the required IMSIssueTemplate
