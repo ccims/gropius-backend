@@ -3,9 +3,7 @@ package gropius.sync.jira.model
 import gropius.model.architecture.IMSProject
 import gropius.model.architecture.Project
 import gropius.model.issue.Issue
-import gropius.model.issue.timeline.Body
-import gropius.model.issue.timeline.TimelineItem
-import gropius.model.issue.timeline.TitleChangedEvent
+import gropius.model.issue.timeline.*
 import gropius.sync.IncomingIssue
 import gropius.sync.IncomingTimelineItem
 import gropius.sync.SyncDataService
@@ -20,6 +18,7 @@ import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository
+import org.springframework.data.neo4j.core.findById
 import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
@@ -44,23 +43,104 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         if (data.fieldId == "summary") {
             val convInfo =
                 timelineItemConversionInformation ?: JiraTimelineItemConversionInformation(imsProject.rawId!!, id);
-            val titleChangedEvent: TitleChangedEvent = TitleChangedEvent(
-                OffsetDateTime.parse(
-                    created, IssueData.formatter
-                ), OffsetDateTime.parse(
-                    created, IssueData.formatter
-                ), data.fromString!!, data.toString!!
-            )
+            val timelineId = timelineItemConversionInformation?.gropiusId
+            val titleChangedEvent: TitleChangedEvent =
+                (if (timelineId != null) service.neoOperations.findById<TitleChangedEvent>(
+                    timelineId
+                ) else null) ?: TitleChangedEvent(
+                    OffsetDateTime.parse(
+                        created, IssueData.formatter
+                    ), OffsetDateTime.parse(
+                        created, IssueData.formatter
+                    ), data.fromString!!, data.toString!!
+                )
             titleChangedEvent.createdBy().value = jiraService.mapUser(imsProject, author)
             titleChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
             return listOf<TimelineItem>(
                 titleChangedEvent
             ) to convInfo;
+        } else if (data.fieldId == "labels") {
+            val convInfo =
+                timelineItemConversionInformation ?: JiraTimelineItemConversionInformation(imsProject.rawId!!, id);
+            val timelineId = timelineItemConversionInformation?.gropiusId
+            if ((data.fromString!!.isNotEmpty()) && (data.toString!!.isNotEmpty())) {
+                TODO()
+            } else if (data.toString!!.isNotEmpty()) {
+                val addedLabelEvent: AddedLabelEvent =
+                    (if (timelineId != null) service.neoOperations.findById<AddedLabelEvent>(
+                        timelineId
+                    ) else null) ?: AddedLabelEvent(
+                        OffsetDateTime.parse(
+                            created, IssueData.formatter
+                        ), OffsetDateTime.parse(
+                            created, IssueData.formatter
+                        )
+                    )
+                addedLabelEvent.createdBy().value = jiraService.mapUser(imsProject, author)
+                addedLabelEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
+                addedLabelEvent.addedLabel().value = jiraService.mapLabel(imsProject, data.toString!!)
+                return listOf<TimelineItem>(
+                    addedLabelEvent
+                ) to convInfo;
+            } else if (data.fromString!!.isNotEmpty()) {
+                val removedLabelEvent: RemovedLabelEvent =
+                    (if (timelineId != null) service.neoOperations.findById<RemovedLabelEvent>(
+                        timelineId
+                    ) else null) ?: RemovedLabelEvent(
+                        OffsetDateTime.parse(
+                            created, IssueData.formatter
+                        ), OffsetDateTime.parse(
+                            created, IssueData.formatter
+                        )
+                    )
+                removedLabelEvent.createdBy().value = jiraService.mapUser(imsProject, author)
+                removedLabelEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
+                removedLabelEvent.removedLabel().value = jiraService.mapLabel(imsProject, data.toString!!)
+                return listOf<TimelineItem>(
+                    removedLabelEvent
+                ) to convInfo;
+            }
         }
         val convInfo =
             timelineItemConversionInformation ?: JiraTimelineItemConversionInformation(imsProject.rawId!!, id);
         return listOf<TimelineItem>() to convInfo;
     }
+}
+
+class JiraCommentTimelineItem(val issueId: String, val comment: JiraComment) : IncomingTimelineItem() {
+    override suspend fun identification(): String {
+        return issueId + ":::" + comment.id
+    }
+
+    override suspend fun gropiusTimelineItem(
+        imsProject: IMSProject,
+        service: SyncDataService,
+        timelineItemConversionInformation: TimelineItemConversionInformation?
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
+        val jiraService = (service as JiraDataService)
+        val convInfo = timelineItemConversionInformation ?: JiraTimelineItemConversionInformation(
+            imsProject.rawId!!, identification()
+        );
+        val timelineId = timelineItemConversionInformation?.gropiusId
+        val commentEvent: IssueComment = (if (timelineId != null) service.neoOperations.findById<IssueComment>(
+            timelineId
+        ) else null) ?: IssueComment(
+            OffsetDateTime.parse(
+                comment.created, IssueData.formatter
+            ), OffsetDateTime.parse(
+                comment.updated, IssueData.formatter
+            ), comment.body, OffsetDateTime.parse(
+                comment.updated, IssueData.formatter
+            ), false
+        )
+        commentEvent.createdBy().value = jiraService.mapUser(imsProject, comment.author)
+        commentEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, comment.updateAuthor)
+        commentEvent.bodyLastEditedBy().value = jiraService.mapUser(imsProject, comment.updateAuthor)
+        return listOf<TimelineItem>(
+            commentEvent
+        ) to convInfo;
+    }
+
 }
 
 @Document
@@ -71,10 +151,11 @@ data class IssueData(
     val self: String,
     val key: String,
     var editmeta: JsonObject,
-    var changelog: ChangleLogContainer,
+    var changelog: ChangeLogContainer,
     val fields: MutableMap<String, JsonElement>,
     var names: JsonObject,
-    var schema: JsonObject
+    var schema: JsonObject,
+    val comments: MutableMap<String, JiraComment> = mutableMapOf()
 ) : IncomingIssue() {
     @Id
     var id: ObjectId? = null
@@ -94,7 +175,7 @@ data class IssueData(
                     oit.id, oit.created, oit.author, it
                 )
             }
-        }
+        } + comments.map { JiraCommentTimelineItem(identification(), it.value) }
     }
 
     override suspend fun identification(): String {
@@ -193,5 +274,14 @@ class IssueDataService(val issuePileRepository: IssueDataRepository) : IssueData
         val issueData = findByImsProjectAndJiraId(imsProject.rawId!!, rawIssueData.jiraId) ?: rawIssueData
         println("ISSUE ${issueData.id}")
         issuePileRepository.save(issueData).awaitSingle()
+    }
+
+    @Transactional
+    suspend fun insertComment(imsProject: IMSProject, jiraId: String, comment: JiraComment) {
+        val issueData = findByImsProjectAndJiraId(imsProject.rawId!!, jiraId)!!
+        if (!issueData.comments.containsKey(comment.id)) {
+            issueData.comments.put(comment.id, comment)
+            issuePileRepository.save(issueData).awaitSingle()
+        }
     }
 }

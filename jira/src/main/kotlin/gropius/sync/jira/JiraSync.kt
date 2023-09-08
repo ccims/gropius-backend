@@ -9,6 +9,7 @@ import gropius.sync.*
 import gropius.sync.jira.config.IMSConfig
 import gropius.sync.jira.config.IMSConfigManager
 import gropius.sync.jira.config.IMSProjectConfig
+import gropius.sync.jira.model.CommentQuery
 import gropius.sync.jira.model.IssueDataService
 import gropius.sync.jira.model.ProjectQuery
 import io.ktor.client.*
@@ -61,26 +62,61 @@ final class JiraSync(
     @OptIn(ExperimentalEncodingApi::class)
     override suspend fun fetchData(imsProjects: List<IMSProject>) {
         for (imsProject in imsProjects) {
-            val imsProjectConfig = IMSProjectConfig(helper, imsProject)
-            val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
-            val basicContent: String = System.getenv("JIRA_DUMMY_EMAIL") + ":" + System.getenv("JIRA_DUMMY_TOKEN")
-            val basicToken = Base64.encode(basicContent.toByteArray())
-            val q = client.get(imsConfig.rootUrl.toString()) {
-                url {
-                    appendPathSegments("search")
-                    parameters.append("jql", "project=FUCK")
-                    parameters.append("expand", "names,schema,editmeta,changelog")
+            val issueList = mutableListOf<String>()
+            var startAt = 0
+            while (true) {
+                val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+                val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+                val basicContent: String = System.getenv("JIRA_DUMMY_EMAIL") + ":" + System.getenv("JIRA_DUMMY_TOKEN")
+                val basicToken = Base64.encode(basicContent.toByteArray())
+                val q = client.get(imsConfig.rootUrl.toString()) {
+                    url {
+                        appendPathSegments("search")
+                        parameters.append("jql", "project=${imsProjectConfig.repo}")
+                        parameters.append("expand", "names,schema,editmeta,changelog")
+                        parameters.append("startAt", "$startAt")
+                    }
+                    headers {
+                        append(
+                            HttpHeaders.Authorization, "Basic ${basicToken}"
+                        )
+                    }
+                }.body<ProjectQuery>()
+                q.issues(imsProject).forEach {
+                    issueList.add(it.jiraId)
+                    issueDataService.insertIssue(imsProject, it)
                 }
-                headers {
-                    append(
-                        HttpHeaders.Authorization, "Basic ${basicToken}"
-                    )
+                startAt = q.startAt + q.issues.size
+                if (startAt >= q.total) break
+            }
+            println("ILST $issueList")
+            for (issueId in issueList) {
+                var startAt = 0
+                while (true) {
+                    val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+                    val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+                    val basicContent: String =
+                        System.getenv("JIRA_DUMMY_EMAIL") + ":" + System.getenv("JIRA_DUMMY_TOKEN")
+                    val basicToken = Base64.encode(basicContent.toByteArray())
+                    val q = client.get(imsConfig.rootUrl.toString()) {
+                        url {
+                            appendPathSegments("issue")
+                            appendPathSegments(issueId)
+                            appendPathSegments("comment")
+                            parameters.append("startAt", "$startAt")
+                        }
+                        headers {
+                            append(
+                                HttpHeaders.Authorization, "Basic ${basicToken}"
+                            )
+                        }
+                    }.body<CommentQuery>()
+                    q.comments.forEach {
+                        issueDataService.insertComment(imsProject, issueId, it)
+                    }
+                    startAt = q.startAt + q.comments.size
+                    if (startAt >= q.total) break
                 }
-            }.body<ProjectQuery>()
-            q.issues[0].fields.forEach({ println("${it.key}: ${it.value}") })
-            q.issues(imsProject).forEach {
-                println(it)
-                issueDataService.insertIssue(imsProject, it)
             }
         }
     }

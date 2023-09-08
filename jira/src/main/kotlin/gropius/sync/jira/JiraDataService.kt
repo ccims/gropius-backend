@@ -1,6 +1,7 @@
 package gropius.sync.jira
 
 import gropius.model.architecture.IMSProject
+import gropius.model.issue.Label
 import gropius.model.template.*
 import gropius.model.user.User
 import gropius.sync.SyncDataService
@@ -13,6 +14,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.neo4j.core.ReactiveNeo4jOperations
 import org.springframework.stereotype.Component
+import java.time.OffsetDateTime
 
 @Component
 class JiraDataService(
@@ -48,5 +50,19 @@ class JiraDataService(
             user.jsonObject["displayName"]!!.jsonPrimitive.content,
             user.jsonObject["emailAddress"]!!.jsonPrimitive.content
         )
+    }
+
+    suspend fun mapLabel(imsProject: IMSProject, label: String): Label {
+        val trackable = imsProject.trackable().value
+        val labels = trackable.labels().filter { it.name == label }
+        if (labels.isEmpty()) {
+            val label = Label(OffsetDateTime.now(), OffsetDateTime.now(), label, "Jira Lebl", "000000")
+            label.createdBy().value = userMapper.mapUser(imsProject, "jira-user")
+            label.lastModifiedBy().value = label.createdBy().value
+            label.trackables() += trackable
+            return neoOperations.save(label).awaitSingle()
+        } else if (labels.size == 1) {
+            return labels.single()
+        } else TODO("Find a label")
     }
 }

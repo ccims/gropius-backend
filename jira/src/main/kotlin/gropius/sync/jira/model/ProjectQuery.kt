@@ -20,13 +20,13 @@ data class ChangelogFieldEntry(
 
 @Serializable
 @Document
-data class ChangleLogEntry(
+data class ChangeLogEntry(
     val id: String, val author: JsonObject, val created: String, val items: List<ChangelogFieldEntry>
 )
 
 @Serializable
 @Document
-data class ChangleLogContainer(val histories: List<ChangleLogEntry>)
+data class ChangeLogContainer(val histories: List<ChangeLogEntry>)
 
 @Serializable
 data class IssueBean(
@@ -35,7 +35,7 @@ data class IssueBean(
     val self: String,
     val key: String,
     val editmeta: JsonObject,
-    val changelog: ChangleLogContainer,
+    val changelog: ChangeLogContainer,
     val fields: Map<String, JsonElement>
 ) {
     fun data(
@@ -52,7 +52,7 @@ data class IssueQuery(
     val self: String,
     val key: String,
     val editmeta: JsonObject,
-    val changelog: ChangleLogContainer,
+    val changelog: ChangeLogContainer,
     val fields: Map<String, JsonElement>,
     val names: JsonObject,
     val schema: JsonObject
@@ -63,8 +63,25 @@ data class IssueQuery(
 }
 
 @Serializable
+data class JiraComment(
+    val id: String,
+    val self: String,
+    val author: JsonObject,
+    val body: String,
+    val updateAuthor: JsonObject,
+    val created: String,
+    val updated: String,
+    val jsdPublic: Boolean
+) {}
+
+@Serializable
+data class CommentQuery(
+    var comments: List<JiraComment>, val startAt: Int, val total: Int
+) {}
+
+@Serializable
 data class ProjectQuery(
-    var issues: List<IssueBean>, val names: JsonObject, val schema: JsonObject
+    var issues: List<IssueBean>, val names: JsonObject, val schema: JsonObject, val startAt: Int, val total: Int
 ) {
     fun issues(imsProject: IMSProject): List<IssueData> = issues.map { it.data(imsProject, names, schema) }
 }
