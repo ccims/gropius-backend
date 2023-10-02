@@ -17,7 +17,6 @@ import gropius.sync.github.generated.*
 import gropius.sync.github.generated.MutateAddLabelMutation.Data.AddLabelsToLabelable.Labelable.Companion.asIssue
 import gropius.sync.github.generated.MutateCreateCommentMutation.Data.AddComment.CommentEdge.Node.Companion.asIssueTimelineItems
 import gropius.sync.github.generated.MutateCreateLabelMutation.Data.CreateLabel.Label.Companion.labelData
-import gropius.sync.github.generated.MutateRemoveLabelMutation.Data.RemoveLabelsFromLabelable.Labelable.Companion.asIssue
 import gropius.sync.github.model.IssueInfo
 import gropius.sync.github.model.LabelInfo
 import gropius.sync.github.repository.IssueInfoRepository
@@ -221,7 +220,7 @@ class Outgoing(
     private suspend fun githubAddLabel(
         imsProjectConfig: IMSProjectConfig, issueInfo: IssueInfo, label: Label, userList: Iterable<User>
     ): List<suspend () -> Unit> {
-        return listOf {
+        return listOf()/* {
             val labelInfo = labelInfoRepository.findByNeo4jId(label.rawId!!)
             if (labelInfo != null) {
                 logger.info("Adding existing ${label.name} (${label.rawId}) to ${issueInfo.neo4jId}")
@@ -230,7 +229,7 @@ class Outgoing(
                 logger.info("Adding new ${label.name} (${label.rawId}) to ${issueInfo.neo4jId}")
                 addCreatedLabel(imsProjectConfig, userList, issueInfo, label)
             }
-        }
+        }*/
     }
 
     /**
@@ -305,7 +304,7 @@ class Outgoing(
         imsProjectConfig: IMSProjectConfig, issueInfo: IssueInfo, label: Label, userList: Iterable<User>
     ): List<suspend () -> Unit> {
         logger.info("Scheduling removing ${label.name} (${label.rawId}) from ${issueInfo.neo4jId}")
-        return listOf {
+        return listOf()/* {
             val labelId = labelInfoRepository.findByNeo4jId(label.rawId!!)
             if (labelId != null) {
                 val client = createClient(imsProjectConfig, userList)
@@ -317,7 +316,7 @@ class Outgoing(
                     //incoming.handleTimelineEvent(imsProjectConfig, issueInfo, item)
                 }
             }
-        }
+        }*/
     }
 
     /**

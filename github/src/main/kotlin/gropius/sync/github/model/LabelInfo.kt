@@ -4,7 +4,6 @@ import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
-import java.net.URI
 
 /**
  * Mapping of a single label from neo4j to GitHub
@@ -15,11 +14,11 @@ import java.net.URI
 @Document
 data class LabelInfo(
     @Indexed
+    val imsProject: String,
+    @Indexed
     val githubId: String,
     @Indexed(unique = true)
-    val neo4jId: String,
-    @Indexed
-    val url: URI
+    val neo4jId: String
 ) {
     /**
      * MongoDB ID

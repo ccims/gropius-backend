@@ -3,15 +3,15 @@ package gropius.sync.jira
 //import gropius.sync.github.config.IMSConfigManager
 //import gropius.sync.github.config.IMSProjectConfig
 import gropius.model.architecture.IMSProject
+import gropius.model.issue.Issue
+import gropius.model.issue.Label
 import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
 import gropius.sync.*
 import gropius.sync.jira.config.IMSConfig
 import gropius.sync.jira.config.IMSConfigManager
 import gropius.sync.jira.config.IMSProjectConfig
-import gropius.sync.jira.model.CommentQuery
-import gropius.sync.jira.model.IssueDataService
-import gropius.sync.jira.model.ProjectQuery
+import gropius.sync.jira.model.*
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -19,7 +19,7 @@ import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import kotlin.io.encoding.Base64
@@ -57,6 +57,21 @@ final class JiraSync(
 
     override suspend fun findTemplates(): Set<IMSTemplate> {
         return imsConfigManager.findTemplates()
+    }
+
+    override suspend fun isOutgoingEnabled(imsProject: IMSProject): Boolean {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        return imsProjectConfig.enableOutgoing
+    }
+
+    override suspend fun isOutgoingLabelsEnabled(imsProject: IMSProject): Boolean {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        return imsProjectConfig.enableOutgoingLabels
+    }
+
+    override suspend fun isOutgoingCommentsEnabled(imsProject: IMSProject): Boolean {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        return imsProjectConfig.enableOutgoingComments
     }
 
     @OptIn(ExperimentalEncodingApi::class)
@@ -128,12 +143,130 @@ final class JiraSync(
     override suspend fun syncComment(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment
     ): TimelineItemConversionInformation? {
-        TODO()/*val response = apolloClient.mutation(MutateCreateCommentMutation(issueId, issueComment.body)).execute()
-        val item = response.data?.addComment?.commentEdge?.node?.asIssueTimelineItems()
-        if (item != null) {
-            return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+        val iid = client.post(imsConfig.rootUrl.toString()) {
+            jiraHttpData()
+            url {
+                appendPathSegments("issue")
+                appendPathSegments(issueId)
+                appendPathSegments("comment")
+            }
+            setBody(
+                JsonObject(mapOf("body" to JsonPrimitive(issueComment.body)))
+            )
+        }.body<JsonObject>()["id"]!!.jsonPrimitive.content
+        return JiraTimelineItemConversionInformation(imsProject.rawId!!, iid)
+    }
+
+    override suspend fun syncAddedLabel(
+        imsProject: IMSProject, issueId: String, label: Label
+    ): TimelineItemConversionInformation? {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+        client.put(imsConfig.rootUrl.toString()) {
+            jiraHttpData()
+            url {
+                appendPathSegments("issue")
+                appendPathSegments(issueId)
+            }
+            setBody(
+                JsonObject(
+                    mapOf(
+                        "update" to JsonObject(
+                            mapOf(
+                                "labels" to JsonArray(
+                                    listOf(
+                                        JsonObject(
+                                            mapOf(
+                                                "add" to JsonPrimitive(
+                                                    label.name
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
         }
-        TODO("ERROR HANDLING")
-        return null*/
+        return JiraTimelineItemConversionInformation(
+            imsProject.rawId!!, "TODO: Get changelog id to prevent duplicate TimelineItem"
+        )
+    }
+
+    override suspend fun syncRemovedLabel(
+        imsProject: IMSProject, issueId: String, label: Label
+    ): TimelineItemConversionInformation? {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+        client.put(imsConfig.rootUrl.toString()) {
+            jiraHttpData()
+            url {
+                appendPathSegments("issue")
+                appendPathSegments(issueId)
+            }
+            setBody(
+                JsonObject(
+                    mapOf(
+                        "update" to JsonObject(
+                            mapOf(
+                                "labels" to JsonArray(
+                                    listOf(
+                                        JsonObject(
+                                            mapOf(
+                                                "remove" to JsonPrimitive(
+                                                    label.name
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        }
+        return JiraTimelineItemConversionInformation(
+            imsProject.rawId!!, "TODO: Get changelog id to prevent duplicate TimelineItem"
+        )
+    }
+
+    override suspend fun createOutgoingIssue(imsProject: IMSProject, issue: Issue): IssueConversionInformation? {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+        val iid = client.post(imsConfig.rootUrl.toString()) {
+            jiraHttpData()
+            url {
+                appendPathSegments("issue")
+            }
+            setBody(
+                IssueQueryRequest(
+                    IssueQueryRequestFields(
+                        issue.title,
+                        issue.body().value.body,
+                        IssueTypeRequest("Bug"),
+                        ProjectRequest(imsProjectConfig.repo),
+                        listOf()
+                    )
+                )
+            )
+        }.body<JsonObject>()["id"]!!.jsonPrimitive.content
+        return IssueConversionInformation(imsProject.rawId!!, iid, issue.rawId!!)
+    }
+
+    @OptIn(ExperimentalEncodingApi::class)
+    private fun HttpRequestBuilder.jiraHttpData() {
+        val basicContent: String = System.getenv("JIRA_DUMMY_EMAIL") + ":" + System.getenv("JIRA_DUMMY_TOKEN")
+        val basicToken = Base64.encode(basicContent.toByteArray())
+        headers {
+            append(
+                HttpHeaders.Authorization, "Basic ${basicToken}"
+            )
+        }
+        contentType(ContentType.parse("application/json; charset=utf-8"))
     }
 }

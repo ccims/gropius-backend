@@ -24,6 +24,13 @@ class JsonHelper(
         return objectMapper.readTree(input).textValue()
     }
 
+    fun parseBoolean(input: String?): Boolean {
+        if (input == null) {
+            return false
+        }
+        return objectMapper.readTree(input).booleanValue()
+    }
+
     /**
      * Parse a json value into a string
      * For example a `"text"` becomes `text`, while `"text` results in null

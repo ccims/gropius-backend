@@ -3,10 +3,7 @@ package gropius.sync.github
 import gropius.model.architecture.IMSProject
 import gropius.model.architecture.Project
 import gropius.model.issue.Issue
-import gropius.model.issue.timeline.Body
-import gropius.model.issue.timeline.IssueComment
-import gropius.model.issue.timeline.TimelineItem
-import gropius.model.issue.timeline.TitleChangedEvent
+import gropius.model.issue.timeline.*
 import gropius.sync.*
 import gropius.sync.github.generated.IssueReadQuery
 import gropius.sync.github.generated.TimelineReadQuery
@@ -104,7 +101,7 @@ interface IssuePileRepository : ReactiveMongoRepository<IssuePileData, ObjectId>
     suspend fun findByImsProjectAndGithubId(
         imsProject: String, githubId: String
     ): IssuePileData?
-
+    
     suspend fun findFirstByImsProjectOrderByLastUpdateDesc(
         imsProject: String
     ): IssuePileData?
@@ -264,9 +261,10 @@ class RenamedTitleEventTimelineItem(
 
 }
 
-class UnlabeledEventTimelineItem(githubId: String, createdAt: OffsetDateTime) :
-    OwnedGithubTimelineItem(githubId, createdAt) {
-    constructor(data: UnlabeledEventTimelineItemData) : this(data.id, data.createdAt) {}
+class UnlabeledEventTimelineItem(
+    githubId: String, createdAt: OffsetDateTime, val createdBy: String?, val label: LabelData
+) : OwnedGithubTimelineItem(githubId, createdAt) {
+    constructor(data: UnlabeledEventTimelineItemData) : this(data.id, data.createdAt, data.actor?.login, data.label) {}
 
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
@@ -275,13 +273,32 @@ class UnlabeledEventTimelineItem(githubId: String, createdAt: OffsetDateTime) :
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
+        val githubService = service as GithubDataService
+        if ((createdBy != null)) {
+            val gropiusId = convInfo.gropiusId
+            val event = if (gropiusId != null) githubService.neoOperations.findById<RemovedLabelEvent>(
+                gropiusId
+            ) else RemovedLabelEvent(createdAt, createdAt)
+            if (event == null) {
+                return listOf<TimelineItem>() to convInfo;
+            }
+            event.createdBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.removedLabel().value = githubService.mapLabel(imsProject, label)
+            return listOf<TimelineItem>(event) to convInfo;
+        }
         return listOf<TimelineItem>() to convInfo;
     }
 }
 
-class LabeledEventTimelineItem(githubId: String, createdAt: OffsetDateTime) :
+class LabeledEventTimelineItem(
+    githubId: String,
+    createdAt: OffsetDateTime,
+    val createdBy: String?,
+    val label: LabelData
+) :
     OwnedGithubTimelineItem(githubId, createdAt) {
-    constructor(data: LabeledEventTimelineItemData) : this(data.id, data.createdAt) {}
+    constructor(data: LabeledEventTimelineItemData) : this(data.id, data.createdAt, data.actor?.login, data.label) {}
 
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
@@ -290,6 +307,20 @@ class LabeledEventTimelineItem(githubId: String, createdAt: OffsetDateTime) :
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
+        val githubService = service as GithubDataService
+        if ((createdBy != null)) {
+            val gropiusId = convInfo.gropiusId
+            val event = if (gropiusId != null) githubService.neoOperations.findById<AddedLabelEvent>(
+                gropiusId
+            ) else AddedLabelEvent(createdAt, createdAt)
+            if (event == null) {
+                return listOf<TimelineItem>() to convInfo;
+            }
+            event.createdBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.addedLabel().value = githubService.mapLabel(imsProject, label)
+            return listOf<TimelineItem>(event) to convInfo;
+        }
         return listOf<TimelineItem>() to convInfo;
     }
 }

@@ -4,7 +4,6 @@ import gropius.sync.github.model.LabelInfo
 import org.bson.types.ObjectId
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository
 import org.springframework.stereotype.Repository
-import java.net.URI
 
 /**
  * Repository for mapping of a single label from neo4j to GitHub
@@ -16,7 +15,7 @@ interface LabelInfoRepository : ReactiveMongoRepository<LabelInfo, ObjectId> {
      * @param neo4jId Database query param
      * @return result of database operation
      */
-    suspend fun findByNeo4jId(neo4jId: String): LabelInfo?
+    suspend fun findByImsProjectAndNeo4jId(imsProject: String, neo4jId: String): LabelInfo?
 
     /**
      * Lookup to find the mapping given a GitHub id
@@ -24,5 +23,5 @@ interface LabelInfoRepository : ReactiveMongoRepository<LabelInfo, ObjectId> {
      * @param url API URL syncing currently
      * @return result of database operation
      */
-    suspend fun findByUrlAndGithubId(url: URI, githubId: String): LabelInfo?
+    suspend fun findByImsProjectAndGithubId(imsProject: String, githubId: String): LabelInfo?
 }

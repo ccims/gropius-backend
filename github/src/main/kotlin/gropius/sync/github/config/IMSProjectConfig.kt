@@ -15,7 +15,10 @@ import gropius.sync.github.model.RepoDescription
  * @param repo repository url
  */
 data class IMSProjectConfig(
-    val botUser: String?, val repo: RepoDescription
+    val botUser: String?, val repo: RepoDescription,
+    val enableOutgoing: Boolean,
+    val enableOutgoingLabels: Boolean,
+    val enableOutgoingComments: Boolean
 ) {
     /**
      * @param imsProject the Gropius IMSProject to use as input
@@ -28,7 +31,10 @@ data class IMSProjectConfig(
         botUser = helper.parseString(imsProject.templatedFields["bot-user"]),
         repo = helper.objectMapper.readValue<RepoDescription>(
             imsProject.templatedFields["repo"]!!, RepoDescription::class.java
-        )
+        ),
+        enableOutgoing = helper.parseBoolean(imsProject.templatedFields["enable-outgoing"]),
+        enableOutgoingLabels = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-labels"]),
+        enableOutgoingComments = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-comments"])
     )
 
     companion object {
@@ -53,6 +59,15 @@ data class IMSProjectConfig(
             }
             "required" to arr["owner", "repo"]
             "gropius-type" to "github-owner"
+        }.toString(), "enable-outgoing" to obj {
+            "\$schema" to IMSConfigManager.SCHEMA
+            "type" to arr["null", "boolean"]
+        }.toString(), "enable-outgoing-labels" to obj {
+            "\$schema" to IMSConfigManager.SCHEMA
+            "type" to arr["null", "boolean"]
+        }.toString(), "enable-outgoing-comments" to obj {
+            "\$schema" to IMSConfigManager.SCHEMA
+            "type" to arr["null", "boolean"]
         }.toString()) + IMSConfigManager.COMMON_TEMPLATE_FIELDS
     }
 }

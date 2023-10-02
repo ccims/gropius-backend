@@ -1,5 +1,6 @@
 package gropius.sync.jira.config
 
+import com.lectra.koson.arr
 import com.lectra.koson.obj
 import gropius.model.architecture.IMSProject
 import gropius.sync.JsonHelper
@@ -13,7 +14,11 @@ import gropius.sync.JsonHelper
  * @param repo repository url
  */
 data class IMSProjectConfig(
-    val botUser: String?, val repo: String
+    val botUser: String?,
+    val repo: String,
+    val enableOutgoing: Boolean,
+    val enableOutgoingLabels: Boolean,
+    val enableOutgoingComments: Boolean
 ) {
     /**
      * @param imsProject the Gropius IMSProject to use as input
@@ -24,7 +29,10 @@ data class IMSProjectConfig(
         helper: JsonHelper, imsProject: IMSProject
     ) : this(
         botUser = helper.parseString(imsProject.templatedFields["bot-user"]),
-        repo = helper.parseString(imsProject.templatedFields["repo"])!!
+        repo = helper.parseString(imsProject.templatedFields["repo"])!!,
+        enableOutgoing = helper.parseBoolean(imsProject.templatedFields["enable-outgoing"]),
+        enableOutgoingLabels = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-labels"]),
+        enableOutgoingComments = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-comments"])
     )
 
     companion object {
@@ -39,6 +47,15 @@ data class IMSProjectConfig(
         val IMS_PROJECT_TEMPLATE_FIELDS = mapOf("repo" to obj {
             "\$schema" to IMSConfigManager.SCHEMA
             "type" to "string"
+        }.toString(), "enable-outgoing" to obj {
+            "\$schema" to IMSConfigManager.SCHEMA
+            "type" to arr["null", "boolean"]
+        }.toString(), "enable-outgoing-labels" to obj {
+            "\$schema" to IMSConfigManager.SCHEMA
+            "type" to arr["null", "boolean"]
+        }.toString(), "enable-outgoing-comments" to obj {
+            "\$schema" to IMSConfigManager.SCHEMA
+            "type" to arr["null", "boolean"]
         }.toString()) + IMSConfigManager.COMMON_TEMPLATE_FIELDS
     }
 }
