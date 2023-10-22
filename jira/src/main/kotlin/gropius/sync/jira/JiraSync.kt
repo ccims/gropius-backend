@@ -145,6 +145,7 @@ final class JiraSync(
     ): TimelineItemConversionInformation? {
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+        if (issueComment.body.isNullOrEmpty()) return null;
         val iid = client.post(imsConfig.rootUrl.toString()) {
             jiraHttpData()
             url {
@@ -180,7 +181,7 @@ final class JiraSync(
                                         JsonObject(
                                             mapOf(
                                                 "add" to JsonPrimitive(
-                                                    label.name
+                                                    jirafyLabelName(label.name)
                                                 )
                                             )
                                         )
@@ -195,6 +196,11 @@ final class JiraSync(
         return JiraTimelineItemConversionInformation(
             imsProject.rawId!!, "TODO: Get changelog id to prevent duplicate TimelineItem"
         )
+    }
+
+    fun jirafyLabelName(gropiusName: String): String {
+        return gropiusName.replace("[^A-Za-z0-9]+".toRegex(), "_").replace("^_*".toRegex(), "")
+            .replace("_*$".toRegex(), "")
     }
 
     override suspend fun syncRemovedLabel(
@@ -218,7 +224,7 @@ final class JiraSync(
                                         JsonObject(
                                             mapOf(
                                                 "remove" to JsonPrimitive(
-                                                    label.name
+                                                    jirafyLabelName(label.name)
                                                 )
                                             )
                                         )

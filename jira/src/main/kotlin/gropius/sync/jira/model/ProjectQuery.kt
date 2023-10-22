@@ -81,7 +81,12 @@ data class CommentQuery(
 
 @Serializable
 data class ProjectQuery(
-    var issues: List<IssueBean>, val names: JsonObject, val schema: JsonObject, val startAt: Int, val total: Int
+    var issues: List<IssueBean>,
+    val startAt: Int,
+    val total: Int,
+    val names: JsonObject? = null,
+    val schema: JsonObject? = null
 ) {
-    fun issues(imsProject: IMSProject): List<IssueData> = issues.map { it.data(imsProject, names, schema) }
+    fun issues(imsProject: IMSProject): List<IssueData> =
+        issues.map { it.data(imsProject, names ?: JsonObject(mapOf()), schema ?: JsonObject(mapOf())) }
 }

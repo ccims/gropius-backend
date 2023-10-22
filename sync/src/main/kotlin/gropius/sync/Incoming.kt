@@ -16,6 +16,7 @@ abstract class IncomingTimelineItem() {
 
 abstract class IncomingIssue() {
     abstract suspend fun incomingTimelineItems(service: SyncDataService): List<IncomingTimelineItem>
+    
     abstract suspend fun identification(): String;
 
     abstract suspend fun markDone(service: SyncDataService)

@@ -27,7 +27,8 @@ class CollectedSyncInfo(
     val issueConversionInformationService: IssueConversionInformationService,
     val issueRepository: IssueRepository,
     val timelineItemConversionInformationService: TimelineItemConversionInformationService,
-    val syncNotificator: SyncNotificator
+    val syncNotificator: SyncNotificator,
+    val issueCleaner: IssueCleaner
 ) {}
 
 abstract class AbstractSync(
@@ -52,8 +53,8 @@ abstract class AbstractSync(
                 if (issue.rawId == null) issue = collectedSyncInfo.neoOperations.save(issue).awaitSingle()
                 if (issueInfo.gropiusId == null) {
                     issueInfo.gropiusId = issue.rawId!!
-                    collectedSyncInfo.issueConversionInformationService.save(issueInfo).awaitSingle()
                 }
+                collectedSyncInfo.issueConversionInformationService.save(issueInfo).awaitSingle()
                 //try {
                 val timelineItems = it.incomingTimelineItems(syncDataService())
                 for (timelineItem in timelineItems) {
@@ -76,6 +77,7 @@ abstract class AbstractSync(
                     }
                     collectedSyncInfo.timelineItemConversionInformationService.save(newInfo).awaitSingle()
                 }
+                collectedSyncInfo.issueCleaner.cleanIssue(issue.rawId!!)
                 it.markDone(syncDataService())
                 //} catch (e: SyncNotificator.NotificatedError) {
                 //    syncNotificator.sendNotification(
@@ -158,8 +160,7 @@ abstract class AbstractSync(
         relevantTimeline: List<TimelineItem>,
         restoresDefaultState: Boolean
     ): Boolean {
-        return shouldSyncType(
-            imsProject,
+        return shouldSyncType(imsProject,
             { it is AddingItem },
             { it is RemovingItem },
             finalBlock,
@@ -217,9 +218,11 @@ abstract class AbstractSync(
                 imsProject.rawId!!, issue.rawId!!
             )
             if (issueInfo == null) {
-                issueInfo =
-                    collectedSyncInfo.issueConversionInformationService.save(createOutgoingIssue(imsProject, issue))
-                        .awaitSingle()
+                val outgoingIssue = createOutgoingIssue(imsProject, issue)
+                if (outgoingIssue != null) {
+                    outgoingIssue.gropiusId = issue.rawId!!
+                    issueInfo = collectedSyncInfo.issueConversionInformationService.save(outgoingIssue).awaitSingle()
+                }
             }
             if (issueInfo != null) {
                 val timeline = issue.timelineItems().toList().sortedBy { it.createdAt }
@@ -234,9 +237,7 @@ abstract class AbstractSync(
     }
 
     private suspend fun syncOutgoingLabels(
-        timeline: List<TimelineItem>,
-        imsProject: IMSProject,
-        issueInfo: IssueConversionInformation
+        timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
         val groups = timeline.filter { (it is AddedLabelEvent) || (it is RemovedLabelEvent) }.groupBy {
             when (it) {
@@ -248,12 +249,13 @@ abstract class AbstractSync(
         val collectedMutations = mutableListOf<suspend () -> Unit>()
         for ((label, relevantTimeline) in groups) {
             var labelIsSynced = false
-            val finalBlock = findFinalTypeBlock(timeline)
+            val finalBlock = findFinalTypeBlock(relevantTimeline)
             for (item in finalBlock) {
-                if (collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
+                val relevantEvent =
+                    collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
                         imsProject.rawId!!, item.rawId!!
-                    )?.githubId != null
-                ) {
+                    )
+                if (relevantEvent?.githubId != null) {
                     labelIsSynced = true
                 }
             }
@@ -263,9 +265,7 @@ abstract class AbstractSync(
                     )
                 ) {
                     val conversionInformation = syncRemovedLabel(
-                        imsProject,
-                        issueInfo.githubId,
-                        label!!/*,finalBlock.map { it.lastModifiedBy().value }*/
+                        imsProject, issueInfo.githubId, label!!/*,finalBlock.map { it.lastModifiedBy().value }*/
                     )
                     if (conversionInformation != null) {
                         conversionInformation.gropiusId = finalBlock.map { it.rawId!! }.first()
@@ -279,9 +279,7 @@ abstract class AbstractSync(
                     )
                 ) {
                     val conversionInformation = syncAddedLabel(
-                        imsProject,
-                        issueInfo.githubId,
-                        label!!/*,finalBlock.map { it.lastModifiedBy().value }*/
+                        imsProject, issueInfo.githubId, label!!/*,finalBlock.map { it.lastModifiedBy().value }*/
                     )
                     if (conversionInformation != null) {
                         conversionInformation.gropiusId = finalBlock.map { it.rawId!! }.first()
@@ -295,9 +293,7 @@ abstract class AbstractSync(
     }
 
     private suspend fun syncOutgoingComments(
-        timeline: List<TimelineItem>,
-        imsProject: IMSProject,
-        issueInfo: IssueConversionInformation
+        timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
         timeline.mapNotNull { it as? IssueComment }.filter {
             collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
@@ -307,8 +303,7 @@ abstract class AbstractSync(
             val conversionInformation = syncComment(imsProject, issueInfo.githubId, it)
             if (conversionInformation != null) {
                 conversionInformation.gropiusId = it.rawId!!
-                collectedSyncInfo.timelineItemConversionInformationService.save(conversionInformation)
-                    .awaitSingle()
+                collectedSyncInfo.timelineItemConversionInformationService.save(conversionInformation).awaitSingle()
             }
         }
     }

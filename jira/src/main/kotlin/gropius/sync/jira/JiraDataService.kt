@@ -48,7 +48,7 @@ class JiraDataService(
             imsProject,
             user.jsonObject["accountId"]!!.jsonPrimitive.content,
             user.jsonObject["displayName"]!!.jsonPrimitive.content,
-            user.jsonObject["emailAddress"]!!.jsonPrimitive.content
+            user.jsonObject["emailAddress"]?.jsonPrimitive?.content
         )
     }
 
@@ -63,6 +63,8 @@ class JiraDataService(
             return neoOperations.save(label).awaitSingle()
         } else if (labels.size == 1) {
             return labels.single()
-        } else TODO("Find a label")
+        } else {
+            return labels.first()
+        }
     }
 }

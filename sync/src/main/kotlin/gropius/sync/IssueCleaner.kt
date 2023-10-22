@@ -63,6 +63,14 @@ class IssueCleaner(
         }
     }
 
+    private suspend fun cleanComments(issue: Issue) {
+        for (item in issue.timelineItems()) {
+            if (item is IssueComment) {
+                issue.issueComments() += item
+            }
+        }
+    }
+
     /**
      * Execute the cleaning process
      *
@@ -75,6 +83,7 @@ class IssueCleaner(
         cleanLabels(issue)
         cleanState(issue)
         cleanTitle(issue)
+        cleanComments(issue)
         issue = neoOperations.save(issue).awaitSingle()
     }
 }

@@ -8,7 +8,9 @@ import gropius.sync.*
 import gropius.sync.github.generated.IssueReadQuery
 import gropius.sync.github.generated.TimelineReadQuery
 import gropius.sync.github.generated.fragment.*
+import gropius.sync.github.generated.fragment.AssignedEventTimelineItemData.Assignee.Companion.userData
 import gropius.sync.github.generated.fragment.TimelineItemData.Companion.asNode
+import gropius.sync.github.generated.fragment.UnassignedEventTimelineItemData.Assignee.Companion.userData
 import jakarta.transaction.Transactional
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.awaitSingle
@@ -54,7 +56,9 @@ data class IssuePileData(
     val initialDescription: String,
     @Indexed
     var lastUpdate: OffsetDateTime,
+    var createdAt: OffsetDateTime,
     val timelineItems: MutableList<GithubTimelineItem>,
+    val createdBy: String,
     @Indexed
     var needsTimelineRequest: Boolean = true,
     @Indexed
@@ -80,13 +84,13 @@ data class IssuePileData(
 
     override suspend fun createIssue(imsProject: IMSProject, service: SyncDataService): Issue {
         val githubService = (service as GithubDataService)
-        val issue = Issue(lastUpdate, lastUpdate, mutableMapOf(), initialTitle, lastUpdate, null, null, null, null)
-        issue.body().value = Body(lastUpdate, lastUpdate, initialDescription, lastUpdate)
-        issue.body().value.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, "todo user")
-        issue.body().value.bodyLastEditedBy().value = githubService.userMapper.mapUser(imsProject, "todo user")
-        issue.body().value.createdBy().value = githubService.userMapper.mapUser(imsProject, "todo user")
-        issue.createdBy().value = githubService.userMapper.mapUser(imsProject, "todo user")
-        issue.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, "todo user")
+        val issue = Issue(createdAt, lastUpdate, mutableMapOf(), initialTitle, lastUpdate, null, null, null, null)
+        issue.body().value = Body(createdAt, lastUpdate, initialDescription, lastUpdate)
+        issue.body().value.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+        issue.body().value.bodyLastEditedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+        issue.body().value.createdBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+        issue.createdBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+        issue.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
         issue.body().value.issue().value = issue
         issue.state().value = githubService.issueState()
         issue.template().value = githubService.issueTemplate()
@@ -101,7 +105,7 @@ interface IssuePileRepository : ReactiveMongoRepository<IssuePileData, ObjectId>
     suspend fun findByImsProjectAndGithubId(
         imsProject: String, githubId: String
     ): IssuePileData?
-    
+
     suspend fun findFirstByImsProjectOrderByLastUpdateDesc(
         imsProject: String
     ): IssuePileData?
@@ -126,7 +130,14 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
         imsProject: IMSProject, data: IssueReadQuery.Data.Repository.Issues.Node
     ) {
         val pile = issuePileRepository.findByImsProjectAndGithubId(imsProject.rawId!!, data.id) ?: IssuePileData(
-            imsProject.rawId!!, data.id, data.title, data.body, data.updatedAt, mutableListOf()
+            imsProject.rawId!!,
+            data.id,
+            data.title,
+            data.body,
+            data.updatedAt,
+            data.createdAt,
+            mutableListOf(),
+            data.author!!.login
         )
         pile.lastUpdate = data.updatedAt
         pile.needsTimelineRequest = true;
@@ -157,16 +168,16 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
             is LabeledEventTimelineItemData -> LabeledEventTimelineItem(data)
             is UnlabeledEventTimelineItemData -> UnlabeledEventTimelineItem(data)
             is RenamedTitleEventTimelineItemData -> RenamedTitleEventTimelineItem(data)
+            is AssignedEventTimelineItemData -> AssignedTimelineItem(data)
+            is UnassignedEventTimelineItemData -> UnassignedTimelineItem(data)
 
             // Handle all events separately, as GitHub does not inherit the createdAt time anywhere
-            is AssignedEventTimelineItemData -> UnknownTimelineItem(data.id, data.createdAt)
             is CommentDeletedEventTimelineItemData -> UnknownTimelineItem(data.id, data.createdAt)
             is DemilestonedEventTimelineItemData -> UnknownTimelineItem(data.id, data.createdAt)
             is MarkedAsDuplicateEventTimelineItemData -> UnknownTimelineItem(data.id, data.createdAt)
             is MentionedEventTimelineItemData -> UnknownTimelineItem(data.id, data.createdAt)
             is MilestonedEventTimelineItemData -> UnknownTimelineItem(data.id, data.createdAt)
             is PinnedEventTimelineItemData -> UnknownTimelineItem(data.id, data.createdAt)
-            is UnassignedEventTimelineItemData -> UnknownTimelineItem(data.id, data.createdAt)
             is UnmarkedAsDuplicateEventTimelineItemData -> UnknownTimelineItem(data.id, data.createdAt)
             is UnpinnedEventTimelineItemData -> UnknownTimelineItem(data.id, data.createdAt)
 
@@ -292,12 +303,8 @@ class UnlabeledEventTimelineItem(
 }
 
 class LabeledEventTimelineItem(
-    githubId: String,
-    createdAt: OffsetDateTime,
-    val createdBy: String?,
-    val label: LabelData
-) :
-    OwnedGithubTimelineItem(githubId, createdAt) {
+    githubId: String, createdAt: OffsetDateTime, val createdBy: String?, val label: LabelData
+) : OwnedGithubTimelineItem(githubId, createdAt) {
     constructor(data: LabeledEventTimelineItemData) : this(data.id, data.createdAt, data.actor?.login, data.label) {}
 
     override suspend fun gropiusTimelineItem(
@@ -319,6 +326,72 @@ class LabeledEventTimelineItem(
             event.createdBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
             event.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
             event.addedLabel().value = githubService.mapLabel(imsProject, label)
+            return listOf<TimelineItem>(event) to convInfo;
+        }
+        return listOf<TimelineItem>() to convInfo;
+    }
+}
+
+class UnassignedTimelineItem(
+    githubId: String, createdAt: OffsetDateTime, val createdBy: String?, val user: String
+) : OwnedGithubTimelineItem(githubId, createdAt) {
+    constructor(data: UnassignedEventTimelineItemData) : this(
+        data.id, data.createdAt, data.actor?.login, data.assignee?.userData()?.login!!
+    ) {
+    }
+
+    override suspend fun gropiusTimelineItem(
+        imsProject: IMSProject,
+        service: SyncDataService,
+        timelineItemConversionInformation: TimelineItemConversionInformation?
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
+        val convInfo =
+            timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
+        val githubService = service as GithubDataService
+        if ((createdBy != null)) {
+            val gropiusId = convInfo.gropiusId
+            val event = if (gropiusId != null) githubService.neoOperations.findById<RemovedAssignmentEvent>(
+                gropiusId
+            ) else RemovedAssignmentEvent(createdAt, createdAt)
+            if (event == null) {
+                return listOf<TimelineItem>() to convInfo;
+            }
+            event.createdBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.removedAssignment().value = TODO()
+            return listOf<TimelineItem>(event) to convInfo;
+        }
+        return listOf<TimelineItem>() to convInfo;
+    }
+}
+
+class AssignedTimelineItem(
+    githubId: String, createdAt: OffsetDateTime, val createdBy: String?, val user: String
+) : OwnedGithubTimelineItem(githubId, createdAt) {
+    constructor(data: AssignedEventTimelineItemData) : this(
+        data.id, data.createdAt, data.actor?.login, data.assignee?.userData()?.login!!
+    ) {
+    }
+
+    override suspend fun gropiusTimelineItem(
+        imsProject: IMSProject,
+        service: SyncDataService,
+        timelineItemConversionInformation: TimelineItemConversionInformation?
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
+        val convInfo =
+            timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
+        val githubService = service as GithubDataService
+        if ((createdBy != null)) {
+            val gropiusId = convInfo.gropiusId
+            val event = if (gropiusId != null) githubService.neoOperations.findById<Assignment>(
+                gropiusId
+            ) else Assignment(createdAt, createdAt)
+            if (event == null) {
+                return listOf<TimelineItem>() to convInfo;
+            }
+            event.createdBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.user().value = githubService.userMapper.mapUser(imsProject, user)
             return listOf<TimelineItem>(event) to convInfo;
         }
         return listOf<TimelineItem>() to convInfo;

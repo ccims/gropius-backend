@@ -126,11 +126,14 @@ final class GithubSync(
     override suspend fun syncComment(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment
     ): TimelineItemConversionInformation? {
-        val response = apolloClient.mutation(MutateCreateCommentMutation(issueId, issueComment.body)).execute()
+        val body = issueComment.body
+        if (body.isNullOrEmpty()) return null;
+        val response = apolloClient.mutation(MutateCreateCommentMutation(issueId, body)).execute()
         val item = response.data?.addComment?.commentEdge?.node?.asIssueTimelineItems()
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)
         }
+        println(response.errors)
         TODO("ERROR HANDLING")
         return null
     }
@@ -145,7 +148,9 @@ final class GithubSync(
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
         }
-        TODO("ERROR HANDLING")
+        println(response.data)
+        println(response.errors)
+        //TODO("ERROR HANDLING")
         return null
     }
 
@@ -159,7 +164,7 @@ final class GithubSync(
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
         }
-        TODO("ERROR HANDLING")
+        //TODO("ERROR HANDLING")
         return null
     }
 
@@ -173,7 +178,7 @@ final class GithubSync(
             apolloClient.mutation(MutateCreateIssueMutation(repoId, issue.title, issue.body().value.body)).execute()
         val item = response.data?.createIssue?.issue
         if (item != null) {
-            return IssueConversionInformation(imsProject.rawId!!, item.id, null)
+            return IssueConversionInformation(imsProject.rawId!!, item.id, issue.rawId!!)
         }
         TODO("ERROR HANDLING")
         return null
