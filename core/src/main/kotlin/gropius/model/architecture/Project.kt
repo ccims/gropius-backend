@@ -6,7 +6,6 @@ import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.NodeWithPermissions
 import gropius.model.user.permission.ProjectPermission
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 import java.net.URI
 
 @DomainNode("projects")

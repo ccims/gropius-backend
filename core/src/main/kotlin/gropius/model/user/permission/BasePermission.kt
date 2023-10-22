@@ -5,7 +5,6 @@ import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
 import gropius.model.common.Named
 import gropius.model.user.GropiusUser
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 
 /**
  * GraphQL description for permission entries

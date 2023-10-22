@@ -2,7 +2,7 @@
 
 mkdir -p ./website/schemas
 
-./gradlew api-public:bootRun --args="--gropius.api.public.jwtSecret=SecretToGetGraphQLSchemaDoNotUseInProduction" --no-daemon &
+./gradlew api-public:bootRun --args="--gropius.api.public.jwtSecret=SecretToGetGraphQLSchemaDoNotUseInProduction --gropius.core.createIndicesOnStartup=false" --no-daemon &
 gradlew_pid=$!
 schema_endpoint="http://localhost:8080/sdl"
 c=0
@@ -20,7 +20,7 @@ curl -s -o ./website/schemas/api-public.gql $schema_endpoint
 echo "Stopping graphql server"
 kill $gradlew_pid
 
-./gradlew api-internal:bootRun --args="--server.port=8081" --no-daemon &
+./gradlew api-internal:bootRun --args="--server.port=8081 --gropius.core.createIndicesOnStartup=false" --no-daemon &
 gradlew_pid=$!
 schema_endpoint="http://localhost:8081/sdl"
 c=0

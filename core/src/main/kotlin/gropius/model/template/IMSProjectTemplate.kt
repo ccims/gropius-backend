@@ -2,7 +2,6 @@ package gropius.model.template
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import gropius.model.architecture.IMSProject
-import gropius.model.architecture.InterfaceSpecificationVersion
 import io.github.graphglue.model.DomainNode
 
 @DomainNode

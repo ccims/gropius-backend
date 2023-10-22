@@ -6,7 +6,6 @@ import gropius.authorization.RELATED_TO_ADMIN_NODE_PERMISSION_RULE
 import gropius.authorization.RelatedToAdminNodePermissionRuleGenerator
 import gropius.graphql.TypeGraphQLType
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 
 /**
  * Common base class for [IMSPermission], [ComponentPermission] and [ProjectPermission]

@@ -8,8 +8,8 @@ import gropius.dto.input.issue.CreateLabelInput
 import gropius.dto.input.issue.RemoveLabelFromTrackableInput
 import gropius.dto.input.issue.UpdateLabelInput
 import gropius.model.architecture.Trackable
-import gropius.model.issue.Label
 import gropius.model.issue.Issue
+import gropius.model.issue.Label
 import gropius.model.user.User
 import gropius.model.user.permission.TrackablePermission
 import gropius.repository.architecture.TrackableRepository

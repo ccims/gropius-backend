@@ -3,12 +3,10 @@ package gropius.authorization
 import gropius.model.architecture.Component
 import gropius.model.architecture.IMS
 import gropius.model.architecture.Project
-import gropius.model.common.AuditedNode
 import gropius.model.user.GropiusUser
 import gropius.model.user.permission.GlobalPermission
 import gropius.model.user.permission.NodePermission
 import io.github.graphglue.authorization.AllowRuleGenerator
-import io.github.graphglue.authorization.DisallowRuleGenerator
 import io.github.graphglue.definition.NodeDefinition
 import io.github.graphglue.definition.NodeDefinitionCollection
 import org.springframework.context.annotation.Bean
@@ -24,11 +22,6 @@ const val RELATED_TO_NODE_PERMISSION_RULE = "relatedToNodePermissionRule"
  * [NodePermission] with ADMIN via [NodePermission.RELATED_TO_NODE_PERMISSION]
  */
 const val RELATED_TO_ADMIN_NODE_PERMISSION_RULE = "relatedToAdminNodePermission"
-
-/**
- * The name of the [IsDeletedRuleGenerator] used to check that an [AuditedNode] is deleted
- */
-const val IS_DELETED_RULE = "isDeletedRule"
 
 /**
  * The name of the [RelatedToGlobalPermissionRuleGenerator] used to check if a [GropiusUser] is related to a
@@ -52,8 +45,7 @@ class AuthorizationConfiguration {
     @Bean(RELATED_TO_ADMIN_NODE_PERMISSION_RULE)
     fun relatedToAdminNodePermissionRule(nodeDefinitionCollection: NodeDefinitionCollection): AllowRuleGenerator {
         return RelatedToAdminNodePermissionRuleGenerator(
-            nodeDefinitionCollection.getNodeDefinition<NodePermission<*>>(),
-            nodeDefinitionCollection.getNodeDefinition<GropiusUser>()
+            nodeDefinitionCollection.getNodeDefinition<NodePermission<*>>()
         )
     }
 
@@ -67,8 +59,7 @@ class AuthorizationConfiguration {
     @Bean(RELATED_TO_NODE_PERMISSION_RULE)
     fun relatedToNodePermissionRule(nodeDefinitionCollection: NodeDefinitionCollection): RelatedToNodePermissionRuleGenerator {
         return RelatedToNodePermissionRuleGenerator(
-            nodeDefinitionCollection.getNodeDefinition<NodePermission<*>>(),
-            nodeDefinitionCollection.getNodeDefinition<GropiusUser>()
+            nodeDefinitionCollection.getNodeDefinition<NodePermission<*>>()
         )
     }
 

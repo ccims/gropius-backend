@@ -4,7 +4,6 @@ import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import gropius.model.common.NamedNode
 import gropius.model.user.permission.NodePermission
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 
 @DomainNode
 @GraphQLDescription(

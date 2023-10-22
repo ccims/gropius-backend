@@ -11,13 +11,13 @@ import gropius.dto.input.user.permission.UpdateBasePermissionInput
 import gropius.model.user.GropiusUser
 import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.NodeWithPermissions
+import gropius.repository.GropiusRepository
 import gropius.repository.findAllById
 import gropius.repository.findById
 import io.github.graphglue.authorization.Permission
+import io.github.graphglue.model.Node
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
-import gropius.repository.GropiusRepository
-import io.github.graphglue.model.Node
 
 /**
  * Base class for services for subclasses of [NodePermission]

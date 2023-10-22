@@ -7,8 +7,8 @@ import gropius.dto.input.isPresent
 import gropius.dto.input.issue.CreateArtefactInput
 import gropius.dto.input.issue.UpdateArtefactInput
 import gropius.model.architecture.Trackable
-import gropius.model.issue.Issue
 import gropius.model.issue.Artefact
+import gropius.model.issue.Issue
 import gropius.model.template.ArtefactTemplate
 import gropius.model.user.permission.TrackablePermission
 import gropius.repository.architecture.TrackableRepository

@@ -12,12 +12,11 @@ import gropius.model.user.User
 import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.TrackablePermission
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 import java.time.Duration
 import java.time.OffsetDateTime
 
-@DomainNode
+@DomainNode(searchQueryName = "searchIssues")
 @GraphQLDescription(
     """An Issue in the Gropius system.
     Issues can be used to report bugs, request features, ask questions, ...
@@ -43,6 +42,7 @@ class Issue(
     @property:GraphQLDescription("Title of the Issue, usually a short description of the Issue.")
     @FilterProperty
     @OrderProperty
+    @SearchProperty
     var title: String,
     @property:GraphQLDescription("The DateTime when the Issue was last updated, this includes a changed timeline.")
     @FilterProperty

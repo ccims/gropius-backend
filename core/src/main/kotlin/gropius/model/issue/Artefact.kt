@@ -5,13 +5,12 @@ import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
 import gropius.model.architecture.Trackable
 import gropius.model.common.AuditedNode
 import gropius.model.issue.timeline.IssueComment
-import gropius.model.user.permission.NodePermission
 import gropius.model.template.ArtefactTemplate
 import gropius.model.template.BaseTemplate
 import gropius.model.template.MutableTemplatedNode
+import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.TrackablePermission
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 import java.net.URI
 import java.time.OffsetDateTime

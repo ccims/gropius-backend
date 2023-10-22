@@ -1,9 +1,8 @@
 package gropius.model.architecture
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
-import gropius.authorization.RELATED_TO_NODE_PERMISSION_RULE
-import gropius.model.common.ExtensibleNode
 import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
+import gropius.authorization.RELATED_TO_NODE_PERMISSION_RULE
 import gropius.model.common.NamedNode
 import gropius.model.template.BaseTemplate
 import gropius.model.template.IMSTemplate
@@ -13,7 +12,6 @@ import gropius.model.user.permission.IMSPermission
 import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.NodeWithPermissions
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 
 @DomainNode("imss")

@@ -2,7 +2,6 @@ package gropius.model.template
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 
 @DomainNode
 @GraphQLDescription("Template for RelationPartners.")

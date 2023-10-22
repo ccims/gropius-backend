@@ -63,6 +63,89 @@ export enum AffectedByIssueOrderField {
   Name = 'NAME'
 }
 
+/** Non global permission entries */
+export enum AllPermissionEntry {
+  /**
+   * Allows to add the Component to Projects
+   * Note: this should be handled very carefully, as adding a Component to a Project gives
+   * all users with READ access to the Project READ access to the Component
+   */
+  AddToProjects = 'ADD_TO_PROJECTS',
+  /** Grants all other permissions on the Node except READ. */
+  Admin = 'ADMIN',
+  /**
+   * Allows to create Comments on Issues on this Trackable.
+   * Also allows editing of your own Comments.
+   */
+  Comment = 'COMMENT',
+  /**
+   * Allows to create new Issues on the Trackable.
+   * This includes adding Issues from other Trackables.
+   */
+  CreateIssues = 'CREATE_ISSUES',
+  /** Allows adding Issues on this Trackable to other Trackables. */
+  ExportIssues = 'EXPORT_ISSUES',
+  /** Allows adding Labels on this Trackable to other Trackables. */
+  ExportLabels = 'EXPORT_LABELS',
+  /**
+   * Allows affecting entities part of this Trackable with any Issues.
+   * Affectable entitites include
+   *   - the Trackable itself
+   *   - in case the Trackable is a Component
+   *     - InterfaceSpecifications, their InterfaceSpecificationVersions and their InterfaceParts of the Component (not inherited ones)
+   *     - Interfaces on the Component
+   *     - ComponentVersions of the Component
+   */
+  LinkFromIssues = 'LINK_FROM_ISSUES',
+  /** Allows to add, remove, and update Artefacts on this Trackable. */
+  ManageArtefacts = 'MANAGE_ARTEFACTS',
+  /** Allows to add / remove ComponentVersions to / from this Project. */
+  ManageComponents = 'MANAGE_COMPONENTS',
+  /**
+   * Allows to add, remove, and update IMSProjects on this Trackable.
+   * Note: for adding, `IMSPermissionEntry.SYNC_TRACKABLES` is required additionally
+   */
+  ManageIms = 'MANAGE_IMS',
+  /**
+   * Allows to manage issues.
+   * This includes `CREATE_ISSUES` and `COMMENT`.
+   * This does NOT include `LINK_TO_ISSUES` and `LINK_FROM_ISSUES`.
+   * Additionaly includes
+   *   - change the Template
+   *   - add / remove Labels
+   *   - add / remove Artefacts
+   *   - change any field on the Issue (title, startDate, dueDate, ...)
+   *   - change templated fields
+   * In contrast to `MODERATOR`, this does not allow editing / removing Comments of other users
+   */
+  ManageIssues = 'MANAGE_ISSUES',
+  /**
+   * Allows to add, remove, and update Labels on this Trackable.
+   * Also allows to delete a Label, but only if it is allowed on all Trackable the Label is on.
+   */
+  ManageLabels = 'MANAGE_LABELS',
+  /**
+   * Allows to moderate Issues on this Trackable.
+   * This allows everything `MANAGE_ISSUES` allows.
+   * Additionally, it allows editing and deleting Comments of other Users
+   */
+  Moderator = 'MODERATOR',
+  /**
+   * Allows to read the Node (obtain it via the API) and to read certain related Nodes.
+   * See documentation for specific Node for the specific conditions.
+   */
+  Read = 'READ',
+  /**
+   * Allows to create Relations with a version of this Component or an Interface of this Component
+   * as start.
+   * Note: as these Relations cannot cause new Interfaces on this Component, this can be granted
+   * more permissively compared to `RELATE_TO_COMPONENT`.
+   */
+  RelateFromComponent = 'RELATE_FROM_COMPONENT',
+  /** Allows to create IMSProjects with this IMS. */
+  SyncTrackables = 'SYNC_TRACKABLES'
+}
+
 /** Filter used to filter Artefact */
 export type ArtefactFilterInput = {
   /** Connects all subformulas via and */
@@ -788,6 +871,8 @@ export type ComponentVersionTemplateFilterInput = {
 
 /** Input for the createGropiusUser mutation */
 export type CreateGropiusUserInput = {
+  /** The avatar of the created GropiusUser */
+  avatar?: InputMaybe<Scalars['URL']>;
   /** The displayName of the created User */
   displayName: Scalars['String'];
   /** The email of the created User if present */
@@ -862,6 +947,8 @@ export type GropiusUserFilterInput = {
   displayName?: InputMaybe<StringFilterInput>;
   /** Filter by email */
   email?: InputMaybe<NullableStringFilterInput>;
+  /** Filter for users with a specific permission on a node */
+  hasNodePermission?: InputMaybe<NodePermissionFilterEntry>;
   /** Filter by id */
   id?: InputMaybe<IdFilterInput>;
   /** Filter by imsUsers */
@@ -903,7 +990,9 @@ export enum GropiusUserOrderField {
   /** Order by email */
   Email = 'EMAIL',
   /** Order by id */
-  Id = 'ID'
+  Id = 'ID',
+  /** Order by username */
+  Username = 'USERNAME'
 }
 
 /** Filter which can be used to filter for Nodes with a specific ID field */
@@ -1256,7 +1345,9 @@ export enum ImsUserOrderField {
   /** Order by email */
   Email = 'EMAIL',
   /** Order by id */
-  Id = 'ID'
+  Id = 'ID',
+  /** Order by username */
+  Username = 'USERNAME'
 }
 
 /** Filter used to filter IMSUserTemplate */
@@ -2367,6 +2458,13 @@ export enum LabelOrderField {
   Name = 'NAME'
 }
 
+export type NodePermissionFilterEntry = {
+  /** The node where the user must have the permission */
+  node: Scalars['ID'];
+  /** The permission the user must have on the node */
+  permission: AllPermissionEntry;
+};
+
 /** Filter which can be used to filter for Nodes with a specific DateTime field */
 export type NullableDateTimeFilterInput = {
   /** Matches values which are equal to the provided value */
@@ -3092,7 +3190,9 @@ export enum UserOrderField {
   /** Order by email */
   Email = 'EMAIL',
   /** Order by id */
-  Id = 'ID'
+  Id = 'ID',
+  /** Order by username */
+  Username = 'USERNAME'
 }
 
 export type ImsUserWithDetailFragment = { __typename: 'IMSUser', id: string, username?: string | null, displayName: string, email?: string | null, templatedFields: Array<{ __typename: 'JSONField', name: string, value?: any | null }>, ims: { __typename: 'IMS', id: string, name: string, description: string, templatedFields: Array<{ __typename: 'JSONField', name: string, value?: any | null }> } };
@@ -3117,7 +3217,7 @@ export type CreateNewImsUserInImsMutationVariables = Exact<{
 }>;
 
 
-export type CreateNewImsUserInImsMutation = { __typename?: 'Mutation', createIMSUser?: { __typename: 'CreateIMSUserPayload', imsuser?: { __typename: 'IMSUser', id: string } | null } | null };
+export type CreateNewImsUserInImsMutation = { __typename?: 'Mutation', createIMSUser?: { __typename: 'CreateIMSUserPayload', imsUser?: { __typename: 'IMSUser', id: string } | null } | null };
 
 export type GetBasicGropiusUserDataQueryVariables = Exact<{
   id: Scalars['ID'];
@@ -3153,7 +3253,7 @@ export type SetImsUserLinkMutationVariables = Exact<{
 }>;
 
 
-export type SetImsUserLinkMutation = { __typename?: 'Mutation', updateIMSUser?: { __typename: 'UpdateIMSUserPayload', imsuser?: { __typename: 'IMSUser', id: string } | null } | null };
+export type SetImsUserLinkMutation = { __typename?: 'Mutation', updateIMSUser?: { __typename: 'UpdateIMSUserPayload', imsUser?: { __typename: 'IMSUser', id: string } | null } | null };
 
 export type UserDataFragment = { __typename: 'GropiusUser', id: string, username: string, displayName: string, email?: string | null };
 
@@ -3220,7 +3320,7 @@ export const CreateNewImsUserInImsDocument = gql`
     mutation createNewImsUserInIms($input: CreateIMSUserInput!) {
   createIMSUser(input: $input) {
     __typename
-    imsuser {
+    imsUser {
       __typename
       id
     }
@@ -3266,7 +3366,7 @@ export const SetImsUserLinkDocument = gql`
     mutation setImsUserLink($gropiusUserId: ID!, $imsUserId: ID!) {
   updateIMSUser(input: {id: $imsUserId, gropiusUser: $gropiusUserId}) {
     __typename
-    imsuser {
+    imsUser {
       __typename
       id
     }

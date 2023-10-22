@@ -1,12 +1,9 @@
 package gropius.model.common
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
-import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
-import gropius.authorization.IS_DELETED_RULE
 import gropius.model.user.User
 import gropius.model.user.permission.NodePermission
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 import java.time.OffsetDateTime
 
 @DomainNode
@@ -17,7 +14,7 @@ import java.time.OffsetDateTime
     A change on a related related node is not a modification.
     """
 )
-@Authorization(NodePermission.READ, disallow = [Rule(IS_DELETED_RULE)])
+@Authorization(NodePermission.READ)
 abstract class AuditedNode(
     @property:GraphQLDescription("The DateTime this entity was created at.")
     @FilterProperty

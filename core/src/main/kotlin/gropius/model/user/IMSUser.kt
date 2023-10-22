@@ -10,7 +10,6 @@ import io.github.graphglue.model.Direction
 import io.github.graphglue.model.DomainNode
 import io.github.graphglue.model.FilterProperty
 import io.github.graphglue.model.NodeRelationship
-import org.springframework.data.annotation.Transient
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 import java.net.URI
 
@@ -27,12 +26,11 @@ class IMSUser(
     displayName: String,
     email: String?,
     avatar: URI?,
-    @property:GraphQLIgnore
-    var username: String?,
+    username: String?,
     @property:GraphQLIgnore
     @CompositeProperty
     override val templatedFields: MutableMap<String, String>
-) : User(displayName, email, avatar), TemplatedNode {
+) : User(displayName, email, avatar, username), TemplatedNode {
 
     companion object {
         const val GROPIUS_USER = "GROPIUS_USER"

@@ -3,7 +3,6 @@ package gropius.dto.input.template
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.execution.OptionalInput
 import com.expediagroup.graphql.generator.scalars.ID
-import gropius.dto.input.common.UpdateExtensibleNodeInput
 import gropius.model.template.Template
 import kotlin.properties.Delegates
 

@@ -4,7 +4,6 @@ import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import gropius.model.common.AuditedNode
 import gropius.model.issue.Issue
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 import java.time.OffsetDateTime
 
 @DomainNode

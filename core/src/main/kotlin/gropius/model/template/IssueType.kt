@@ -6,7 +6,7 @@ import gropius.model.issue.Issue
 import gropius.model.user.permission.NodePermission
 import io.github.graphglue.model.*
 
-@DomainNode
+@DomainNode(searchQueryName = "searchIssueTypes")
 @GraphQLDescription(
     """Type of an Issue like BUG or FEATURE_REQUEST. Part of an IssueTemplate.
     READ is always granted.

@@ -48,7 +48,7 @@ query getImsUsersByTemplatedFieldValues($imsFilterInput: IMSFilterInput!, $userF
 mutation createNewImsUserInIms($input: CreateIMSUserInput!) {
     createIMSUser(input: $input) {
         __typename
-        imsuser {
+        imsUser {
             __typename
             id
         }

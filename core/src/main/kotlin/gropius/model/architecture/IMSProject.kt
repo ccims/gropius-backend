@@ -4,14 +4,12 @@ import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
 import gropius.authorization.RELATED_TO_ADMIN_NODE_PERMISSION_RULE
 import gropius.model.common.ExtensibleNode
-import gropius.model.issue.Issue
-import gropius.model.user.permission.NodePermission
-import io.github.graphglue.model.*
 import gropius.model.template.BaseTemplate
 import gropius.model.template.IMSProjectTemplate
 import gropius.model.template.MutableTemplatedNode
+import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.TrackablePermission
-import org.springframework.data.annotation.Transient
+import io.github.graphglue.model.*
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 
 @DomainNode

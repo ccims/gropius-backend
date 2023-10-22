@@ -32,7 +32,7 @@ mutation createNewUser($input: CreateGropiusUserInput!) {
 mutation setImsUserLink($gropiusUserId: ID!, $imsUserId: ID!) {
     updateIMSUser(input: { id: $imsUserId, gropiusUser: $gropiusUserId }) {
         __typename
-        imsuser {
+        imsUser {
             __typename
             id
         }

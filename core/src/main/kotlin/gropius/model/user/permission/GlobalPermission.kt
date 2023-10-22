@@ -3,8 +3,8 @@ package gropius.model.user.permission
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import gropius.graphql.TypeGraphQLType
 import gropius.model.architecture.Component
-import gropius.model.architecture.Project
 import gropius.model.architecture.IMS
+import gropius.model.architecture.Project
 import gropius.model.template.Template
 import io.github.graphglue.model.DomainNode
 

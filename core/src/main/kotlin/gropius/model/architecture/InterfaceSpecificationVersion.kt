@@ -8,7 +8,6 @@ import gropius.model.template.MutableTemplatedNode
 import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.TrackablePermission
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 
 @DomainNode

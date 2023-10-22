@@ -3,8 +3,8 @@ package gropius.service.user
 import gropius.dto.input.ifPresent
 import gropius.dto.input.user.CreateIMSUserInput
 import gropius.dto.input.user.UpdateIMSUserInput
-import gropius.model.user.IMSUser
 import gropius.model.architecture.IMS
+import gropius.model.user.IMSUser
 import gropius.repository.architecture.IMSRepository
 import gropius.repository.findById
 import gropius.repository.user.IMSUserRepository

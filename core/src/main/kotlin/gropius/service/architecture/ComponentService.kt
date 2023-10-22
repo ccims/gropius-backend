@@ -13,7 +13,6 @@ import gropius.model.template.ComponentTemplate
 import gropius.model.user.permission.GlobalPermission
 import gropius.model.user.permission.NodePermission
 import gropius.repository.architecture.ComponentRepository
-import gropius.repository.common.NodeRepository
 import gropius.repository.findById
 import gropius.repository.template.ComponentTemplateRepository
 import gropius.service.template.TemplatedNodeService

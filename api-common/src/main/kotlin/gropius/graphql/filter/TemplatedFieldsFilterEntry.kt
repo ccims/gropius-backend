@@ -1,4 +1,4 @@
-package gropius.graphql
+package gropius.graphql.filter
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory

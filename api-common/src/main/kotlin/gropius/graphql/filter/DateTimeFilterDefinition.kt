@@ -1,4 +1,4 @@
-package gropius.graphql
+package gropius.graphql.filter
 
 import graphql.scalars.datetime.DateTimeScalar
 import io.github.graphglue.connection.filter.definition.scalars.ComparableFilterDefinition

@@ -3,7 +3,6 @@ package gropius.dto.input.architecture
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.scalars.ID
 import gropius.dto.input.common.CreateNamedNodeInput
-import java.lang.IllegalArgumentException
 
 @GraphQLDescription("Input for the createIntraComponentDependencySpecification mutation")
 class CreateIntraComponentDependencySpecificationInput(

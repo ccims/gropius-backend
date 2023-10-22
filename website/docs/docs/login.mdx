@@ -96,17 +96,14 @@ The token-endpoint of a specific strategy instance for posting the credentials t
 
 The diagram below shows an example login flow using an instance of the `userpass`-strategy with the id `:id`:
 
-<Mermaid
-    chart={`
+```mermaid
 sequenceDiagram
     participant C as Client-App
     participant LS as Login-Server
     
     C->>+LS: POST /authenticate/oauth/:id/token/login
     LS-->>-C: (access_token, refresh_token) to Gropius
-`}
-    config={{ theme: { light: "neutral", dark: "dark" } }}
-/>
+```
 
 ### Redirect Flow
 
@@ -119,8 +116,7 @@ The relevant endpoints are:
 
 The diagram below shows an example login flow using an instance of the `github`-strategy with the id `:id`:
 
-<Mermaid
-    chart={`
+```mermaid
 sequenceDiagram
     participant C as Client-App
     participant LS as Login-Server
@@ -141,9 +137,7 @@ sequenceDiagram
     C->>C: Load frontend,<br>process returned code 
     C->>+LS: POST /authenticate/oauth/:id/token<br>Request containing client credentials and [CODE]
     LS-->>-C: (access_token, refresh_token) to Gropius<br>Finish gropius redirect OAuth flow
-`}
-    config={{ theme: { light: "neutral", dark: "dark" } }}
-/>
+```
 
 ### Refresh Token Flow
 
@@ -165,8 +159,7 @@ The user can in future also use this authentication to login and/or sync (depend
 
 A self register flow using a `userpass` strategy instance could look like this:
 
-<Mermaid
-    chart={`
+```mermaid
 sequenceDiagram
     participant C as Client-App
     participant LS as Login-Server
@@ -184,9 +177,7 @@ sequenceDiagram
     B-->>-LS: 
     end
     LS-->>-C: Registration successful
-`}
-    config={{ theme: { light: "neutral", dark: "dark" } }}
-/>
+```
 
 ### Self Link
 

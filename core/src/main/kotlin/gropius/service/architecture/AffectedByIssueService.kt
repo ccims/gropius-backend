@@ -1,8 +1,8 @@
 package gropius.service.architecture
 
 import gropius.model.architecture.AffectedByIssue
-import gropius.service.common.NamedNodeService
 import gropius.repository.GropiusRepository
+import gropius.service.common.NamedNodeService
 
 /**
  * Base class for services for subclasses of [AffectedByIssue]

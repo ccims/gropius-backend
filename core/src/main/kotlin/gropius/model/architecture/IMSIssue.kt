@@ -9,7 +9,6 @@ import gropius.model.template.IMSIssueTemplate
 import gropius.model.template.TemplatedNode
 import gropius.model.user.permission.NodePermission
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 
 @DomainNode

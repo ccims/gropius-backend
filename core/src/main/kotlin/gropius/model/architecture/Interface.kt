@@ -2,13 +2,15 @@ package gropius.model.architecture
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
-import gropius.model.template.*
+import gropius.model.template.BaseTemplate
+import gropius.model.template.InterfaceTemplate
+import gropius.model.template.MutableTemplatedNode
+import gropius.model.template.RelationPartnerTemplate
 import gropius.model.user.permission.ComponentPermission
 import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.TrackablePermission
 import io.github.graphglue.model.*
 import io.github.graphglue.model.property.NodeCache
-import org.springframework.data.annotation.Transient
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 
 @DomainNode

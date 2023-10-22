@@ -1,7 +1,7 @@
 package gropius.repository.common
 
-import io.github.graphglue.model.Node
 import gropius.repository.GropiusRepository
+import io.github.graphglue.model.Node
 import org.springframework.stereotype.Repository
 
 /**

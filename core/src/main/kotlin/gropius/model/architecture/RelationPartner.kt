@@ -2,7 +2,6 @@ package gropius.model.architecture
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
-import gropius.model.template.ComponentTemplate
 import gropius.model.template.RelationPartnerTemplate
 import gropius.model.template.TemplatedNode
 import io.github.graphglue.model.Direction
@@ -10,7 +9,6 @@ import io.github.graphglue.model.DomainNode
 import io.github.graphglue.model.FilterProperty
 import io.github.graphglue.model.NodeRelationship
 import io.github.graphglue.model.property.NodeCache
-import org.springframework.data.annotation.Transient
 
 @DomainNode
 @GraphQLDescription("Entity which can be used as start / end of Relations. Can be affected by Issues.")

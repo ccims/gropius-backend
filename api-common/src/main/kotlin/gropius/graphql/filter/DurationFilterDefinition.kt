@@ -1,5 +1,6 @@
-package gropius.graphql
+package gropius.graphql.filter
 
+import gropius.graphql.DurationScalar
 import io.github.graphglue.connection.filter.definition.scalars.ComparableFilterDefinition
 import java.time.Duration
 

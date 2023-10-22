@@ -2,11 +2,9 @@ package gropius.service.template
 
 import gropius.dto.input.orElse
 import gropius.dto.input.template.CreateTemplateInput
-import gropius.dto.input.template.SubTemplateInput
-import gropius.model.template.SubTemplate
 import gropius.model.template.Template
-import gropius.repository.findAllById
 import gropius.repository.GropiusRepository
+import gropius.repository.findAllById
 
 /**
  * Base class for services for subclasses of [Template]

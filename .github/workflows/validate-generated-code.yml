@@ -30,7 +30,7 @@ jobs:
       - name: Validate generated code
         shell: bash {0}
         run: |
-          ./gradlew api-internal:bootRun --args="--server.port=8081" --no-daemon &
+          ./gradlew api-internal:bootRun --args="--server.port=8081 --gropius.core.createIndicesOnStartup=false" --no-daemon &
           gradlew_pid=$!
           schema_endpoint="http://localhost:8081/sdl"
           c=0
@@ -46,7 +46,10 @@ jobs:
           done
           cd login-service
           echo "Validating login-service generated code"
-          npm run generate-model
+          if ! npm run generate-model; then
+            echo "Failed to generate model"
+            exit 1
+          fi
           if [[ `git status --porcelain` ]]; then
             echo "Outdated generated code in login-service"
             exit 1

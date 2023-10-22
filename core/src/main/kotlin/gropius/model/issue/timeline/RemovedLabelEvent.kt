@@ -2,7 +2,10 @@ package gropius.model.issue.timeline
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import gropius.model.issue.Label
-import io.github.graphglue.model.*
+import io.github.graphglue.model.Direction
+import io.github.graphglue.model.DomainNode
+import io.github.graphglue.model.FilterProperty
+import io.github.graphglue.model.NodeRelationship
 import java.time.OffsetDateTime
 
 @DomainNode

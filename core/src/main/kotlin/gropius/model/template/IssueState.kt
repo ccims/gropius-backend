@@ -5,9 +5,8 @@ import gropius.model.common.NamedNode
 import gropius.model.issue.Issue
 import gropius.model.user.permission.NodePermission
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 
-@DomainNode
+@DomainNode(searchQueryName = "searchIssueStates")
 @GraphQLDescription(
     """State of an Issue like BUG or FEATURE_REQUEST. Part of an IssueTemplate.
     READ is always granted.

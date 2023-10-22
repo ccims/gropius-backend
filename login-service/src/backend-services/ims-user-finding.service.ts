@@ -345,7 +345,7 @@ export class ImsUserFindingService {
                 templatedFields: templatedValuesAsArray,
             },
         });
-        return result.createIMSUser.imsuser.id;
+        return result.createIMSUser.imsUser.id;
     }
 
     /**

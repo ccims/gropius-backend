@@ -7,7 +7,10 @@ import gropius.dto.input.architecture.UpdateInterfaceSpecificationInput
 import gropius.dto.input.common.DeleteNodeInput
 import gropius.dto.input.ifPresent
 import gropius.dto.input.isPresent
-import gropius.model.architecture.*
+import gropius.model.architecture.Component
+import gropius.model.architecture.InterfacePart
+import gropius.model.architecture.InterfaceSpecification
+import gropius.model.architecture.InterfaceSpecificationVersion
 import gropius.model.template.InterfaceSpecificationTemplate
 import gropius.model.user.permission.NodePermission
 import gropius.repository.architecture.ComponentRepository

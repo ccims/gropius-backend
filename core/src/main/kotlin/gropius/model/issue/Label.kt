@@ -10,10 +10,9 @@ import gropius.model.issue.timeline.RemovedLabelEvent
 import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.TrackablePermission
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 import java.time.OffsetDateTime
 
-@DomainNode
+@DomainNode(searchQueryName = "searchLabels")
 @GraphQLDescription(
     """Label used to mark Issues with.
     A Label consists of a name, a description and a color.

@@ -104,7 +104,7 @@ export class BackendUserService {
             .filter(
                 (result) =>
                     result.status == "rejected" ||
-                    (result.status == "fulfilled" && !result.value.updateIMSUser.imsuser.id),
+                    (result.status == "fulfilled" && !result.value.updateIMSUser.imsUser.id),
             )
             .map((result) => (result.status == "fulfilled" ? result.value : result.reason));
         this.logger.warn("Failures during linking ims user and Gropius user:", failedLinks);

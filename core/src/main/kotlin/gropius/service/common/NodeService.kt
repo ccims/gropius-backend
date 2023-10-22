@@ -2,13 +2,13 @@ package gropius.service.common
 
 import gropius.authorization.GropiusAuthorizationContext
 import gropius.model.user.GropiusUser
+import gropius.repository.GropiusRepository
 import gropius.repository.user.GropiusUserRepository
 import io.github.graphglue.authorization.AuthorizationChecker
 import io.github.graphglue.authorization.Permission
 import io.github.graphglue.model.Node
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Autowired
-import gropius.repository.GropiusRepository
 
 /**
  * Base class for services for subclasses of [Node]

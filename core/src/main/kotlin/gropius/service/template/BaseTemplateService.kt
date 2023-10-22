@@ -8,10 +8,10 @@ import gropius.model.template.BaseTemplate
 import gropius.model.template.SubTemplate
 import gropius.model.template.Template
 import gropius.model.user.permission.GlobalPermission
-import gropius.service.common.NamedNodeService
-import io.github.graphglue.authorization.Permission
 import gropius.repository.GropiusRepository
+import gropius.service.common.NamedNodeService
 import gropius.util.JsonNodeMapper
+import io.github.graphglue.authorization.Permission
 import org.springframework.beans.factory.annotation.Autowired
 
 /**

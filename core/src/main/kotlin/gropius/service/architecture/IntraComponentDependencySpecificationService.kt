@@ -8,11 +8,7 @@ import gropius.dto.input.architecture.UpdateIntraComponentDependencySpecificatio
 import gropius.dto.input.common.DeleteNodeInput
 import gropius.dto.input.ifPresent
 import gropius.dto.input.orElse
-import gropius.model.architecture.ComponentVersion
-import gropius.model.architecture.Interface
-import gropius.model.architecture.InterfacePart
-import gropius.model.architecture.IntraComponentDependencyParticipant
-import gropius.model.architecture.IntraComponentDependencySpecification
+import gropius.model.architecture.*
 import gropius.model.user.permission.NodePermission
 import gropius.repository.architecture.*
 import gropius.repository.findAllById

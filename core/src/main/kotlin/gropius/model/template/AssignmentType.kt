@@ -5,9 +5,8 @@ import gropius.model.common.NamedNode
 import gropius.model.issue.timeline.Assignment
 import gropius.model.user.permission.NodePermission
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 
-@DomainNode
+@DomainNode(searchQueryName = "searchAssignmentTypes")
 @GraphQLDescription(
     """Type for an Assignment, like REVIEWER. Part of an IssueTemplate.
     READ is always granted.

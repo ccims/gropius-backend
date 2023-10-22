@@ -2,8 +2,8 @@ package gropius.model.issue.timeline
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import gropius.model.user.permission.NodePermission
-import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
+import io.github.graphglue.model.Authorization
+import io.github.graphglue.model.DomainNode
 import java.time.OffsetDateTime
 
 @DomainNode

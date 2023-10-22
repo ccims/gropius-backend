@@ -1,7 +1,6 @@
 package gropius.schema.mutation
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
-import com.expediagroup.graphql.generator.scalars.ID
 import com.expediagroup.graphql.server.operations.Mutation
 import graphql.schema.DataFetchingEnvironment
 import gropius.authorization.gropiusAuthorizationContext

@@ -16,12 +16,15 @@ import graphql.scalars.regex.RegexScalar
 import graphql.schema.*
 import gropius.authorization.checkPermission
 import gropius.authorization.gropiusAuthorizationContext
+import gropius.graphql.filter.DateTimeFilterDefinition
+import gropius.graphql.filter.DurationFilterDefinition
+import gropius.graphql.filter.NodePermissionFilterEntryDefinition
+import gropius.graphql.filter.TemplatedFieldsFilterEntryDefinition
 import gropius.model.common.PERMISSION_FIELD_BEAN
 import gropius.model.template.TEMPLATED_FIELDS_FILTER_BEAN
 import gropius.model.template.TemplatedNode
 import gropius.model.user.GropiusUser
-import gropius.model.user.IMSUser
-import gropius.model.user.USERNAME_FILTER_BEAN
+import gropius.model.user.NODE_PERMISSION_FILTER_BEAN
 import gropius.model.user.permission.ALL_PERMISSION_ENTRY_NAME
 import gropius.util.JsonNodeMapper
 import io.github.graphglue.authorization.Permission
@@ -30,10 +33,8 @@ import io.github.graphglue.connection.filter.definition.scalars.StringFilterDefi
 import io.github.graphglue.definition.ExtensionFieldDefinition
 import io.github.graphglue.definition.NodeDefinition
 import io.github.graphglue.definition.NodeDefinitionCollection
-import io.github.graphglue.model.Node
 import org.neo4j.cypherdsl.core.Cypher
 import org.neo4j.cypherdsl.core.Expression
-import org.neo4j.cypherdsl.core.SymbolicName
 import org.neo4j.driver.Driver
 import org.neo4j.driver.Value
 import org.springframework.beans.factory.BeanFactory
@@ -142,14 +143,6 @@ class GraphQLConfiguration {
         }
 
     /**
-     * Filter for usernames on both [IMSUser] and [GropiusUser]
-     *
-     * @return the generated filter definition
-     */
-    @Bean(USERNAME_FILTER_BEAN)
-    fun usernameFilter() = StringFilterDefinition("username", "username", true)
-
-    /**
      * Filter for templatedFields on [TemplatedNode]
      *
      * @param jsonNodeMapper used to serialize [JsonNode]s
@@ -157,6 +150,15 @@ class GraphQLConfiguration {
      */
     @Bean(TEMPLATED_FIELDS_FILTER_BEAN)
     fun templatedFieldsFilter(jsonNodeMapper: JsonNodeMapper) = TemplatedFieldsFilterEntryDefinition(jsonNodeMapper)
+
+    /**
+     * Filter for [GropiusUser]s with a specific permission on a specific node
+     *
+     * @param nodeDefinitionCollection used to get the node definition
+     * @return the generated filter definition
+     */
+    @Bean(NODE_PERMISSION_FILTER_BEAN)
+    fun nodePermissionFilter(nodeDefinitionCollection: NodeDefinitionCollection) = NodePermissionFilterEntryDefinition(nodeDefinitionCollection)
 
     /**
      * Provides the permission field for all nodes

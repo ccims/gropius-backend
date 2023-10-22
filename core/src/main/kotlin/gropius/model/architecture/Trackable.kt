@@ -8,7 +8,6 @@ import gropius.model.issue.Label
 import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.TrackablePermission
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 import java.net.URI
 
 @DomainNode

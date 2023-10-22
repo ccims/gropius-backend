@@ -1,15 +1,18 @@
 package gropius.model.user
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
-import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
 import gropius.authorization.RELATED_TO_GLOBAL_PERMISSION_RULE
 import gropius.model.user.permission.BasePermission
 import gropius.model.user.permission.GlobalPermission
 import io.github.graphglue.model.*
-import org.springframework.data.annotation.Transient
 import java.net.URI
 
-@DomainNode
+/**
+ * Name of the bean defining the nodePermission filter
+ */
+const val NODE_PERMISSION_FILTER_BEAN = "nodePermissionFilter"
+
+@DomainNode(searchQueryName = "searchGropiusUsers")
 @GraphQLDescription(
     """A user of the Gropius System.
     The username can be used as unique identifier for GropiusUsers.
@@ -23,22 +26,22 @@ import java.net.URI
 @Authorization(GlobalPermission.CAN_CREATE_COMPONENTS, allow = [Rule(RELATED_TO_GLOBAL_PERMISSION_RULE)])
 @Authorization(GlobalPermission.CAN_CREATE_PROJECTS, allow = [Rule(RELATED_TO_GLOBAL_PERMISSION_RULE)])
 @Authorization(GlobalPermission.CAN_CREATE_TEMPLATES, allow = [Rule(RELATED_TO_GLOBAL_PERMISSION_RULE)])
+@AdditionalFilter(NODE_PERMISSION_FILTER_BEAN)
 class GropiusUser(
     displayName: String,
     email: String?,
     avatar: URI?,
-    @property:GraphQLIgnore
-    val username: String,
+    username: String,
     @GraphQLDescription("True if the user is an admin")
     var isAdmin: Boolean
-) : User(displayName, email, avatar) {
+) : User(displayName, email, avatar, username) {
 
     companion object {
         const val PERMISSION = "PERMISSION"
     }
 
     @GraphQLDescription("A unique identifier for the GropiusUser. Note that this might not be unique across all Users.")
-    override fun username(): String = username
+    override fun username(): String = username!!
 
     @NodeRelationship(IMSUser.GROPIUS_USER, Direction.INCOMING)
     @GraphQLDescription("The IMSUsers linked to this GropiusUser.")

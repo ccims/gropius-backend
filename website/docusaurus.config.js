@@ -7,8 +7,6 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula");
 const apiSidebar = require("./sidebars").apiSidebar
 
 async function createConfig() {
-    const mdxMermaid = await import("mdx-mermaid")
-
     return {
         title: "Gropius Backend",
         url: "https://ccims.github.io/",
@@ -20,7 +18,9 @@ async function createConfig() {
         organizationName: "ccims",
         projectName: "gropius-backend-docs",
         trailingSlash: false,
-
+        markdown: {
+            mermaid: true
+        },
         presets: [
             [
                 "@docusaurus/preset-classic",
@@ -28,7 +28,6 @@ async function createConfig() {
                     docs: {
                         sidebarPath: require.resolve("./sidebars.js"),
                         routeBasePath: "/",
-                        remarkPlugins: [mdxMermaid.default],
                     },
                     blog: false,
                     theme: {
@@ -116,6 +115,9 @@ async function createConfig() {
                     baseURL: "graphql/api-public",
                     docOptions: {
                         index: true
+                    },
+                    loaders: {
+                        GraphQLFileLoader: "@graphql-tools/graphql-file-loader"
                     }
                 },
             ],
@@ -128,6 +130,9 @@ async function createConfig() {
                     baseURL: "graphql/api-internal",
                     docOptions: {
                         index: true
+                    },
+                    loaders: {
+                        GraphQLFileLoader: "@graphql-tools/graphql-file-loader"
                     }
                 },
             ],
@@ -168,7 +173,7 @@ async function createConfig() {
                 }
             ]
         ],
-        themes: ["docusaurus-theme-openapi-docs"]
+        themes: ["docusaurus-theme-openapi-docs", "@docusaurus/theme-mermaid"]
     };
 }
 

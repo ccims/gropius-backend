@@ -2,7 +2,6 @@ package gropius.repository
 
 import com.expediagroup.graphql.generator.scalars.ID
 import kotlinx.coroutines.reactor.awaitSingle
-import gropius.repository.GropiusRepository
 import org.springframework.data.repository.reactive.ReactiveCrudRepository
 
 /**

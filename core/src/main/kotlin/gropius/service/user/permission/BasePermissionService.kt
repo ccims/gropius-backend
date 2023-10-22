@@ -6,9 +6,9 @@ import gropius.dto.input.orElse
 import gropius.dto.input.user.permission.CreateBasePermissionInput
 import gropius.dto.input.user.permission.UpdateBasePermissionInput
 import gropius.model.user.permission.BasePermission
+import gropius.repository.GropiusRepository
 import gropius.repository.findAllById
 import gropius.service.common.NodeService
-import gropius.repository.GropiusRepository
 
 /**
  * Base class for services for subclasses of [BasePermission]

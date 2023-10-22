@@ -6,7 +6,6 @@ import io.github.graphglue.authorization.Permission
 import io.github.graphglue.definition.NodeDefinition
 import io.github.graphglue.model.Rule
 import org.neo4j.cypherdsl.core.Condition
-import org.neo4j.cypherdsl.core.Cypher
 import org.neo4j.cypherdsl.core.Node
 import org.neo4j.cypherdsl.core.RelationshipPattern
 
@@ -27,11 +26,10 @@ import org.neo4j.cypherdsl.core.RelationshipPattern
  *
  * @param nodePermissionDefinition the definition of the [NodePermission] related to the node
  *   on which the permission is checked and the [GropiusUser]
- * @param gropiusUserDefinition the definition of the [GropiusUser] related to the [NodePermission]
  */
 class RelatedToNodePermissionRuleGenerator(
-    private val nodePermissionDefinition: NodeDefinition, gropiusUserDefinition: NodeDefinition
-) : NodePermissionRuleGenerator(gropiusUserDefinition) {
+    private val nodePermissionDefinition: NodeDefinition
+) : NodePermissionRuleGenerator() {
 
     override fun generateRule(
         node: Node,

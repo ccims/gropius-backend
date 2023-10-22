@@ -1,7 +1,6 @@
 package gropius.authorization
 
 import gropius.model.architecture.IMSProject
-import gropius.model.user.GropiusUser
 import gropius.model.user.permission.NodePermission
 import io.github.graphglue.authorization.Permission
 import io.github.graphglue.definition.NodeDefinition
@@ -20,11 +19,10 @@ import org.neo4j.cypherdsl.core.RelationshipPattern
  * Used e.g. to check for [NodePermission.READ] on [NodePermission] and [IMSProject]
  *
  * @param nodePermissionDefinition used to generate Cypher DSL node for [NodePermission]
- * @param gropiusUserDefinition used to generate Cypher DSL node for [GropiusUser]
  */
 class RelatedToAdminNodePermissionRuleGenerator(
-    private val nodePermissionDefinition: NodeDefinition, gropiusUserDefinition: NodeDefinition
-) : NodePermissionRuleGenerator(gropiusUserDefinition) {
+    private val nodePermissionDefinition: NodeDefinition
+) : NodePermissionRuleGenerator() {
 
     override fun generateRule(
         node: Node, currentRelationship: RelationshipPattern, rule: Rule, permission: Permission

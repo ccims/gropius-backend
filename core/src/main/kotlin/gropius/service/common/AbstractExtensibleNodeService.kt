@@ -7,9 +7,9 @@ import gropius.dto.input.common.JSONFieldInput
 import gropius.dto.input.common.UpdateExtensibleNodeInput
 import gropius.dto.input.orElse
 import gropius.model.common.ExtensibleNode
-import org.springframework.beans.factory.annotation.Autowired
 import gropius.repository.GropiusRepository
 import gropius.util.JsonNodeMapper
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * Base class for services for subclasses of [ExtensibleNode]
