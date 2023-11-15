@@ -24,8 +24,12 @@ class JiraDataService(
     val neoOperations: ReactiveNeo4jOperations
 ) : SyncDataService {
     suspend fun issueTemplate(): IssueTemplate {
+        val newTemplate = IssueTemplate("noissue", "", mutableMapOf(), false)
+        newTemplate.issueStates() += IssueState("open", "", true)
+        newTemplate.issueStates() += IssueState("closed", "", false)
+        for (t in newTemplate.issueStates()) t.partOf() += newTemplate
         return neoOperations.findAll(IssueTemplate::class.java).awaitFirstOrNull() ?: neoOperations.save(
-            IssueTemplate("noissue", "", mutableMapOf(), false)
+            newTemplate
         ).awaitSingle()
     }
 
@@ -36,11 +40,11 @@ class JiraDataService(
             .awaitSingle()
     }
 
-    suspend fun issueState(): IssueState {
-        val newIssueState = IssueState("open", "", true)
+    suspend fun issueState(isOpen: Boolean): IssueState {
+        val newIssueState = IssueState(if (isOpen) "open" else "closed", "", isOpen)
         newIssueState.partOf() += issueTemplate()
-        return neoOperations.findAll(IssueState::class.java).awaitFirstOrNull() ?: neoOperations.save(newIssueState)
-            .awaitSingle()
+        return neoOperations.findAll(IssueState::class.java).filter { it.isOpen == isOpen }.awaitFirstOrNull()
+            ?: neoOperations.save(newIssueState).awaitSingle()
     }
 
     suspend fun mapUser(imsProject: IMSProject, user: JsonElement): User {

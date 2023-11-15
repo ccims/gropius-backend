@@ -59,13 +59,35 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
             return listOf<TimelineItem>(
                 titleChangedEvent
             ) to convInfo;
+        } else if (data.fieldId == "resolution") {
+            val convInfo =
+                timelineItemConversionInformation ?: JiraTimelineItemConversionInformation(imsProject.rawId!!, id);
+            val timelineId = timelineItemConversionInformation?.gropiusId
+            val titleChangedEvent: StateChangedEvent =
+                (if (timelineId != null) service.neoOperations.findById<StateChangedEvent>(
+                    timelineId
+                ) else null) ?: StateChangedEvent(
+                    OffsetDateTime.parse(
+                        created, IssueData.formatter
+                    ), OffsetDateTime.parse(
+                        created, IssueData.formatter
+                    )
+                )
+            titleChangedEvent.createdBy().value = jiraService.mapUser(imsProject, author)
+            titleChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
+            titleChangedEvent.oldState().value = jiraService.issueState(data.fromString == null)
+            titleChangedEvent.newState().value = jiraService.issueState(data.toString == null)
+            return listOf<TimelineItem>(
+                titleChangedEvent
+            ) to convInfo;
         } else if (data.fieldId == "labels") {
             val convInfo =
                 timelineItemConversionInformation ?: JiraTimelineItemConversionInformation(imsProject.rawId!!, id);
             val timelineId = timelineItemConversionInformation?.gropiusId
-            if ((data.fromString!!.isNotEmpty()) && (data.toString!!.isNotEmpty())) {
-                TODO()
-            } else if (data.toString!!.isNotEmpty()) {
+            val sourceSet = data.fromString!!.split(' ').toSet()
+            val destinationSet = data.toString!!.split(' ').toSet()
+            println("GOING FROM $sourceSet to $destinationSet, meaning added: ${(destinationSet subtract sourceSet)} and removed ${(sourceSet subtract destinationSet)}")
+            for (addedLabel in (destinationSet subtract sourceSet)) {
                 val addedLabelEvent: AddedLabelEvent =
                     (if (timelineId != null) service.neoOperations.findById<AddedLabelEvent>(
                         timelineId
@@ -78,11 +100,12 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
                     )
                 addedLabelEvent.createdBy().value = jiraService.mapUser(imsProject, author)
                 addedLabelEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
-                addedLabelEvent.addedLabel().value = jiraService.mapLabel(imsProject, data.toString!!)
+                addedLabelEvent.addedLabel().value = jiraService.mapLabel(imsProject, addedLabel)
                 return listOf<TimelineItem>(
                     addedLabelEvent
                 ) to convInfo;
-            } else if (data.fromString!!.isNotEmpty()) {
+            }
+            for (removedLabel in (sourceSet subtract destinationSet)) {
                 val removedLabelEvent: RemovedLabelEvent =
                     (if (timelineId != null) service.neoOperations.findById<RemovedLabelEvent>(
                         timelineId
@@ -95,7 +118,7 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
                     )
                 removedLabelEvent.createdBy().value = jiraService.mapUser(imsProject, author)
                 removedLabelEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
-                removedLabelEvent.removedLabel().value = jiraService.mapLabel(imsProject, data.toString!!)
+                removedLabelEvent.removedLabel().value = jiraService.mapLabel(imsProject, removedLabel)
                 return listOf<TimelineItem>(
                     removedLabelEvent
                 ) to convInfo;
@@ -207,7 +230,7 @@ data class IssueData(
         issue.createdBy().value = jiraService.mapUser(imsProject, fields["creator"]!!)
         issue.lastModifiedBy().value = jiraService.mapUser(imsProject, fields["creator"]!!)
         issue.body().value.issue().value = issue
-        issue.state().value = jiraService.issueState()
+        issue.state().value = jiraService.issueState(true)
         issue.template().value = jiraService.issueTemplate()
         issue.trackables() += jiraService.neoOperations.findAll(Project::class.java).awaitFirst()
         issue.type().value = jiraService.issueType()

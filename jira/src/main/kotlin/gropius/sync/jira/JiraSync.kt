@@ -7,6 +7,7 @@ import gropius.model.issue.Issue
 import gropius.model.issue.Label
 import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
+import gropius.model.template.IssueState
 import gropius.sync.*
 import gropius.sync.jira.config.IMSConfig
 import gropius.sync.jira.config.IMSConfigManager
@@ -72,6 +73,21 @@ final class JiraSync(
     override suspend fun isOutgoingCommentsEnabled(imsProject: IMSProject): Boolean {
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         return imsProjectConfig.enableOutgoingComments
+    }
+
+    override suspend fun isOutgoingTitleChangedEnabled(imsProject: IMSProject): Boolean {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        return imsProjectConfig.enableOutgoingTitleChanges
+    }
+
+    override suspend fun isOutgoingAssignmentsEnabled(imsProject: IMSProject): Boolean {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        return imsProjectConfig.enableOutgoingAssignments
+    }
+
+    override suspend fun isOutgoingStatesEnabled(imsProject: IMSProject): Boolean {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        return imsProjectConfig.enableOutgoingState
     }
 
     @OptIn(ExperimentalEncodingApi::class)
@@ -158,6 +174,67 @@ final class JiraSync(
             )
         }.body<JsonObject>()["id"]!!.jsonPrimitive.content
         return JiraTimelineItemConversionInformation(imsProject.rawId!!, iid)
+    }
+
+    override suspend fun syncTitleChange(
+        imsProject: IMSProject, issueId: String, newTitle: String
+    ): TimelineItemConversionInformation? {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+        client.put(imsConfig.rootUrl.toString()) {
+            jiraHttpData()
+            url {
+                appendPathSegments("issue")
+                appendPathSegments(issueId)
+            }
+            setBody(
+                JsonObject(
+                    mapOf(
+                        "fields" to JsonObject(
+                            mapOf(
+                                "summary" to JsonPrimitive(newTitle)
+                            )
+                        )
+                    )
+                )
+            )
+        }
+        return JiraTimelineItemConversionInformation(
+            imsProject.rawId!!, "TODO: Get changelog id to prevent duplicate TimelineItem"
+        )
+    }
+
+    override suspend fun syncStateChange(
+        imsProject: IMSProject, issueId: String, newState: IssueState
+    ): TimelineItemConversionInformation? {
+        if (true) {
+            //TODO: Jira State Transitions
+            return null;
+        }
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+        client.put(imsConfig.rootUrl.toString()) {
+            jiraHttpData()
+            url {
+                appendPathSegments("issue")
+                appendPathSegments(issueId)
+            }
+            setBody(
+                JsonObject(
+                    mapOf(
+                        "fields" to JsonObject(
+                            mapOf(
+                                "resolution" to if (newState.isOpen) JsonNull else JsonPrimitive("Done"),
+                                "status" to if (newState.isOpen) JsonPrimitive("To Do") else JsonPrimitive("Done")
+                            )
+                        )
+                    )
+                )
+            )
+        }
+        return JiraTimelineItemConversionInformation(
+            imsProject.rawId!!, "TODO: Get changelog id to prevent duplicate TimelineItem"
+        )
     }
 
     override suspend fun syncAddedLabel(

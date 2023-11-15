@@ -39,7 +39,7 @@ class CommentWalker(
             if (isRateLimited) {
                 return GithubGithubResourceWalkerBudgetUsageType()//TODO: rate limit max err
             }
-            if (response.errors?.isEmpty() != false) {
+            if (response.errors.isNullOrEmpty()) {
                 val ic = response.data?.node?.asIssueComment()!!
                 issuePileService.markCommentDone(issue, comment, ic.updatedAt, ic.body)
             }

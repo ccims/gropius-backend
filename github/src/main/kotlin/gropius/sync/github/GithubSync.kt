@@ -6,6 +6,7 @@ import gropius.model.issue.Issue
 import gropius.model.issue.Label
 import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
+import gropius.model.template.IssueState
 import gropius.sync.*
 import gropius.sync.github.config.IMSConfigManager
 import gropius.sync.github.config.IMSProjectConfig
@@ -66,6 +67,21 @@ final class GithubSync(
     override suspend fun isOutgoingCommentsEnabled(imsProject: IMSProject): Boolean {
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         return imsProjectConfig.enableOutgoingComments
+    }
+
+    override suspend fun isOutgoingTitleChangedEnabled(imsProject: IMSProject): Boolean {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        return imsProjectConfig.enableOutgoingTitleChanges
+    }
+
+    override suspend fun isOutgoingAssignmentsEnabled(imsProject: IMSProject): Boolean {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        return imsProjectConfig.enableOutgoingAssignments
+    }
+
+    override suspend fun isOutgoingStatesEnabled(imsProject: IMSProject): Boolean {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        return imsProjectConfig.enableOutgoingState
     }
 
     override suspend fun balancedFetchData(
@@ -150,6 +166,39 @@ final class GithubSync(
         }
         println(response.data)
         println(response.errors)
+        //TODO("ERROR HANDLING")
+        return null
+    }
+
+    override suspend fun syncTitleChange(
+        imsProject: IMSProject, issueId: String, newTitle: String
+    ): TimelineItemConversionInformation? {
+        val response = apolloClient.mutation(MutateChangeTitleMutation(issueId, newTitle)).execute()
+        val item = response.data?.updateIssue?.issue?.timelineItems?.nodes?.lastOrNull()
+        if (item != null) {
+            return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
+        }
+        println(response.data)
+        println(response.errors)
+        //TODO("ERROR HANDLING")
+        return null
+    }
+
+    override suspend fun syncStateChange(
+        imsProject: IMSProject, issueId: String, newState: IssueState
+    ): TimelineItemConversionInformation? {
+        val item = if (newState.isOpen) {
+            apolloClient.mutation(MutateReopenIssueMutation(issueId))
+                .execute().data?.reopenIssue?.issue?.timelineItems?.nodes?.lastOrNull()
+        } else {
+            apolloClient.mutation(MutateCloseIssueMutation(issueId))
+                .execute().data?.closeIssue?.issue?.timelineItems?.nodes?.lastOrNull()
+        }
+        if (item != null) {
+            return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
+        }
+        //println(response.data)
+        //println(response.errors)
         //TODO("ERROR HANDLING")
         return null
     }

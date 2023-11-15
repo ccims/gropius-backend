@@ -36,11 +36,11 @@ class GithubDataService(
             .awaitSingle()
     }
 
-    suspend fun issueState(): IssueState {
-        val newIssueState = IssueState("open", "", true)
+    suspend fun issueState(isOpen: Boolean): IssueState {
+        val newIssueState = IssueState(if (isOpen) "open" else "closed", "", isOpen)
         newIssueState.partOf() += issueTemplate()
-        return neoOperations.findAll(IssueState::class.java).awaitFirstOrNull() ?: neoOperations.save(newIssueState)
-            .awaitSingle()
+        return neoOperations.findAll(IssueState::class.java).filter { it.isOpen == isOpen }.awaitFirstOrNull()
+            ?: neoOperations.save(newIssueState).awaitSingle()
     }
 
     suspend fun mapLabel(imsProject: IMSProject, labelData: LabelData): Label? {

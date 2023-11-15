@@ -92,7 +92,7 @@ data class IssuePileData(
         issue.createdBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
         issue.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
         issue.body().value.issue().value = issue
-        issue.state().value = githubService.issueState()
+        issue.state().value = githubService.issueState(true)
         issue.template().value = githubService.issueTemplate()
         issue.trackables() += githubService.neoOperations.findAll(Project::class.java).awaitFirst()
         issue.type().value = githubService.issueType()
@@ -398,9 +398,9 @@ class AssignedTimelineItem(
     }
 }
 
-class ReopenedEventTimelineItem(githubId: String, createdAt: OffsetDateTime) :
+class ReopenedEventTimelineItem(githubId: String, createdAt: OffsetDateTime, val createdBy: String?) :
     OwnedGithubTimelineItem(githubId, createdAt) {
-    constructor(data: ReopenedEventTimelineItemData) : this(data.id, data.createdAt) {}
+    constructor(data: ReopenedEventTimelineItemData) : this(data.id, data.createdAt, data.actor?.login) {}
 
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
@@ -409,13 +409,28 @@ class ReopenedEventTimelineItem(githubId: String, createdAt: OffsetDateTime) :
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
+        val githubService = service as GithubDataService
+        if ((createdBy != null)) {
+            val gropiusId = convInfo.gropiusId
+            val event = if (gropiusId != null) githubService.neoOperations.findById<StateChangedEvent>(
+                gropiusId
+            ) else StateChangedEvent(createdAt, createdAt)
+            if (event == null) {
+                return listOf<TimelineItem>() to convInfo;
+            }
+            event.createdBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.newState().value = githubService.issueState(true)
+            event.oldState().value = githubService.issueState(false)
+            return listOf<TimelineItem>(event) to convInfo;
+        }
         return listOf<TimelineItem>() to convInfo;
     }
 }
 
-class ClosedEventTimelineItem(githubId: String, createdAt: OffsetDateTime) :
+class ClosedEventTimelineItem(githubId: String, createdAt: OffsetDateTime, val createdBy: String?) :
     OwnedGithubTimelineItem(githubId, createdAt) {
-    constructor(data: ClosedEventTimelineItemData) : this(data.id, data.createdAt) {}
+    constructor(data: ClosedEventTimelineItemData) : this(data.id, data.createdAt, data.actor?.login) {}
 
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
@@ -424,6 +439,21 @@ class ClosedEventTimelineItem(githubId: String, createdAt: OffsetDateTime) :
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
+        val githubService = service as GithubDataService
+        if ((createdBy != null)) {
+            val gropiusId = convInfo.gropiusId
+            val event = if (gropiusId != null) githubService.neoOperations.findById<StateChangedEvent>(
+                gropiusId
+            ) else StateChangedEvent(createdAt, createdAt)
+            if (event == null) {
+                return listOf<TimelineItem>() to convInfo;
+            }
+            event.createdBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
+            event.newState().value = githubService.issueState(false)
+            event.oldState().value = githubService.issueState(true)
+            return listOf<TimelineItem>(event) to convInfo;
+        }
         return listOf<TimelineItem>() to convInfo;
     }
 }

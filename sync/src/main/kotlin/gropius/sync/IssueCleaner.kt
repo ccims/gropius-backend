@@ -40,6 +40,25 @@ class IssueCleaner(
     }
 
     /**
+     * Clean all labels on this issue into a consistent state
+     * @param issue issue to work on
+     */
+    private suspend fun cleanAssignments(issue: Issue) {
+        issue.labels().clear()
+        for (item in issue.timelineItems().sortedBy { it.createdAt }) {
+            if (item is Assignment) {
+                issue.assignments() += item
+            }
+            if (item is RemovedAssignmentEvent) {
+                TODO()
+            }
+            if (item is AssignmentTypeChangedEvent) {
+                issue.assignments() -= item.assignment().value
+            }
+        }
+    }
+
+    /**
      * Clean the title on this issue into a consistent state
      * @param issue issue to work on
      */
@@ -81,6 +100,7 @@ class IssueCleaner(
     suspend fun cleanIssue(id: String) {
         var issue = neoOperations.findById<Issue>(id)!!
         cleanLabels(issue)
+        cleanAssignments(issue)
         cleanState(issue)
         cleanTitle(issue)
         cleanComments(issue)

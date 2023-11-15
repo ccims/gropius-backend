@@ -18,7 +18,10 @@ data class IMSProjectConfig(
     val repo: String,
     val enableOutgoing: Boolean,
     val enableOutgoingLabels: Boolean,
-    val enableOutgoingComments: Boolean
+    val enableOutgoingComments: Boolean,
+    val enableOutgoingAssignments: Boolean,
+    val enableOutgoingTitleChanges: Boolean,
+    val enableOutgoingState: Boolean
 ) {
     /**
      * @param imsProject the Gropius IMSProject to use as input
@@ -32,7 +35,10 @@ data class IMSProjectConfig(
         repo = helper.parseString(imsProject.templatedFields["repo"])!!,
         enableOutgoing = helper.parseBoolean(imsProject.templatedFields["enable-outgoing"]),
         enableOutgoingLabels = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-labels"]),
-        enableOutgoingComments = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-comments"])
+        enableOutgoingComments = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-comments"]),
+        enableOutgoingAssignments = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-assignments"]),
+        enableOutgoingTitleChanges = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-title-changes"]),
+        enableOutgoingState = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-state"])
     )
 
     companion object {
@@ -54,6 +60,15 @@ data class IMSProjectConfig(
             "\$schema" to IMSConfigManager.SCHEMA
             "type" to arr["null", "boolean"]
         }.toString(), "enable-outgoing-comments" to obj {
+            "\$schema" to IMSConfigManager.SCHEMA
+            "type" to arr["null", "boolean"]
+        }.toString(), "enable-outgoing-assignments" to obj {
+            "\$schema" to IMSConfigManager.SCHEMA
+            "type" to arr["null", "boolean"]
+        }.toString(), "enable-outgoing-title-changes" to obj {
+            "\$schema" to IMSConfigManager.SCHEMA
+            "type" to arr["null", "boolean"]
+        }.toString(), "enable-outgoing-state" to obj {
             "\$schema" to IMSConfigManager.SCHEMA
             "type" to arr["null", "boolean"]
         }.toString()) + IMSConfigManager.COMMON_TEMPLATE_FIELDS

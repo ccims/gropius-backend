@@ -4,11 +4,9 @@ import gropius.model.architecture.IMS
 import gropius.model.architecture.IMSProject
 import gropius.model.issue.Issue
 import gropius.model.issue.Label
-import gropius.model.issue.timeline.AddedLabelEvent
-import gropius.model.issue.timeline.IssueComment
-import gropius.model.issue.timeline.RemovedLabelEvent
-import gropius.model.issue.timeline.TimelineItem
+import gropius.model.issue.timeline.*
 import gropius.model.template.IMSTemplate
+import gropius.model.template.IssueState
 import gropius.repository.issue.IssueRepository
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
@@ -101,6 +99,14 @@ abstract class AbstractSync(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment
     ): TimelineItemConversionInformation?
 
+    abstract suspend fun syncTitleChange(
+        imsProject: IMSProject, issueId: String, newTitle: String
+    ): TimelineItemConversionInformation?
+
+    abstract suspend fun syncStateChange(
+        imsProject: IMSProject, issueId: String, newState: IssueState
+    ): TimelineItemConversionInformation?
+
     abstract suspend fun syncAddedLabel(
         imsProject: IMSProject, issueId: String, label: Label
     ): TimelineItemConversionInformation?
@@ -116,17 +122,23 @@ abstract class AbstractSync(
 
     abstract suspend fun isOutgoingCommentsEnabled(imsProject: IMSProject): Boolean
 
+    abstract suspend fun isOutgoingTitleChangedEnabled(imsProject: IMSProject): Boolean
+
+    abstract suspend fun isOutgoingAssignmentsEnabled(imsProject: IMSProject): Boolean
+
+    abstract suspend fun isOutgoingStatesEnabled(imsProject: IMSProject): Boolean
+
     /**
      * Find the last consecutive list of blocks of the same searchLambda
      * @param relevantTimeline List of timeline items filtered for issue and sorted by date
      * @param searchLambda Lambda returning a value that is equal if the items should be considered equal
      * @return Consecutive same type timeline items
      */
-    private suspend fun <T> findFinalBlock(
-        relevantTimeline: List<TimelineItem>, searchLambda: suspend (TimelineItem) -> T
-    ): List<TimelineItem> {
+    private suspend inline fun <T, reified BT : TimelineItem> findFinalBlock(
+        relevantTimeline: List<BT>, searchLambda: suspend (BT) -> T
+    ): List<BT> {
         val lastItem = relevantTimeline.last()
-        val finalItems = mutableListOf<TimelineItem>()
+        val finalItems = mutableListOf<BT>()
         for (item in relevantTimeline.reversed()) {
             if (searchLambda(item) != searchLambda(lastItem)) {
                 break
@@ -160,7 +172,8 @@ abstract class AbstractSync(
         relevantTimeline: List<TimelineItem>,
         restoresDefaultState: Boolean
     ): Boolean {
-        return shouldSyncType(imsProject,
+        return shouldSyncType(
+            imsProject,
             { it is AddingItem },
             { it is RemovingItem },
             finalBlock,
@@ -231,6 +244,15 @@ abstract class AbstractSync(
                 }
                 if (isOutgoingLabelsEnabled(imsProject)) {
                     syncOutgoingLabels(timeline, imsProject, issueInfo)
+                }
+                if (isOutgoingTitleChangedEnabled(imsProject)) {
+                    syncOutgoingTitleChanges(timeline, imsProject, issueInfo)
+                }
+                if (isOutgoingAssignmentsEnabled(imsProject)) {
+                    syncOutgoingAssignments(timeline, imsProject, issueInfo)
+                }
+                if (isOutgoingStatesEnabled(imsProject)) {
+                    syncOutgoingStateChanges(timeline, imsProject, issueInfo)
                 }
             }
         }
@@ -306,6 +328,43 @@ abstract class AbstractSync(
                 collectedSyncInfo.timelineItemConversionInformationService.save(conversionInformation).awaitSingle()
             }
         }
+    }
+
+    private suspend fun syncOutgoingTitleChanges(
+        timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
+    ) {
+        val relevantTimeline = timeline.mapNotNull { it as? TitleChangedEvent }
+        if (relevantTimeline.isEmpty()) return
+        val finalBlock = findFinalBlock(relevantTimeline) { it.newTitle }
+        if (finalBlock.none {
+                collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
+                    imsProject.rawId!!, it.rawId!!
+                ) != null
+            }) {
+            syncTitleChange(imsProject, issueInfo.githubId, finalBlock.first().newTitle)
+        }
+    }
+
+    private suspend fun syncOutgoingStateChanges(
+        timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
+    ) {
+        val relevantTimeline = timeline.mapNotNull { it as? StateChangedEvent }
+        if (relevantTimeline.isEmpty()) return
+        val finalBlock = findFinalBlock(relevantTimeline) { it.newState().value }
+        println("finalBlock: $finalBlock")
+        if (finalBlock.none {
+                collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
+                    imsProject.rawId!!, it.rawId!!
+                ) != null
+            }) {
+            println("syncOutgoingStateChanges: $finalBlock")
+            syncStateChange(imsProject, issueInfo.githubId, finalBlock.first().newState().value)
+        }
+    }
+
+    private suspend fun syncOutgoingAssignments(
+        timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
+    ) {
     }
 
     suspend fun sync() {
