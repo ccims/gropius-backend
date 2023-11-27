@@ -8,6 +8,7 @@ import gropius.model.issue.timeline.*
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
 import gropius.repository.issue.IssueRepository
+import io.github.graphglue.model.Node
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
@@ -39,6 +40,8 @@ abstract class AbstractSync(
 
     abstract suspend fun findTemplates(): Set<IMSTemplate>
 
+    val issueDereplicator: IssueDereplicator = NullDereplicator()
+
     suspend fun doIncoming(imsProject: IMSProject) {
         try {
             findUnsyncedIssues(imsProject).forEach {
@@ -48,11 +51,8 @@ abstract class AbstractSync(
                 var issue =
                     if (issueInfo.gropiusId != null) collectedSyncInfo.issueRepository.findById(issueInfo.gropiusId!!)
                         .awaitSingle() else it.createIssue(imsProject, syncDataService())
-                if (issue.rawId == null) issue = collectedSyncInfo.neoOperations.save(issue).awaitSingle()
-                if (issueInfo.gropiusId == null) {
-                    issueInfo.gropiusId = issue.rawId!!
-                }
-                collectedSyncInfo.issueConversionInformationService.save(issueInfo).awaitSingle()
+                val nodesToSave = mutableListOf<Node>(issue)
+                val savedNodeHandlers = mutableListOf<suspend (node: Node) -> Unit>()
                 //try {
                 val timelineItems = it.incomingTimelineItems(syncDataService())
                 for (timelineItem in timelineItems) {
@@ -60,21 +60,50 @@ abstract class AbstractSync(
                         collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGithubId(
                             imsProject.rawId!!, timelineItem.identification()
                         )
-                    val (timelineItem, newInfo) = timelineItem.gropiusTimelineItem(
+                    var (timelineItem, newInfo) = timelineItem.gropiusTimelineItem(
                         imsProject, syncDataService(), oldInfo
                     )
+                    if (issue.rawId != null) {
+                        val dereplicationResult = issueDereplicator.validateTimelineItem(issue, timelineItem)
+                        timelineItem = dereplicationResult.resultingTimelineItems
+                    }
                     if (timelineItem.isNotEmpty()) {//TODO: Handle multiple
                         timelineItem.forEach { it.issue().value = issue }
-                        newInfo.gropiusId =
-                            collectedSyncInfo.neoOperations.save(timelineItem.single()).awaitSingle()!!.rawId
+                        issue.timelineItems() += timelineItem
                         issue.issueComments() += timelineItem.mapNotNull { it as? IssueComment }
-                        issue = collectedSyncInfo.neoOperations.save(issue).awaitSingle()
+                        nodesToSave.add(timelineItem.single())
+                        savedNodeHandlers.add {
+                            newInfo.gropiusId = (it as TimelineItem).rawId
+                            if (oldInfo?.id != null) {
+                                newInfo.id = oldInfo.id;
+                            }
+                            collectedSyncInfo.timelineItemConversionInformationService.save(newInfo).awaitSingle()
+                        }
                     }
-                    if (oldInfo?.id != null) {
-                        newInfo.id = oldInfo.id;
-                    }
-                    collectedSyncInfo.timelineItemConversionInformationService.save(newInfo).awaitSingle()
                 }
+                var dereplicationResult: IssueDereplicatorIssueResult? = null
+                if (issue.rawId == null) {
+                    dereplicationResult = issueDereplicator.validateIssue(imsProject, issue)
+                    issue = dereplicationResult.resultingIssue
+                    for (fakeSyncedItem in dereplicationResult.fakeSyncedItems) {
+                        nodesToSave.add(fakeSyncedItem)
+                        savedNodeHandlers.add {
+                            val gropiusId = (it as TimelineItem).rawId
+                            collectedSyncInfo.timelineItemConversionInformationService.save(TODO()).awaitSingle()
+                        }
+                    }
+                }
+                val savedList = collectedSyncInfo.neoOperations.saveAll(listOf<Node>(issue) + nodesToSave).collectList()
+                    .awaitSingle()
+                val savedIssue = savedList.removeFirst()
+                if (issue.rawId == null) issue = savedIssue as Issue
+                savedList.zip(savedNodeHandlers).forEach { (savedNode, savedNodeHandler) ->
+                    savedNodeHandler(savedNode)
+                }
+                if (issueInfo.gropiusId == null) {
+                    issueInfo.gropiusId = issue.rawId!!
+                }
+                collectedSyncInfo.issueConversionInformationService.save(issueInfo).awaitSingle()
                 collectedSyncInfo.issueCleaner.cleanIssue(issue.rawId!!)
                 it.markDone(syncDataService())
                 //} catch (e: SyncNotificator.NotificatedError) {
