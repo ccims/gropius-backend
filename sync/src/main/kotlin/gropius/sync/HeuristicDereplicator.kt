@@ -10,7 +10,11 @@ class HeuristicDereplicator : IssueDereplicator {
         return (newIssue.title == existingIssue.title) && (newIssue.createdBy == existingIssue.createdBy) && (newIssue.body().value.body == existingIssue.body().value.body);
     }
 
-    override suspend fun validateIssue(imsProject: IMSProject, issue: Issue): IssueDereplicatorIssueResult {
+    override suspend fun validateIssue(
+        imsProject: IMSProject,
+        issue: Issue,
+        request: IssueDereplicatorRequest
+    ): IssueDereplicatorIssueResult {
         for (otherIssue in imsProject.trackable().value.issues()) {
             if (matchIssue(issue, otherIssue)) {
                 return SimpleDereplicatorIssueResult(otherIssue, listOf())
@@ -24,7 +28,7 @@ class HeuristicDereplicator : IssueDereplicator {
     }
 
     override suspend fun validateTimelineItem(
-        issue: Issue, timelineItems: List<TimelineItem>
+        issue: Issue, timelineItems: List<TimelineItem>, request: IssueDereplicatorRequest
     ): IssueDereplicatorTimelineItemResult {
         val comment = (timelineItems.first() as? IssueComment)
         if (comment != null) {

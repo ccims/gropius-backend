@@ -7,17 +7,25 @@ import gropius.model.issue.Label
 import gropius.model.issue.timeline.*
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
+import gropius.model.user.GropiusUser
+import gropius.model.user.User
 import gropius.repository.issue.IssueRepository
 import io.github.graphglue.model.Node
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.neo4j.core.ReactiveNeo4jOperations
+import org.springframework.data.neo4j.core.findAll
 import org.springframework.stereotype.Component
 
 interface DataFetcher {
     suspend fun fetchData(imsProjects: List<IMSProject>);
 }
+
+class DummyTimelineItemConversionInformation(
+    imsProject: String, githubId: String
+) : TimelineItemConversionInformation(imsProject, githubId, null) {}
 
 @Component
 class CollectedSyncInfo(
@@ -30,6 +38,8 @@ class CollectedSyncInfo(
     val issueCleaner: IssueCleaner
 ) {}
 
+class SimpleIssueDereplicatorRequest(override val dummyUser: User) : IssueDereplicatorRequest {}
+
 abstract class AbstractSync(
     val collectedSyncInfo: CollectedSyncInfo
 ) : DataFetcher {
@@ -40,9 +50,17 @@ abstract class AbstractSync(
 
     abstract suspend fun findTemplates(): Set<IMSTemplate>
 
-    val issueDereplicator: IssueDereplicator = NullDereplicator()
+    val issueDereplicator: IssueDereplicator = InvasiveDereplicator()
 
     suspend fun doIncoming(imsProject: IMSProject) {
+        val dereplicatorRequest = SimpleIssueDereplicatorRequest(
+            collectedSyncInfo.neoOperations.findAll<GropiusUser>().filter { it.username == "gropius" }.firstOrNull()
+                ?: collectedSyncInfo.neoOperations.save(
+                    GropiusUser(
+                        "Gropius", null, null, "gropius", false
+                    )
+                ).awaitSingle()
+        )
         try {
             findUnsyncedIssues(imsProject).forEach {
                 val issueInfo = collectedSyncInfo.issueConversionInformationService.findByImsProjectAndGithubId(
@@ -64,7 +82,8 @@ abstract class AbstractSync(
                         imsProject, syncDataService(), oldInfo
                     )
                     if (issue.rawId != null) {
-                        val dereplicationResult = issueDereplicator.validateTimelineItem(issue, timelineItem)
+                        val dereplicationResult =
+                            issueDereplicator.validateTimelineItem(issue, timelineItem, dereplicatorRequest)
                         timelineItem = dereplicationResult.resultingTimelineItems
                     }
                     if (timelineItem.isNotEmpty()) {//TODO: Handle multiple
@@ -83,18 +102,19 @@ abstract class AbstractSync(
                 }
                 var dereplicationResult: IssueDereplicatorIssueResult? = null
                 if (issue.rawId == null) {
-                    dereplicationResult = issueDereplicator.validateIssue(imsProject, issue)
+                    dereplicationResult = issueDereplicator.validateIssue(imsProject, issue, dereplicatorRequest)
                     issue = dereplicationResult.resultingIssue
                     for (fakeSyncedItem in dereplicationResult.fakeSyncedItems) {
                         nodesToSave.add(fakeSyncedItem)
                         savedNodeHandlers.add {
-                            val gropiusId = (it as TimelineItem).rawId
-                            collectedSyncInfo.timelineItemConversionInformationService.save(TODO()).awaitSingle()
+                            val tici =
+                                DummyTimelineItemConversionInformation(imsProject.rawId!!, (it as TimelineItem).rawId!!)
+                            tici.gropiusId = (it as TimelineItem).rawId
+                            collectedSyncInfo.timelineItemConversionInformationService.save(tici).awaitSingle()
                         }
                     }
                 }
-                val savedList = collectedSyncInfo.neoOperations.saveAll(listOf<Node>(issue) + nodesToSave).collectList()
-                    .awaitSingle()
+                val savedList = collectedSyncInfo.neoOperations.saveAll(nodesToSave).collectList().awaitSingle()
                 val savedIssue = savedList.removeFirst()
                 if (issue.rawId == null) issue = savedIssue as Issue
                 savedList.zip(savedNodeHandlers).forEach { (savedNode, savedNodeHandler) ->

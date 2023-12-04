@@ -158,7 +158,11 @@ final class GithubSync(
         imsProject: IMSProject, issueId: String, label: Label
     ): TimelineItemConversionInformation? {
         val labelInfo =
-            githubDataService.labelInfoRepository.findByImsProjectAndNeo4jId(imsProject.rawId!!, label.rawId!!)!!
+            githubDataService.labelInfoRepository.findByImsProjectAndNeo4jId(imsProject.rawId!!, label.rawId!!)
+        if (labelInfo == null) {
+            //TODO("Create label on remote")
+            return null
+        }
         val response = apolloClient.mutation(MutateAddLabelMutation(issueId, labelInfo.githubId)).execute()
         val item = response.data?.addLabelsToLabelable?.labelable?.asIssue()?.timelineItems?.nodes?.lastOrNull()
         if (item != null) {

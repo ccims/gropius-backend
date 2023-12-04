@@ -19,7 +19,11 @@ class InvasiveDereplicator : IssueDereplicator {
         return titleRegex.find(title)?.groupValues?.get(1)
     }
 
-    override suspend fun validateIssue(imsProject: IMSProject, issue: Issue): IssueDereplicatorIssueResult {
+    override suspend fun validateIssue(
+        imsProject: IMSProject,
+        issue: Issue,
+        request: IssueDereplicatorRequest
+    ): IssueDereplicatorIssueResult {
         for (otherIssue in imsProject.trackable().value.issues()) {
             val otherId = getId(otherIssue)
             if ((otherId != null) && (otherId == getId(issue))) {
@@ -36,6 +40,8 @@ class InvasiveDereplicator : IssueDereplicator {
             val titleChange = TitleChangedEvent(
                 OffsetDateTime.now(), OffsetDateTime.now(), title, title + " [${UUID.randomUUID().toString()}]"
             )
+            titleChange.createdBy().value = request.dummyUser
+            titleChange.lastModifiedBy().value = request.dummyUser
             issue.timelineItems() += titleChange
             return SimpleDereplicatorIssueResult(issue, listOf(titleChange))
         }
@@ -43,7 +49,7 @@ class InvasiveDereplicator : IssueDereplicator {
     }
 
     override suspend fun validateTimelineItem(
-        issue: Issue, timelineItems: List<TimelineItem>
+        issue: Issue, timelineItems: List<TimelineItem>, request: IssueDereplicatorRequest
     ): IssueDereplicatorTimelineItemResult {
         return SimpleDereplicatorTimelineItemResult(timelineItems)
     }

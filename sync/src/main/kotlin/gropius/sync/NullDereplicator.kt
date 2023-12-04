@@ -22,12 +22,14 @@ class SimpleDereplicatorTimelineItemResult(val timelineItems: List<TimelineItem>
 }
 
 class NullDereplicator : IssueDereplicator {
-    override suspend fun validateIssue(imsProject: IMSProject, issue: Issue): IssueDereplicatorIssueResult {
+    override suspend fun validateIssue(
+        imsProject: IMSProject, issue: Issue, request: IssueDereplicatorRequest
+    ): IssueDereplicatorIssueResult {
         return SimpleDereplicatorIssueResult(issue, listOf())
     }
 
     override suspend fun validateTimelineItem(
-        issue: Issue, timelineItems: List<TimelineItem>
+        issue: Issue, timelineItems: List<TimelineItem>, request: IssueDereplicatorRequest
     ): IssueDereplicatorTimelineItemResult {
         return SimpleDereplicatorTimelineItemResult(timelineItems)
     }
