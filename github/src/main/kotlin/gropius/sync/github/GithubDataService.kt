@@ -5,8 +5,8 @@ import gropius.model.issue.Label
 import gropius.model.template.*
 import gropius.sync.SyncDataService
 import gropius.sync.github.generated.fragment.LabelData
-import gropius.sync.github.model.LabelInfo
-import gropius.sync.github.repository.LabelInfoRepository
+import gropius.sync.model.LabelInfo
+import gropius.sync.repository.LabelInfoRepository
 import gropius.sync.user.UserMapper
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactor.awaitSingle

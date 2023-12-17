@@ -1,28 +1,27 @@
-package gropius.sync.github.repository
+package gropius.sync.repository
 
-import gropius.sync.github.model.TimelineEventInfo
+import gropius.sync.model.LabelInfo
 import org.bson.types.ObjectId
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository
 import org.springframework.stereotype.Repository
-import java.net.URI
 
 /**
- * Repository for mapping of a single timeline event from neo4j to GitHub
+ * Repository for mapping of a single label from neo4j to GitHub
  */
 @Repository
-interface TimelineEventInfoRepository : ReactiveMongoRepository<TimelineEventInfo, ObjectId> {
+interface LabelInfoRepository : ReactiveMongoRepository<LabelInfo, ObjectId> {
     /**
      * Lookup to find the mapping given a neo4j id
      * @param neo4jId Database query param
      * @return result of database operation
      */
-    suspend fun findByNeo4jId(neo4jId: String): TimelineEventInfo?
+    suspend fun findByImsProjectAndNeo4jId(imsProject: String, neo4jId: String): LabelInfo?
 
     /**
      * Lookup to find the mapping given a GitHub id
      * @param githubId Database query param
-     * @param url Database query param
+     * @param url API URL syncing currently
      * @return result of database operation
      */
-    suspend fun findByUrlAndGithubId(url: URI, githubId: String): TimelineEventInfo?
+    suspend fun findByImsProjectAndGithubId(imsProject: String, githubId: String): LabelInfo?
 }

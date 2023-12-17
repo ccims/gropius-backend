@@ -9,8 +9,14 @@ import gropius.model.issue.timeline.IssueComment
 import gropius.model.issue.timeline.TimelineItem
 import gropius.model.user.User
 import org.neo4j.cypherdsl.core.Cypher
+import org.slf4j.LoggerFactory
 
 class HeuristicDereplicator(val issueThreshold: Double, val commentThreshold: Double) : IssueDereplicator {
+    /**
+     * Logger used to print notifications
+     */
+    private val logger = LoggerFactory.getLogger(HeuristicDereplicator::class.java)
+
     suspend fun matchIssue(
         newIssue: Issue,
         existingIssueMatchTitle: Boolean,
@@ -49,7 +55,7 @@ class HeuristicDereplicator(val issueThreshold: Double, val commentThreshold: Do
             issueNamedNode.relationshipTo(bodyNamedNode, Issue.BODY).asCondition()
                 .and(issueNamedNode.relationshipFrom(trackableNamedNode, Trackable.ISSUE).asCondition())
         ).toIterable().map { it.rawId!! }.toSet()
-        println("OISSUE ${issue.rawId} ${issue.title} $titleMatches $createdByMatches $bodyMatches")
+        logger.trace("OISSUE ${issue.rawId} ${issue.title} $titleMatches $createdByMatches $bodyMatches")
         for (otherIssue in otherIssues) {
             if (matchIssue(
                     issue,

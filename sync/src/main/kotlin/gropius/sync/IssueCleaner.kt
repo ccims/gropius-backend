@@ -44,16 +44,16 @@ class IssueCleaner(
      * @param issue issue to work on
      */
     private suspend fun cleanAssignments(issue: Issue) {
-        issue.labels().clear()
+        issue.assignments().clear()
         for (item in issue.timelineItems().sortedBy { it.createdAt }) {
             if (item is Assignment) {
                 issue.assignments() += item
             }
             if (item is RemovedAssignmentEvent) {
-                TODO()
+                issue.assignments() -= item.removedAssignment().value
             }
             if (item is AssignmentTypeChangedEvent) {
-                issue.assignments() -= item.assignment().value
+                TODO()
             }
         }
     }
