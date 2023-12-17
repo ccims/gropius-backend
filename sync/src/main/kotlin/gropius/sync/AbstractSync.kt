@@ -17,7 +17,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.neo4j.core.ReactiveNeo4jOperations
 import org.springframework.data.neo4j.core.findAll
+import org.springframework.data.neo4j.core.findById
 import org.springframework.stereotype.Component
+import java.io.File
 
 interface DataFetcher {
     suspend fun fetchData(imsProjects: List<IMSProject>);
@@ -38,7 +40,11 @@ class CollectedSyncInfo(
     val issueCleaner: IssueCleaner
 ) {}
 
-class SimpleIssueDereplicatorRequest(override val dummyUser: User) : IssueDereplicatorRequest {}
+class SimpleIssueDereplicatorRequest(
+    override val dummyUser: User,
+    override val neoOperations: ReactiveNeo4jOperations,
+    override val issueRepository: IssueRepository
+) : IssueDereplicatorRequest {}
 
 abstract class AbstractSync(
     val collectedSyncInfo: CollectedSyncInfo
@@ -59,7 +65,7 @@ abstract class AbstractSync(
                     GropiusUser(
                         "Gropius", null, null, "gropius", false
                     )
-                ).awaitSingle()
+                ).awaitSingle(), collectedSyncInfo.neoOperations, collectedSyncInfo.issueRepository
         )
         try {
             findUnsyncedIssues(imsProject).forEach {

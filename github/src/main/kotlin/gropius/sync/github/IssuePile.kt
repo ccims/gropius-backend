@@ -129,6 +129,7 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
     suspend fun integrateIssue(
         imsProject: IMSProject, data: IssueReadQuery.Data.Repository.Issues.Node
     ) {
+        if (data.author == null) println(data)
         val pile = issuePileRepository.findByImsProjectAndGithubId(imsProject.rawId!!, data.id) ?: IssuePileData(
             imsProject.rawId!!,
             data.id,
@@ -137,7 +138,7 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
             data.updatedAt,
             data.createdAt,
             mutableListOf(),
-            data.author!!.login
+            data.author?.login ?: "ghost"
         )
         pile.lastUpdate = data.updatedAt
         pile.needsTimelineRequest = true;
@@ -336,7 +337,7 @@ class UnassignedTimelineItem(
     githubId: String, createdAt: OffsetDateTime, val createdBy: String?, val user: String
 ) : OwnedGithubTimelineItem(githubId, createdAt) {
     constructor(data: UnassignedEventTimelineItemData) : this(
-        data.id, data.createdAt, data.actor?.login, data.assignee?.userData()?.login!!
+        data.id, data.createdAt, data.actor?.login, data.assignee?.userData()?.login ?: "ghost"
     ) {
     }
 
@@ -348,7 +349,7 @@ class UnassignedTimelineItem(
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
         val githubService = service as GithubDataService
-        if ((createdBy != null)) {
+        /*if ((createdBy != null)) {
             val gropiusId = convInfo.gropiusId
             val event = if (gropiusId != null) githubService.neoOperations.findById<RemovedAssignmentEvent>(
                 gropiusId
@@ -360,7 +361,7 @@ class UnassignedTimelineItem(
             event.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
             event.removedAssignment().value = TODO()
             return listOf<TimelineItem>(event) to convInfo;
-        }
+        }*/
         return listOf<TimelineItem>() to convInfo;
     }
 }
@@ -369,7 +370,7 @@ class AssignedTimelineItem(
     githubId: String, createdAt: OffsetDateTime, val createdBy: String?, val user: String
 ) : OwnedGithubTimelineItem(githubId, createdAt) {
     constructor(data: AssignedEventTimelineItemData) : this(
-        data.id, data.createdAt, data.actor?.login, data.assignee?.userData()?.login!!
+        data.id, data.createdAt, data.actor?.login, data.assignee?.userData()?.login ?: "ghost"
     ) {
     }
 
