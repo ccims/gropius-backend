@@ -149,8 +149,8 @@ final class GithubSync(
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)
         }
-        println(response.errors)
-        TODO("ERROR HANDLING")
+        logger.error("${response.data} ${response.errors}")
+        //TODO("ERROR HANDLING")
         return null
     }
 
@@ -160,6 +160,7 @@ final class GithubSync(
         val labelInfo =
             githubDataService.labelInfoRepository.findByImsProjectAndNeo4jId(imsProject.rawId!!, label.rawId!!)
         if (labelInfo == null) {
+            logger.error("Create label on remote")
             //TODO("Create label on remote")
             return null
         }
@@ -168,8 +169,7 @@ final class GithubSync(
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
         }
-        println(response.data)
-        println(response.errors)
+        logger.error("${response.data} ${response.errors}")
         //TODO("ERROR HANDLING")
         return null
     }
@@ -182,8 +182,7 @@ final class GithubSync(
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
         }
-        println(response.data)
-        println(response.errors)
+        logger.error("${response.data} ${response.errors}")
         //TODO("ERROR HANDLING")
         return null
     }
@@ -191,20 +190,25 @@ final class GithubSync(
     override suspend fun syncStateChange(
         imsProject: IMSProject, issueId: String, newState: IssueState
     ): TimelineItemConversionInformation? {
-        val item = if (newState.isOpen) {
-            apolloClient.mutation(MutateReopenIssueMutation(issueId))
-                .execute().data?.reopenIssue?.issue?.timelineItems?.nodes?.lastOrNull()
+        if (newState.isOpen) {
+            val response = apolloClient.mutation(MutateReopenIssueMutation(issueId)).execute()
+            val item = response.data?.reopenIssue?.issue?.timelineItems?.nodes?.lastOrNull()
+            if (item != null) {
+                return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
+            }
+            logger.error("${response.data} ${response.errors}")
+            //TODO("ERROR HANDLING")
+            return null
         } else {
-            apolloClient.mutation(MutateCloseIssueMutation(issueId))
-                .execute().data?.closeIssue?.issue?.timelineItems?.nodes?.lastOrNull()
+            val response = apolloClient.mutation(MutateCloseIssueMutation(issueId)).execute()
+            val item = response.data?.closeIssue?.issue?.timelineItems?.nodes?.lastOrNull()
+            if (item != null) {
+                return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
+            }
+            logger.error("${response.data} ${response.errors}")
+            //TODO("ERROR HANDLING")
+            return null
         }
-        if (item != null) {
-            return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
-        }
-        //println(response.data)
-        //println(response.errors)
-        //TODO("ERROR HANDLING")
-        return null
     }
 
     override suspend fun syncRemovedLabel(
@@ -217,6 +221,7 @@ final class GithubSync(
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
         }
+        logger.error("${response.data} ${response.errors}")
         //TODO("ERROR HANDLING")
         return null
     }
@@ -233,7 +238,8 @@ final class GithubSync(
         if (item != null) {
             return IssueConversionInformation(imsProject.rawId!!, item.id, issue.rawId!!)
         }
-        TODO("ERROR HANDLING")
+        logger.error("${response.data} ${response.errors}")
+        //TODO("ERROR HANDLING")
         return null
     }
 }

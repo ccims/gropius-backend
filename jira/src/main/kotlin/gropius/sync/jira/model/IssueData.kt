@@ -248,8 +248,7 @@ public fun BsonValue.toKJson(): JsonElement {
     else if (this is BsonDouble) JsonPrimitive(this.value)
     else if (this is BsonNull) JsonNull
     else {
-        println(this)
-        TODO()
+        TODO("$this")
     }
 }
 
