@@ -17,6 +17,7 @@ class IssueWalker(
 ) : CursorResourceWalker<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType, GithubResourceWalkerBudget>(
     imsProject, imsProject.rawId!!, config.resourceWalkerConfig, budget, cursorResourceWalkerDataService
 ) {
+
     override suspend fun execute(): GithubGithubResourceWalkerBudgetUsageType {
         try {
             val newestIssue = issuePileService.findFirstByImsProjectOrderByLastUpdateDesc(imsProject.rawId!!)
@@ -32,8 +33,9 @@ class IssueWalker(
                 )
                 val response = apolloClient.query(query).execute()
                 cursor =
-                    if (response.data?.repository?.issues?.pageInfo?.hasNextPage == true) response.data?.repository?.issues?.pageInfo?.endCursor
-                    else null;
+                    if (response.data?.repository?.issues?.pageInfo?.hasNextPage == true) {
+                        response.data?.repository?.issues?.pageInfo?.endCursor
+                    } else null;
                 var isRateLimited = false
                 response.errors?.forEach {
                     if (it.nonStandardFields?.get("type") == "RATE_LIMITED") {

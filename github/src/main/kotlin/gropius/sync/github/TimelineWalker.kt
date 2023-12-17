@@ -9,6 +9,7 @@ import gropius.sync.github.generated.TimelineReadQuery
 import gropius.sync.github.generated.TimelineReadQuery.Data.Node.Companion.asIssue
 import kotlinx.coroutines.reactor.awaitSingle
 import org.bson.types.ObjectId
+import org.slf4j.LoggerFactory
 
 class TimelineWalker(
     imsProject: IMSProject,
@@ -21,8 +22,13 @@ class TimelineWalker(
 ) : CursorResourceWalker<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType, GithubResourceWalkerBudget>(
     imsProject, issue.toHexString(), config.resourceWalkerConfig, budget, cursorResourceWalkerDataService
 ) {
+    /**
+     * Logger used to print notifications
+     */
+    private val logger = LoggerFactory.getLogger(TimelineWalker::class.java)
+
     override suspend fun execute(): GithubGithubResourceWalkerBudgetUsageType {
-        println("EXECUTE TimelineWalker")
+        logger.info("EXECUTE TimelineWalker")
         try {
             val issuePile = issuePileService.findById(issue).awaitSingle()
             val since = issuePile?.timelineItems?.maxOfOrNull { it.createdAt }
@@ -33,8 +39,9 @@ class TimelineWalker(
                 )
                 val response = apolloClient.query(query).execute()
                 cursor =
-                    if (response.data?.node?.asIssue()?.timelineItems?.pageInfo?.hasNextPage == true) response.data?.node?.asIssue()?.timelineItems?.pageInfo?.endCursor
-                    else null;
+                    if (response.data?.node?.asIssue()?.timelineItems?.pageInfo?.hasNextPage == true) {
+                        response.data?.node?.asIssue()?.timelineItems?.pageInfo?.endCursor
+                    } else null;
                 var isRateLimited = false
                 response.errors?.forEach {
                     if (it.nonStandardFields?.get("type") == "RATE_LIMITED") {

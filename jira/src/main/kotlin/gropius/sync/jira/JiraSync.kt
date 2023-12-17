@@ -120,7 +120,7 @@ final class JiraSync(
                 startAt = q.startAt + q.issues.size
                 if (startAt >= q.total) break
             }
-            println("ILST $issueList")
+            logger.info("ILST $issueList")
             for (issueId in issueList) {
                 var startAt = 0
                 while (true) {

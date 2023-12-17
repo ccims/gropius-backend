@@ -23,12 +23,10 @@ class HeuristicDereplicator(val issueThreshold: Double, val commentThreshold: Do
         existingIssueMatchAuthor: Boolean,
         existingIssueMatchBody: Boolean
     ): Boolean {
-        //println("Looking at ${existingIssue.rawId}")
         val list = listOf(
             existingIssueMatchTitle, existingIssueMatchAuthor, existingIssueMatchBody
         )
         return (list.count { it } / list.count().toDouble()) >= issueThreshold
-        //println("$list: ${newIssue.title}?${existingIssue.title} ${newIssue.createdBy().value.rawId}?${existingIssue.createdBy().value.rawId}")
     }
 
     override suspend fun validateIssue(
@@ -64,7 +62,7 @@ class HeuristicDereplicator(val issueThreshold: Double, val commentThreshold: Do
                     bodyMatches.contains(otherIssue.rawId!!)
                 )
             ) {
-                println("DEREPL MATCH $issueThreshold")
+                logger.info("DEREPL MATCH $issueThreshold")
                 return SimpleDereplicatorIssueResult(otherIssue, listOf())
             }
         }

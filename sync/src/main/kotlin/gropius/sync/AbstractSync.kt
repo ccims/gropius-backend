@@ -17,9 +17,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.neo4j.core.ReactiveNeo4jOperations
 import org.springframework.data.neo4j.core.findAll
-import org.springframework.data.neo4j.core.findById
 import org.springframework.stereotype.Component
-import java.io.File
 
 interface DataFetcher {
     suspend fun fetchData(imsProjects: List<IMSProject>);
@@ -51,104 +49,12 @@ abstract class AbstractSync(
 ) : DataFetcher {
     private val logger = LoggerFactory.getLogger(AbstractSync::class.java)
 
+    val issueDereplicator: IssueDereplicator = InvasiveDereplicator()
+
     abstract suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue>;
     abstract fun syncDataService(): SyncDataService
 
     abstract suspend fun findTemplates(): Set<IMSTemplate>
-
-    val issueDereplicator: IssueDereplicator = InvasiveDereplicator()
-
-    suspend fun doIncoming(imsProject: IMSProject) {
-        val dereplicatorRequest = SimpleIssueDereplicatorRequest(
-            collectedSyncInfo.neoOperations.findAll<GropiusUser>().filter { it.username == "gropius" }.firstOrNull()
-                ?: collectedSyncInfo.neoOperations.save(
-                    GropiusUser(
-                        "Gropius", null, null, "gropius", false
-                    )
-                ).awaitSingle(), collectedSyncInfo.neoOperations, collectedSyncInfo.issueRepository
-        )
-        try {
-            findUnsyncedIssues(imsProject).forEach {
-                val issueInfo = collectedSyncInfo.issueConversionInformationService.findByImsProjectAndGithubId(
-                    imsProject.rawId!!, it.identification()
-                ) ?: IssueConversionInformation(imsProject.rawId!!, it.identification(), null)
-                var issue =
-                    if (issueInfo.gropiusId != null) collectedSyncInfo.issueRepository.findById(issueInfo.gropiusId!!)
-                        .awaitSingle() else it.createIssue(imsProject, syncDataService())
-                val nodesToSave = mutableListOf<Node>(issue)
-                val savedNodeHandlers = mutableListOf<suspend (node: Node) -> Unit>()
-                //try {
-                val timelineItems = it.incomingTimelineItems(syncDataService())
-                for (timelineItem in timelineItems) {
-                    val oldInfo =
-                        collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGithubId(
-                            imsProject.rawId!!, timelineItem.identification()
-                        )
-                    var (timelineItem, newInfo) = timelineItem.gropiusTimelineItem(
-                        imsProject, syncDataService(), oldInfo
-                    )
-                    if (issue.rawId != null) {
-                        val dereplicationResult =
-                            issueDereplicator.validateTimelineItem(issue, timelineItem, dereplicatorRequest)
-                        timelineItem = dereplicationResult.resultingTimelineItems
-                    }
-                    if (timelineItem.isNotEmpty()) {//TODO: Handle multiple
-                        timelineItem.forEach { it.issue().value = issue }
-                        issue.timelineItems() += timelineItem
-                        issue.issueComments() += timelineItem.mapNotNull { it as? IssueComment }
-                        nodesToSave.add(timelineItem.single())
-                        savedNodeHandlers.add {
-                            newInfo.gropiusId = (it as TimelineItem).rawId
-                            if (oldInfo?.id != null) {
-                                newInfo.id = oldInfo.id;
-                            }
-                            collectedSyncInfo.timelineItemConversionInformationService.save(newInfo).awaitSingle()
-                        }
-                    }
-                }
-                var dereplicationResult: IssueDereplicatorIssueResult? = null
-                if (issue.rawId == null) {
-                    dereplicationResult = issueDereplicator.validateIssue(imsProject, issue, dereplicatorRequest)
-                    issue = dereplicationResult.resultingIssue
-                    for (fakeSyncedItem in dereplicationResult.fakeSyncedItems) {
-                        nodesToSave.add(fakeSyncedItem)
-                        savedNodeHandlers.add {
-                            val tici =
-                                DummyTimelineItemConversionInformation(imsProject.rawId!!, (it as TimelineItem).rawId!!)
-                            tici.gropiusId = (it as TimelineItem).rawId
-                            collectedSyncInfo.timelineItemConversionInformationService.save(tici).awaitSingle()
-                        }
-                    }
-                }
-                val savedList = collectedSyncInfo.neoOperations.saveAll(nodesToSave).collectList().awaitSingle()
-                val savedIssue = savedList.removeFirst()
-                if (issue.rawId == null) issue = savedIssue as Issue
-                savedList.zip(savedNodeHandlers).forEach { (savedNode, savedNodeHandler) ->
-                    savedNodeHandler(savedNode)
-                }
-                if (issueInfo.gropiusId == null) {
-                    issueInfo.gropiusId = issue.rawId!!
-                }
-                collectedSyncInfo.issueConversionInformationService.save(issueInfo).awaitSingle()
-                collectedSyncInfo.issueCleaner.cleanIssue(issue.rawId!!)
-                it.markDone(syncDataService())
-                //} catch (e: SyncNotificator.NotificatedError) {
-                //    syncNotificator.sendNotification(
-                //        imsIssue, SyncNotificator.NotificationDummy(e)
-                //    )
-                //} catch (e: Exception) {
-                //    logger.warn("Error in issue sync", e)
-                //}
-            }
-        } catch (e: SyncNotificator.NotificatedError) {
-            logger.warn("Error in IMSProject sync", e)
-            collectedSyncInfo.syncNotificator.sendNotification(
-                imsProject, SyncNotificator.NotificationDummy(e)
-            )
-        } catch (e: Exception) {
-            logger.warn("Error in IMS sync", e)
-        }
-    }
 
     abstract suspend fun syncComment(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment
@@ -182,6 +88,123 @@ abstract class AbstractSync(
     abstract suspend fun isOutgoingAssignmentsEnabled(imsProject: IMSProject): Boolean
 
     abstract suspend fun isOutgoingStatesEnabled(imsProject: IMSProject): Boolean
+
+    suspend fun doIncoming(imsProject: IMSProject) {
+        val dereplicatorRequest = SimpleIssueDereplicatorRequest(
+            collectedSyncInfo.neoOperations.findAll<GropiusUser>().filter { it.username == "gropius" }.firstOrNull()
+                ?: collectedSyncInfo.neoOperations.save(
+                    GropiusUser(
+                        "Gropius", null, null, "gropius", false
+                    )
+                ).awaitSingle(), collectedSyncInfo.neoOperations, collectedSyncInfo.issueRepository
+        )
+        try {
+            findUnsyncedIssues(imsProject).forEach {
+                syncIncomingIssue(imsProject, it, dereplicatorRequest)
+                //} catch (e: SyncNotificator.NotificatedError) {
+                //    syncNotificator.sendNotification(
+                //        imsIssue, SyncNotificator.NotificationDummy(e)
+                //    )
+                //} catch (e: Exception) {
+                //    logger.warn("Error in issue sync", e)
+                //}
+            }
+        } catch (e: SyncNotificator.NotificatedError) {
+            logger.warn("Error in IMSProject sync", e)
+            collectedSyncInfo.syncNotificator.sendNotification(
+                imsProject, SyncNotificator.NotificationDummy(e)
+            )
+        } catch (e: Exception) {
+            logger.warn("Error in IMS sync", e)
+        }
+    }
+
+    private suspend fun syncIncomingIssue(
+        imsProject: IMSProject,
+        incomingIssue: IncomingIssue,
+        dereplicatorRequest: SimpleIssueDereplicatorRequest
+    ) {
+        val issueInfo = collectedSyncInfo.issueConversionInformationService.findByImsProjectAndGithubId(
+            imsProject.rawId!!, incomingIssue.identification()
+        ) ?: IssueConversionInformation(imsProject.rawId!!, incomingIssue.identification(), null)
+        var issue =
+            if (issueInfo.gropiusId != null) collectedSyncInfo.issueRepository.findById(issueInfo.gropiusId!!)
+                .awaitSingle() else incomingIssue.createIssue(imsProject, syncDataService())
+        val nodesToSave = mutableListOf<Node>(issue)
+        val savedNodeHandlers = mutableListOf<suspend (node: Node) -> Unit>()
+        val timelineItems = incomingIssue.incomingTimelineItems(syncDataService())
+        for (timelineItem in timelineItems) {
+            syncIncomingTimelineItem(
+                imsProject,
+                timelineItem,
+                issue,
+                dereplicatorRequest,
+                nodesToSave,
+                savedNodeHandlers
+            )
+        }
+        var dereplicationResult: IssueDereplicatorIssueResult? = null
+        if (issue.rawId == null) {
+            dereplicationResult = issueDereplicator.validateIssue(imsProject, issue, dereplicatorRequest)
+            issue = dereplicationResult.resultingIssue
+            for (fakeSyncedItem in dereplicationResult.fakeSyncedItems) {
+                nodesToSave.add(fakeSyncedItem)
+                savedNodeHandlers.add {
+                    val tici =
+                        DummyTimelineItemConversionInformation(imsProject.rawId!!, (it as TimelineItem).rawId!!)
+                    tici.gropiusId = (it as TimelineItem).rawId
+                    collectedSyncInfo.timelineItemConversionInformationService.save(tici).awaitSingle()
+                }
+            }
+        }
+        val savedList = collectedSyncInfo.neoOperations.saveAll(nodesToSave).collectList().awaitSingle()
+        val savedIssue = savedList.removeFirst()
+        if (issue.rawId == null) issue = savedIssue as Issue
+        savedList.zip(savedNodeHandlers).forEach { (savedNode, savedNodeHandler) ->
+            savedNodeHandler(savedNode)
+        }
+        if (issueInfo.gropiusId == null) {
+            issueInfo.gropiusId = issue.rawId!!
+        }
+        collectedSyncInfo.issueConversionInformationService.save(issueInfo).awaitSingle()
+        collectedSyncInfo.issueCleaner.cleanIssue(issue.rawId!!)
+        incomingIssue.markDone(syncDataService())
+    }
+
+    private suspend fun syncIncomingTimelineItem(
+        imsProject: IMSProject,
+        timelineItem: IncomingTimelineItem,
+        issue: Issue,
+        dereplicatorRequest: SimpleIssueDereplicatorRequest,
+        nodesToSave: MutableList<Node>,
+        savedNodeHandlers: MutableList<suspend (node: Node) -> Unit>
+    ) {
+        val oldInfo =
+            collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGithubId(
+                imsProject.rawId!!, timelineItem.identification()
+            )
+        var (timelineItem, newInfo) = timelineItem.gropiusTimelineItem(
+            imsProject, syncDataService(), oldInfo
+        )
+        if (issue.rawId != null) {
+            val dereplicationResult =
+                issueDereplicator.validateTimelineItem(issue, timelineItem, dereplicatorRequest)
+            timelineItem = dereplicationResult.resultingTimelineItems
+        }
+        if (timelineItem.isNotEmpty()) {//TODO: Handle multiple
+            timelineItem.forEach { it.issue().value = issue }
+            issue.timelineItems() += timelineItem
+            issue.issueComments() += timelineItem.mapNotNull { it as? IssueComment }
+            nodesToSave.add(timelineItem.single())
+            savedNodeHandlers.add {
+                newInfo.gropiusId = (it as TimelineItem).rawId
+                if (oldInfo?.id != null) {
+                    newInfo.id = oldInfo.id;
+                }
+                collectedSyncInfo.timelineItemConversionInformationService.save(newInfo).awaitSingle()
+            }
+        }
+    }
 
     /**
      * Find the last consecutive list of blocks of the same searchLambda
@@ -260,7 +283,7 @@ abstract class AbstractSync(
                     imsProject.rawId!!, it.rawId!!
                 )?.githubId != null
             }
-            println("LNE $lastNegativeEvent")
+            logger.trace("LastNegativeEvent $lastNegativeEvent")
             if (lastNegativeEvent == null) {
                 return !restoresDefaultState
             } else {
@@ -325,45 +348,54 @@ abstract class AbstractSync(
         }
         val collectedMutations = mutableListOf<suspend () -> Unit>()
         for ((label, relevantTimeline) in groups) {
-            var labelIsSynced = false
-            val finalBlock = findFinalTypeBlock(relevantTimeline)
-            for (item in finalBlock) {
-                val relevantEvent =
-                    collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
-                        imsProject.rawId!!, item.rawId!!
-                    )
-                if (relevantEvent?.githubId != null) {
-                    labelIsSynced = true
+            syncOutgoingSingleLabel(relevantTimeline, imsProject, issueInfo, label)
+        }
+    }
+
+    private suspend fun syncOutgoingSingleLabel(
+        relevantTimeline: List<TimelineItem>,
+        imsProject: IMSProject,
+        issueInfo: IssueConversionInformation,
+        label: Label?
+    ) {
+        var labelIsSynced = false
+        val finalBlock = findFinalTypeBlock(relevantTimeline)
+        for (item in finalBlock) {
+            val relevantEvent =
+                collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
+                    imsProject.rawId!!, item.rawId!!
+                )
+            if (relevantEvent?.githubId != null) {
+                labelIsSynced = true
+            }
+        }
+        if (!labelIsSynced) {
+            if (shouldSyncType<RemovedLabelEvent, AddedLabelEvent>(
+                    imsProject, finalBlock, relevantTimeline, true
+                )
+            ) {
+                val conversionInformation = syncRemovedLabel(
+                    imsProject, issueInfo.githubId, label!!/*,finalBlock.map { it.lastModifiedBy().value }*/
+                )
+                if (conversionInformation != null) {
+                    conversionInformation.gropiusId = finalBlock.map { it.rawId!! }.first()
+                    collectedSyncInfo.timelineItemConversionInformationService.save(
+                        conversionInformation
+                    ).awaitSingle()
                 }
             }
-            if (!labelIsSynced) {
-                if (shouldSyncType<RemovedLabelEvent, AddedLabelEvent>(
-                        imsProject, finalBlock, relevantTimeline, true
-                    )
-                ) {
-                    val conversionInformation = syncRemovedLabel(
-                        imsProject, issueInfo.githubId, label!!/*,finalBlock.map { it.lastModifiedBy().value }*/
-                    )
-                    if (conversionInformation != null) {
-                        conversionInformation.gropiusId = finalBlock.map { it.rawId!! }.first()
-                        collectedSyncInfo.timelineItemConversionInformationService.save(
-                            conversionInformation
-                        ).awaitSingle()
-                    }
-                }
-                if (shouldSyncType<AddedLabelEvent, RemovedLabelEvent>(
-                        imsProject, finalBlock, relevantTimeline, false
-                    )
-                ) {
-                    val conversionInformation = syncAddedLabel(
-                        imsProject, issueInfo.githubId, label!!/*,finalBlock.map { it.lastModifiedBy().value }*/
-                    )
-                    if (conversionInformation != null) {
-                        conversionInformation.gropiusId = finalBlock.map { it.rawId!! }.first()
-                        collectedSyncInfo.timelineItemConversionInformationService.save(
-                            conversionInformation
-                        ).awaitSingle()
-                    }
+            if (shouldSyncType<AddedLabelEvent, RemovedLabelEvent>(
+                    imsProject, finalBlock, relevantTimeline, false
+                )
+            ) {
+                val conversionInformation = syncAddedLabel(
+                    imsProject, issueInfo.githubId, label!!/*,finalBlock.map { it.lastModifiedBy().value }*/
+                )
+                if (conversionInformation != null) {
+                    conversionInformation.gropiusId = finalBlock.map { it.rawId!! }.first()
+                    collectedSyncInfo.timelineItemConversionInformationService.save(
+                        conversionInformation
+                    ).awaitSingle()
                 }
             }
         }
@@ -406,13 +438,13 @@ abstract class AbstractSync(
         val relevantTimeline = timeline.mapNotNull { it as? StateChangedEvent }
         if (relevantTimeline.isEmpty()) return
         val finalBlock = findFinalBlock(relevantTimeline) { it.newState().value }
-        println("finalBlock: $finalBlock")
+        logger.trace("finalBlock: $finalBlock")
         if (finalBlock.none {
                 collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
                     imsProject.rawId!!, it.rawId!!
                 ) != null
             }) {
-            println("syncOutgoingStateChanges: $finalBlock")
+            logger.trace("syncOutgoingStateChanges: $finalBlock")
             syncStateChange(imsProject, issueInfo.githubId, finalBlock.first().newState().value)
         }
     }

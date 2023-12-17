@@ -129,7 +129,6 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
     suspend fun integrateIssue(
         imsProject: IMSProject, data: IssueReadQuery.Data.Repository.Issues.Node
     ) {
-        if (data.author == null) println(data)
         val pile = issuePileRepository.findByImsProjectAndGithubId(imsProject.rawId!!, data.id) ?: IssuePileData(
             imsProject.rawId!!,
             data.id,
@@ -349,7 +348,7 @@ class UnassignedTimelineItem(
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
         val githubService = service as GithubDataService
-        /*if ((createdBy != null)) {
+        if (TODO() && (createdBy != null)) {
             val gropiusId = convInfo.gropiusId
             val event = if (gropiusId != null) githubService.neoOperations.findById<RemovedAssignmentEvent>(
                 gropiusId
@@ -361,7 +360,7 @@ class UnassignedTimelineItem(
             event.lastModifiedBy().value = githubService.userMapper.mapUser(imsProject, createdBy)
             event.removedAssignment().value = TODO()
             return listOf<TimelineItem>(event) to convInfo;
-        }*/
+        }
         return listOf<TimelineItem>() to convInfo;
     }
 }

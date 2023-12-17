@@ -9,6 +9,7 @@ import gropius.sync.github.generated.CommentReadQuery
 import gropius.sync.github.generated.CommentReadQuery.Data.Node.Companion.asIssueComment
 import kotlinx.coroutines.reactor.awaitSingle
 import org.bson.types.ObjectId
+import org.slf4j.LoggerFactory
 
 class CommentWalker(
     imsProject: IMSProject,
@@ -22,8 +23,13 @@ class CommentWalker(
 ) : CursorResourceWalker<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType, GithubResourceWalkerBudget>(
     imsProject, issue.toHexString(), config.resourceWalkerConfig, budget, cursorResourceWalkerDataService
 ) {
+    /**
+     * Logger used to print notifications
+     */
+    private val logger = LoggerFactory.getLogger(CommentWalker::class.java)
+
     override suspend fun execute(): GithubGithubResourceWalkerBudgetUsageType {
-        println("EXECUTE CommentWalker")
+        logger.info("EXECUTE CommentWalker")
         try {
             val issuePile = issuePileService.findById(issue).awaitSingle()
             val query = CommentReadQuery(
