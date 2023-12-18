@@ -1,30 +1,30 @@
 ---
 sidebar_position: 3
-slug: /github-sync
+slug: /jira-sync
 ---
 
-# GitHub sync
+# Jira sync
 
-The GitHub sync binary runs one cycle and then exits.
+The Jira sync binary runs one cycle and then exits.
 For automatical sync schedule executions of the module with cron or similar.
 Currently supported are titles, desriptions, comments and labels
 
 ## Single Execution
 
 Each cycle consists of two parts: Incoming and Outgoing.
-The incoming phase only syncs data from GitHub to gropius while the outgoing phase syncs only from gropius to GitHub.
+The incoming phase only syncs data from Jira to gropius while the outgoing phase syncs only from gropius to Jira.
 
 ### Incoming
 
-During the Incoming phase the sync first downloads all new events from GitHub.
-These events are immediately added to the MongoDB and the timestamps for the GitHub api moved to avoid repeated downloads.
+During the Incoming phase the sync first downloads all new events from Jira.
+These events are immediately added to the MongoDB and the timestamps for the Jira api moved to avoid repeated downloads.
 
 After everything has been downloaded, the missing issues are created and all timeline items inserted into the timelines.
 
 ### Outgoing
 
-The outgoing phase collects all new issues and timeline items that have no known GitHub id and have not been invalidated (e.g. no reopen after close event).
-These differences are then collected and prepared for submission to GitHub.
+The outgoing phase collects all new issues and timeline items that have no known Jira id and have not been invalidated (e.g. no reopen after close event).
+These differences are then collected and prepared for submission to Jira.
 
 After all mutations are collected, a final damage control check ensures that the amount of mutations does not exceed a threshold to prevent damage to larger public repositories in case of issues with the sync.
 Then all of the mutations are executed and the ids of the created issues and timeline items added to the MongoDB.
@@ -32,11 +32,11 @@ Then all of the mutations are executed and the ids of the created issues and tim
 ## How to use
 
 When the server side is running, the repos which should be synced have to be set.
-To mark an `IMS` to connect to GitHub, the sync service creates the GitHub `IMSTemplate` on first run.
+To mark an `IMS` to connect to Jira, the sync service creates the Jira `IMSTemplate` on first run.
 
 This can be used to create an `IMS`, which requires:
 * the id of an `IMSUser` owning the token which is then used to query the issues (`null` until an `IMSUser` is created for this `IMS`)
-* and the URL of the GraphQL endpoint of the GitHub instance (e.g. `https://api.github.com/graphql` for the GitHub GitHub)
+* and the URL of the GraphQL endpoint of the Jira instance (e.g. `https://api.jira.com/graphql` for the Jira Jira)
 in the appropriate `templatedFields`.
 
 If using the dev-login-service, the `IMSUser` is not created automatically and has to be created via request to the internal api (should be port 8081) with the mutation `createIMSUser`.
@@ -53,7 +53,7 @@ For authorization ask the dev login service (http://localhost:3000/) to create a
 The token is returned as pile of dotted base64 as the only content in the side.
 To use it in the playground (http://localhost:8080/graphiql), you need to paste `{"Authorization": "Bearer <Content of second dev-login response>"}` in the header part usually on the lower left.
 
-Ensure the environment variable `GITHUB_DUMMY_PAT` is set to a valid github token
+Ensure the environment variable `JIRA_DUMMY_EMAIL` and `JIRA_DUMMY_TOKEN` is set to a valid jira token combination
 
 Create Trackable
 ```
@@ -105,7 +105,10 @@ Create IMS
 ```gql
 mutation {
   createIMS(
-    input: {template: "<IMSTemplate ID>", templatedFields: [{name: "graphql-url", value: "https://api.github.com/graphql"}], description: "desc", name: "n"}
+    input: {template: "<IMSTemplate ID>", templatedFields: [
+      {name: "graphql-url", value: "<Some IMSUser>"},
+      {name: "root-url", value: "https://<Something>.atlassian.net/rest/api/2"}
+    ], description: "desc", name: "n"}
   ) {
     ims {
       id
@@ -131,7 +134,7 @@ mutation {
   createIMSProject(
     input: {ims: "<IMS ID>", trackable: "<Trackable ID>", templatedFields:
       [
-        {name: "repo", value: {owner: "<Some GitHub owner>", repo: "<Some GitHub repo>"}},
+        {name: "repo", value: "<Some Jira repo>"},
         {name: "enable-outgoing", value: true},
         {name: "enable-outgoing-labels", value: true},
         {name: "enable-outgoing-comments", value: true},
