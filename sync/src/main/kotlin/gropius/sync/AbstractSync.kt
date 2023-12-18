@@ -19,14 +19,35 @@ import org.springframework.data.neo4j.core.ReactiveNeo4jOperations
 import org.springframework.data.neo4j.core.findAll
 import org.springframework.stereotype.Component
 
+/**
+ * Interface for syncing data
+ */
 interface DataFetcher {
+
+    /**
+     * Execute the ata fetching for a given list of IMSProjects
+     */
     suspend fun fetchData(imsProjects: List<IMSProject>);
 }
 
+/**
+ * Fallback Timeline Item Conversion
+ * @param imsProject IMS project to sync
+ * @param githubId GitHub ID of the timeline item
+ */
 class DummyTimelineItemConversionInformation(
     imsProject: String, githubId: String
 ) : TimelineItemConversionInformation(imsProject, githubId, null) {}
 
+/**
+ * Bean accessor
+ * @param neoOperations Neo4j operations bean
+ * @param issueConversionInformationService IssueConversionInformationService bean
+ * @param issueRepository IssueRepository bean
+ * @param timelineItemConversionInformationService TimelineItemConversionInformationService bean
+ * @param syncNotificator SyncNotificator bean
+ * @param issueCleaner IssueCleaner bean
+ */
 @Component
 class CollectedSyncInfo(
     @Qualifier("graphglueNeo4jOperations")
@@ -38,57 +59,155 @@ class CollectedSyncInfo(
     val issueCleaner: IssueCleaner
 ) {}
 
+/**
+ * Simple static issue dereplicator request implmeneation
+ */
 class SimpleIssueDereplicatorRequest(
     override val dummyUser: User,
     override val neoOperations: ReactiveNeo4jOperations,
     override val issueRepository: IssueRepository
 ) : IssueDereplicatorRequest {}
 
+/**
+ * Base class for sync
+ * @param collectedSyncInfo Bean accessor
+ */
 abstract class AbstractSync(
     val collectedSyncInfo: CollectedSyncInfo
 ) : DataFetcher {
     private val logger = LoggerFactory.getLogger(AbstractSync::class.java)
 
+    /**
+     * Currently active dereplicator
+     */
     val issueDereplicator: IssueDereplicator = InvasiveDereplicator()
 
+    /**
+     * Get the currently unsynced issue for an IMSProject
+     * @param imsProject IMS project to sync
+     * @return List of unsynced issues
+     */
     abstract suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue>;
+
+    /**
+     * Get the sync data which should be given to further methods
+     */
     abstract fun syncDataService(): SyncDataService
 
+    /**
+     * Get the template used to create new issues
+     */
     abstract suspend fun findTemplates(): Set<IMSTemplate>
 
+    /**
+     * Incorporate a comment
+     * @param imsProject IMS project to sync
+     * @param issueId GitHub ID of the issue
+     * @param issueComment Comment to sync
+     * @return Conversion information
+     */
     abstract suspend fun syncComment(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment
     ): TimelineItemConversionInformation?
 
+    /**
+     * Incorporate a title change
+     * @param imsProject IMS project to sync
+     * @param issueId GitHub ID of the issue
+     * @param newTitle New title of the issue
+     * @return Conversion information
+     */
     abstract suspend fun syncTitleChange(
         imsProject: IMSProject, issueId: String, newTitle: String
     ): TimelineItemConversionInformation?
 
+    /**
+     * Incorporate a state change
+     * @param imsProject IMS project to sync
+     * @param issueId GitHub ID of the issue
+     * @param newState New state of the issue
+     * @return Conversion information
+     */
     abstract suspend fun syncStateChange(
         imsProject: IMSProject, issueId: String, newState: IssueState
     ): TimelineItemConversionInformation?
 
+    /**
+     * Incorporate an added label
+     * @param imsProject IMS project to sync
+     * @param issueId GitHub ID of the issue
+     * @param label Label to sync
+     * @return Conversion information
+     */
     abstract suspend fun syncAddedLabel(
         imsProject: IMSProject, issueId: String, label: Label
     ): TimelineItemConversionInformation?
 
+    /**
+     * Incorporate a removed label
+     * @param imsProject IMS project to sync
+     * @param issueId GitHub ID of the issue
+     * @param label Label to sync
+     * @return Conversion information
+     */
     abstract suspend fun syncRemovedLabel(
         imsProject: IMSProject, issueId: String, label: Label
     ): TimelineItemConversionInformation?
 
+    /**
+     * Create an issue on the IMS
+     * @param imsProject IMS project to sync
+     * @param issue Issue to sync
+     * @return Conversion information
+     */
     abstract suspend fun createOutgoingIssue(imsProject: IMSProject, issue: Issue): IssueConversionInformation?;
 
+    /**
+     * Check if Outgoing Sync is Enabled
+     * @param imsProject IMS project to check for
+     * @return true if and only if outgoing sync is enabled
+     */
     abstract suspend fun isOutgoingEnabled(imsProject: IMSProject): Boolean
+
+    /**
+     * Check if Outgoing Sync of Labels is Enabled
+     * @param imsProject IMS project to check for
+     * @return true if and only if outgoing sync of labels is enabled
+     */
     abstract suspend fun isOutgoingLabelsEnabled(imsProject: IMSProject): Boolean
 
+    /**
+     * Check if Outgoing Sync of Comments is Enabled
+     * @param imsProject IMS project to check for
+     * @return true if and only if outgoing sync of comments is enabled
+     */
     abstract suspend fun isOutgoingCommentsEnabled(imsProject: IMSProject): Boolean
 
+    /**
+     * Check if Outgoing Sync of Title Changes is Enabled
+     * @param imsProject IMS project to check for
+     * @return true if and only if outgoing sync of title changes is enabled
+     */
     abstract suspend fun isOutgoingTitleChangedEnabled(imsProject: IMSProject): Boolean
 
+    /**
+     * Check if Outgoing Sync of Assignments is Enabled
+     * @param imsProject IMS project to check for
+     * @return true if and only if outgoing sync of assignments is enabled
+     */
     abstract suspend fun isOutgoingAssignmentsEnabled(imsProject: IMSProject): Boolean
 
+    /**
+     * Check if Outgoing Sync of State Changes is Enabled
+     * @param imsProject IMS project to check for
+     * @return true if and only if outgoing sync of state changes is enabled
+     */
     abstract suspend fun isOutgoingStatesEnabled(imsProject: IMSProject): Boolean
 
+    /**
+     * Sync Incoming Part
+     * @param imsProject IMS project to sync
+     */
     suspend fun doIncoming(imsProject: IMSProject) {
         val dereplicatorRequest = SimpleIssueDereplicatorRequest(
             collectedSyncInfo.neoOperations.findAll<GropiusUser>().filter { it.username == "gropius" }.firstOrNull()
@@ -119,6 +238,13 @@ abstract class AbstractSync(
         }
     }
 
+    /**
+     * Sync one incoming issue
+     * @param imsProject IMS project to sync
+     * @param incomingIssue Issue to sync
+     * @param dereplicatorRequest Request for the dereplicator
+     * @return Conversion information
+     */
     private suspend fun syncIncomingIssue(
         imsProject: IMSProject,
         incomingIssue: IncomingIssue,
@@ -171,6 +297,16 @@ abstract class AbstractSync(
         incomingIssue.markDone(syncDataService())
     }
 
+    /**
+     * Sync one incoming timeline item
+     * @param imsProject IMS project to sync
+     * @param timelineItem Timeline item to sync
+     * @param issue Issue to sync
+     * @param dereplicatorRequest Request for the dereplicator
+     * @param nodesToSave List of nodes to save
+     * @param savedNodeHandlers List of handlers for saved nodes
+     * @return Conversion information
+     */
     private suspend fun syncIncomingTimelineItem(
         imsProject: IMSProject,
         timelineItem: IncomingTimelineItem,
@@ -300,6 +436,10 @@ abstract class AbstractSync(
         return false
     }
 
+    /**
+     * Sync Outgoing issues
+     * @param imsProject IMS project to sync
+     */
     open suspend fun doOutgoing(imsProject: IMSProject) {
         if (!isOutgoingEnabled(imsProject)) {
             return
@@ -336,6 +476,12 @@ abstract class AbstractSync(
         }
     }
 
+    /**
+     * Sync Outgoing Labels
+     * @param timeline Timeline of the issue
+     * @param imsProject IMS project to sync
+     * @param issueInfo Issue to sync
+     */
     private suspend fun syncOutgoingLabels(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
@@ -352,6 +498,13 @@ abstract class AbstractSync(
         }
     }
 
+    /**
+     * Sync Outgoing Single Label
+     * @param relevantTimeline Timeline of the issue filtered for the label
+     * @param imsProject IMS project to sync
+     * @param issueInfo Issue to sync
+     * @param label Label to sync
+     */
     private suspend fun syncOutgoingSingleLabel(
         relevantTimeline: List<TimelineItem>,
         imsProject: IMSProject,
@@ -401,6 +554,12 @@ abstract class AbstractSync(
         }
     }
 
+    /**
+     * Sync Outgoing Comments
+     * @param timeline Timeline of the issue
+     * @param imsProject IMS project to sync
+     * @param issueInfo Issue to sync
+     */
     private suspend fun syncOutgoingComments(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
@@ -417,6 +576,12 @@ abstract class AbstractSync(
         }
     }
 
+    /**
+     * Sync Outgoing Title Changes
+     * @param timeline Timeline of the issue
+     * @param imsProject IMS project to sync
+     * @param issueInfo Issue to sync
+     */
     private suspend fun syncOutgoingTitleChanges(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
@@ -432,6 +597,12 @@ abstract class AbstractSync(
         }
     }
 
+    /**
+     * Sync Outgoing State Changes
+     * @param timeline Timeline of the issue
+     * @param imsProject IMS project to sync
+     * @param issueInfo Issue to sync
+     */
     private suspend fun syncOutgoingStateChanges(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
@@ -449,11 +620,20 @@ abstract class AbstractSync(
         }
     }
 
+    /**
+     * Sync Outgoing Assignments
+     * @param timeline Timeline of the issue
+     * @param imsProject IMS project to sync
+     * @param issueInfo Issue to sync
+     */
     private suspend fun syncOutgoingAssignments(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
     }
 
+    /**
+     * Sync all data
+     */
     suspend fun sync() {
         val imsTemplates = findTemplates()
         logger.info("Found ${imsTemplates.size} IMSTemplate")

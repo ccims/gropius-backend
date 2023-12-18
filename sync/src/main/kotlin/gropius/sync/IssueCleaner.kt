@@ -82,6 +82,10 @@ class IssueCleaner(
         }
     }
 
+    /**
+     * Resort comments into comments list
+     * @param issue issue to work on
+     */
     private suspend fun cleanComments(issue: Issue) {
         for (item in issue.timelineItems()) {
             if (item is IssueComment) {

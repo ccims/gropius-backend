@@ -19,6 +19,16 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.URI
 
+/**
+ * This class is responsible for syncing data from and to GitHub
+ * @param githubDataService The service used to access the database
+ * @param issuePileService The service used to access the issue pile
+ * @param helper The helper used to convert data to and from JSON
+ * @param cursorResourceWalkerDataService The service used to access the cursor resource walker data
+ * @param imsConfigManager The manager used to access the IMS config
+ * @param collectedSyncInfo The collected sync info
+ * @param loadBalancedDataFetcher The load balanced data fetcher
+ */
 @Component
 final class GithubSync(
     val githubDataService: GithubDataService,
@@ -34,7 +44,7 @@ final class GithubSync(
         loadBalancedDataFetcher.start(this)
     }
 
-    val apolloClient = ApolloClient.Builder().serverUrl(URI("https://api.github.com/graphql").toString())
+    private val apolloClient = ApolloClient.Builder().serverUrl(URI("https://api.github.com/graphql").toString())
         .addHttpHeader("Authorization", "bearer " + System.getenv("GITHUB_DUMMY_PAT")).build()
 
     /**

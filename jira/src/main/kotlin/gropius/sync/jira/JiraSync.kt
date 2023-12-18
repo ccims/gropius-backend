@@ -26,6 +26,16 @@ import org.springframework.stereotype.Component
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
+/**
+ * Jira main sync class
+ * @param jiraDataService the data service for Jira
+ * @param helper the json helper
+ * @param cursorResourceWalkerDataService the data service for the cursor resource walker
+ * @param imsConfigManager the config manager for the IMS
+ * @param collectedSyncInfo the collected sync info
+ * @param loadBalancedDataFetcher the load balanced data fetcher
+ * @param issueDataService the data service for issues
+ */
 @Component
 final class JiraSync(
     val jiraDataService: JiraDataService,
@@ -37,7 +47,7 @@ final class JiraSync(
     val issueDataService: IssueDataService
 ) : AbstractSync(collectedSyncInfo) {
 
-    val client = HttpClient() {
+    private val client = HttpClient() {
         expectSuccess = true
         install(Logging)
         install(ContentNegotiation) {
@@ -275,6 +285,9 @@ final class JiraSync(
         )
     }
 
+    /**
+     * Scape a Gropius Label name for Jira
+     */
     fun jirafyLabelName(gropiusName: String): String {
         return gropiusName.replace("[^A-Za-z0-9]+".toRegex(), "_").replace("^_*".toRegex(), "")
             .replace("_*$".toRegex(), "")

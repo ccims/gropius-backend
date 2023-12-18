@@ -11,6 +11,16 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 
+/**
+ * A walker that walks over all issues of a github repository
+ * @param imsProject the ims project to walk over
+ * @param issue the issue to walk over
+ * @param config the config of the walker
+ * @param budget the budget of the walker
+ * @param apolloClient the apollo client to use for the walker
+ * @param issuePileService the issue pile service to use for the walker
+ * @param cursorResourceWalkerDataService the data service to use for the walker
+ */
 class TimelineWalker(
     imsProject: IMSProject,
     val issue: ObjectId,

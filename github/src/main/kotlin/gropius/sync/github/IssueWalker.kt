@@ -7,6 +7,15 @@ import gropius.sync.CursorResourceWalker
 import gropius.sync.CursorResourceWalkerDataService
 import gropius.sync.github.generated.IssueReadQuery
 
+/**
+ * A walker that walks over all issues of a github repository
+ * @param imsProject the ims project to walk over
+ * @param config the config of the walker
+ * @param budget the budget of the walker
+ * @param apolloClient the apollo client to use for the walker
+ * @param issuePileService the issue pile service to use for the walker
+ * @param cursorResourceWalkerDataService the data service to use for the walker
+ */
 class IssueWalker(
     imsProject: IMSProject,
     val config: GitHubResourceWalkerConfig,

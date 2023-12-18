@@ -11,12 +11,20 @@ import gropius.model.user.User
 import org.neo4j.cypherdsl.core.Cypher
 import org.slf4j.LoggerFactory
 
+/**
+ * Heuristic dereplicator
+ * @param issueThreshold Threshold for matching issues
+ * @param commentThreshold Threshold for matching comments
+ */
 class HeuristicDereplicator(val issueThreshold: Double, val commentThreshold: Double) : IssueDereplicator {
     /**
      * Logger used to print notifications
      */
     private val logger = LoggerFactory.getLogger(HeuristicDereplicator::class.java)
 
+    /**
+     * Check the match for a given issue and database queries
+     */
     suspend fun matchIssue(
         newIssue: Issue,
         existingIssueMatchTitle: Boolean,
@@ -29,6 +37,9 @@ class HeuristicDereplicator(val issueThreshold: Double, val commentThreshold: Do
         return (list.count { it } / list.count().toDouble()) >= issueThreshold
     }
 
+    /**
+     * Validate a single issue
+     */
     override suspend fun validateIssue(
         imsProject: IMSProject, issue: Issue, request: IssueDereplicatorRequest
     ): IssueDereplicatorIssueResult {
@@ -69,6 +80,9 @@ class HeuristicDereplicator(val issueThreshold: Double, val commentThreshold: Do
         return SimpleDereplicatorIssueResult(issue, listOf())
     }
 
+    /**
+     * Ceck match for a single issue comment
+     */
     suspend fun matchIssueComment(newComment: IssueComment, existingComment: IssueComment): Boolean {
         val list = listOf(
             (newComment.body == existingComment.body), (newComment.createdBy == existingComment.createdBy)
@@ -76,6 +90,9 @@ class HeuristicDereplicator(val issueThreshold: Double, val commentThreshold: Do
         return (list.count { it } / list.count().toDouble()) >= issueThreshold
     }
 
+    /**
+     * Validate a single TimelineItem
+     */
     override suspend fun validateTimelineItem(
         issue: Issue, timelineItems: List<TimelineItem>, request: IssueDereplicatorRequest
     ): IssueDereplicatorTimelineItemResult {

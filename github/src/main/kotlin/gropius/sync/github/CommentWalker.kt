@@ -11,6 +11,17 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 
+/**
+ * Walker for a single comment
+ * @param imsProject the Gropius IMSProject to use as input
+ * @param issue the issue to comment on
+ * @param comment the comment to write
+ * @param config the config of the parent IMS
+ * @param budget the budget to use
+ * @param apolloClient the apollo client to use
+ * @param issuePileService the issue pile service to use
+ * @param cursorResourceWalkerDataService the data service to use
+ */
 class CommentWalker(
     imsProject: IMSProject,
     val issue: ObjectId,

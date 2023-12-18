@@ -17,6 +17,12 @@ import org.springframework.data.neo4j.core.findById
 import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
 
+/**
+ * Repository for mapping of a single user from neo4j to GitHub
+ * @param imsProject IMS project to sync
+ * @param githubId GitHub ID of the user
+ * @param gropiusId Gropius ID of the user
+ */
 @Document
 data class UserInfoData(
     @Indexed
@@ -33,22 +39,50 @@ data class UserInfoData(
     var id: ObjectId? = null
 }
 
+/**
+ * Repository for mapping of a single user from neo4j to GitHub
+ */
 @Repository
 interface NUserInfoRepository : ReactiveMongoRepository<UserInfoData, ObjectId> {
+
+    /**
+     * Lookup to find the mapping given a neo4j id
+     * @param imsProject Database query param
+     * @param gropiusId Database query param
+     * @return result of database operation
+     */
     suspend fun findByImsProjectAndGithubId(
         imsProject: String, githubId: String
     ): UserInfoData?
 
+    /**
+     * Lookup to find the mapping given a GitHub id
+     * @param imsProject Database query param
+     * @param gropiusId Database query param
+     * @return result of database operation
+     */
     suspend fun findByImsProjectAndGropiusId(
         imsProject: String, gropiusId: String
     ): UserInfoData?
 }
 
+/**
+ * Repository for user mapping
+ * @param neoOperations Neo4j operations
+ * @param nuserInfoRepository MongoDB repository
+ */
 @Service
 class UserMapper(
     @Qualifier("graphglueNeo4jOperations")
     private val neoOperations: ReactiveNeo4jOperations, val nuserInfoRepository: NUserInfoRepository
 ) : NUserInfoRepository by nuserInfoRepository {
+
+    /**
+     * Save a user to the database
+     * @param imsProject IMS project to sync
+     * @param githubId GitHub ID of the user
+     * @param gropiusId Gropius ID of the user
+     */
     @Transactional
     suspend fun saveUser(
         imsProject: IMSProject, githubId: String, gropiusId: String
@@ -59,6 +93,14 @@ class UserMapper(
         nuserInfoRepository.save(pile).awaitSingle()
     }
 
+    /**
+     * Map a user from given parameters
+     * @param imsProject IMS project to sync
+     * @param name GitHub name of the user
+     * @param displayName Display name of the user
+     * @param email Email of the user
+     * @return Mapped user
+     */
     @Transactional
     suspend fun mapUser(
         imsProject: IMSProject, name: String, displayName: String? = null, email: String? = null

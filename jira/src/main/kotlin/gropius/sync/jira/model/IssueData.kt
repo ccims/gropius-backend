@@ -25,10 +25,22 @@ import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
+/**
+ * TimelineItem maping between Jira and Gropius
+ * @param imsProject IMSProject the timeline item belongs to
+ * @param githubId the id of the timeline item in github
+ */
 class JiraTimelineItemConversionInformation(
     imsProject: String, githubId: String
 ) : TimelineItemConversionInformation(imsProject, githubId, null) {}
 
+/**
+ * Intermediate representation of a single TimelineItem from Jira
+ * @param id the id of the timeline item
+ * @param created the creation date of the timeline item
+ * @param author the author of the timeline item
+ * @param data the data of the timeline item
+ */
 class JiraTimelineItem(val id: String, val created: String, val author: JsonObject, val data: ChangelogFieldEntry) :
     IncomingTimelineItem() {
     /**
@@ -62,6 +74,14 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         return listOf<TimelineItem>() to convInfo;
     }
 
+    /**
+     * Convert a Jira Label to Gropius Label
+     * @param timelineItemConversionInformation the timeline item conversion information
+     * @param imsProject the ims project
+     * @param service the service
+     * @param jiraService the jira service
+     * @return the pair of timeline items and conversion information
+     */
     private suspend fun gropiusLabels(
         timelineItemConversionInformation: TimelineItemConversionInformation?,
         imsProject: IMSProject,
@@ -113,6 +133,14 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         return listOf<TimelineItem>() to convInfo;
     }
 
+    /**
+     * Convert a single state change to a Gropius StateChangedEvent
+     * @param timelineItemConversionInformation the timeline item conversion information
+     * @param imsProject the ims project
+     * @param service the service
+     * @param jiraService the jira service
+     * @return the pair of timeline items and conversion information
+     */
     private suspend fun gropiusState(
         timelineItemConversionInformation: TimelineItemConversionInformation?,
         imsProject: IMSProject,
@@ -141,6 +169,14 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         ) to convInfo;
     }
 
+    /**
+     * Convert a single title change to a Gropius TitleChangedEvent
+     * @param timelineItemConversionInformation the timeline item conversion information
+     * @param imsProject the ims project
+     * @param service the service
+     * @param jiraService the jira service
+     * @return the pair of timeline items and conversion information
+     */
     private suspend fun gropiusSummary(
         timelineItemConversionInformation: TimelineItemConversionInformation?,
         imsProject: IMSProject,
@@ -168,6 +204,11 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
     }
 }
 
+/**
+ * Intermediate representation of a single comment from Jira
+ * @param id the id of the comment
+ * @param comment the comment
+ */
 class JiraCommentTimelineItem(val issueId: String, val comment: JiraComment) : IncomingTimelineItem() {
     override suspend fun identification(): String {
         return issueId + ":::" + comment.id
@@ -204,6 +245,20 @@ class JiraCommentTimelineItem(val issueId: String, val comment: JiraComment) : I
 
 }
 
+/**
+ * Data of a single issue from the API to the database
+ * @param imsProject the ims project the issue belongs to
+ * @param expand the expand string
+ * @param jiraId the id of the issue in Jira
+ * @param self the self link
+ * @param key the key of the issue
+ * @param editmeta the edit meta data
+ * @param changelog the changelog
+ * @param fields the fields
+ * @param names the names
+ * @param schema the schema
+ * @param comments the comments
+ */
 @Document
 data class IssueData(
     val imsProject: String,
@@ -219,6 +274,9 @@ data class IssueData(
     val comments: MutableMap<String, JiraComment> = mutableMapOf()
 ) : IncomingIssue() {
 
+    /**
+     * MongoDB ID
+     */
     @Id
     var id: ObjectId? = null
 
@@ -314,16 +372,30 @@ public fun JsonObject.toBson(): BsonDocument {
     })
 }
 
+/**
+ * Repository for IssueData
+ */
 @Repository
 interface IssueDataRepository : ReactiveMongoRepository<IssueData, ObjectId> {
+
+    /**
+     * Find an issue by its IMSProject and JiraId
+     * @param imsProject the IMSProject the issue belongs to
+     * @param jiraId the JiraId of the issue
+     * @return the issue if found, null otherwise
+     */
     suspend fun findByImsProjectAndJiraId(
         imsProject: String, jiraId: String
     ): IssueData?
 
+    /**
+     * Find all issues by their IMSProject
+     * @param imsProject the IMSProject the issues belong to
+     * @return the issues
+     */
     suspend fun findByImsProject(
         imsProject: String
     ): List<IssueData>
-
 }
 
 @Service
@@ -333,6 +405,11 @@ class IssueDataService(val issuePileRepository: IssueDataRepository) : IssueData
      */
     private val logger = LoggerFactory.getLogger(IssueDataService::class.java)
 
+    /**
+     * Insert an issue into the database
+     * @param imsProject the IMSProject the issue belongs to
+     * @param rawIssueData the issue data
+     */
     @Transactional
     suspend fun insertIssue(imsProject: IMSProject, rawIssueData: IssueData) {
         logger.info("LOOKING FOR ${imsProject.rawId!!} AND ${rawIssueData.jiraId}")
@@ -341,6 +418,12 @@ class IssueDataService(val issuePileRepository: IssueDataRepository) : IssueData
         issuePileRepository.save(issueData).awaitSingle()
     }
 
+    /**
+     * Insert a comment into the database
+     * @param imsProject the IMSProject the comment belongs to
+     * @param jiraId the JiraId of the issue the comment belongs to
+     * @param comment the comment
+     */
     @Transactional
     suspend fun insertComment(imsProject: IMSProject, jiraId: String, comment: JiraComment) {
         val issueData = findByImsProjectAndJiraId(imsProject.rawId!!, jiraId)!!

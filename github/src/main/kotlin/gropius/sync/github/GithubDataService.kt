@@ -16,6 +16,13 @@ import org.springframework.data.neo4j.core.findById
 import org.springframework.stereotype.Component
 import java.time.OffsetDateTime
 
+/**
+ * Service to handle data from GitHub
+ * @param issuePileService the issue pile service to use
+ * @param userMapper the user mapper to use
+ * @param neoOperations Reference for the spring instance of ReactiveNeo4jOperations
+ * @param labelInfoRepository the label info repository to use
+ */
 @Component
 class GithubDataService(
     val issuePileService: IssuePileService,
@@ -24,12 +31,21 @@ class GithubDataService(
     val neoOperations: ReactiveNeo4jOperations,
     val labelInfoRepository: LabelInfoRepository
 ) : SyncDataService {
+
+    /**
+     * Find and ensure the IMSTemplate in the database
+     * @return the IssueTemplate
+     */
     suspend fun issueTemplate(): IssueTemplate {
         return neoOperations.findAll(IssueTemplate::class.java).awaitFirstOrNull() ?: neoOperations.save(
             IssueTemplate("noissue", "", mutableMapOf(), false)
         ).awaitSingle()
     }
 
+    /**
+     * Find and ensure the IMSIssueTemplate in the database
+     * @return the IssueType
+     */
     suspend fun issueType(): IssueType {
         val newIssueType = IssueType("type", "", "")
         newIssueType.partOf() += issueTemplate()
@@ -37,6 +53,11 @@ class GithubDataService(
             .awaitSingle()
     }
 
+    /**
+     * Find and ensure the IMSIssueTemplate in the database
+     * @param isOpen whether the state is open or closed
+     * @return the IssueState
+     */
     suspend fun issueState(isOpen: Boolean): IssueState {
         val newIssueState = IssueState(if (isOpen) "open" else "closed", "", isOpen)
         newIssueState.partOf() += issueTemplate()
@@ -44,6 +65,12 @@ class GithubDataService(
             ?: neoOperations.save(newIssueState).awaitSingle()
     }
 
+    /**
+     * Map a Label from GitHub to Gropius
+     * @param imsProject the Gropius IMSProject to use as input
+     * @param labelData the label data to map
+     * @return the mapped Label
+     */
     suspend fun mapLabel(imsProject: IMSProject, labelData: LabelData): Label? {
         val labelInfo = labelInfoRepository.findByImsProjectAndGithubId(imsProject.rawId!!, labelData.id)
         if (labelInfo != null) {

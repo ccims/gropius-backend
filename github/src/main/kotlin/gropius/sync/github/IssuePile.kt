@@ -24,6 +24,11 @@ import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
 
+/**
+ * A timeline item that may be integrated into Gropius
+ * @param githubId The GitHub ID of the timeline item
+ * @param createdAt The creation date of the timeline item
+ */
 @Document
 abstract class GithubTimelineItem(
     @Indexed
@@ -37,6 +42,11 @@ abstract class GithubTimelineItem(
     var id: ObjectId? = null
 }
 
+/**
+ * GitHub Timeline Item with ID
+ * @param githubId The GitHub ID of the timeline item
+ * @param createdAt The creation date of the timeline item
+ */
 @Document
 abstract class OwnedGithubTimelineItem(
     githubId: String, createdAt: OffsetDateTime
@@ -46,6 +56,20 @@ abstract class OwnedGithubTimelineItem(
     }
 }
 
+/**
+ * A single issue that may or may not be integrated into Gropius
+ * @param imsProject The IMS project ID
+ * @param githubId The GitHub ID of the issue
+ * @param initialTitle The initial title of the issue
+ * @param initialDescription The initial description of the issue
+ * @param lastUpdate The last update date of the issue
+ * @param createdAt The creation date of the issue
+ * @param timelineItems The timeline items of the issue
+ * @param createdBy The GitHub user that created the issue
+ * @param needsTimelineRequest Whether the timeline of the issue needs to be requested
+ * @param needsCommentRequest Whether the comments of the issue need to be requested
+ * @param hasUnsyncedData Whether the issue has unsynced data
+ */
 @Document
 data class IssuePileData(
     @Indexed
@@ -66,6 +90,10 @@ data class IssuePileData(
     @Indexed
     var hasUnsyncedData: Boolean = true
 ) : IncomingIssue(), DereplicatorIssueInfo, DereplicatorTitleChangeIssueInfo {
+
+    /**
+     * MongoDB ID
+     */
     @Id
     var id: ObjectId? = null
 
@@ -100,31 +128,75 @@ data class IssuePileData(
     }
 }
 
+/**
+ * A repository for issue piles
+ * @see IssuePileData
+ */
 @Repository
 interface IssuePileRepository : ReactiveMongoRepository<IssuePileData, ObjectId> {
+
+    /**
+     * Find an issue pile by IMS project ID and GitHub ID
+     * @param imsProject The IMS project ID
+     * @param githubId The GitHub ID
+     * @return The issue pile
+     */
     suspend fun findByImsProjectAndGithubId(
         imsProject: String, githubId: String
     ): IssuePileData?
 
+    /**
+     * Find an issue pile by IMS project ID and GitHub ID
+     * @param imsProject The IMS project ID
+     * @param githubId The GitHub ID
+     * @return The issue pile
+     */
     suspend fun findFirstByImsProjectOrderByLastUpdateDesc(
         imsProject: String
     ): IssuePileData?
 
+    /**
+     * Find all issue piles by IMS project ID requiring a new Timeline request
+     * @param imsProject The IMS project ID
+     * @param needsTimelineRequest Whether the timeline needs to be requested
+     */
     suspend fun findByImsProjectAndNeedsTimelineRequest(
         imsProject: String, needsTimelineRequest: Boolean
     ): List<IssuePileData>
 
+    /**
+     * Find all issue piles by IMS project ID requiring a new Comment request
+     * @param imsProject The IMS project ID
+     * @param needsCommentRequest Whether the comments need to be requested
+     * @return The issue piles
+     */
     suspend fun findByImsProjectAndNeedsCommentRequest(
         imsProject: String, needsCommentRequest: Boolean
     ): List<IssuePileData>
 
+    /**
+     * Find all issue piles by IMS project ID and whether they have unsynced data
+     * @param imsProject The IMS project ID
+     * @param hasUnsyncedData Whether the issue piles have unsynced data
+     * @return The issue piles
+     */
     suspend fun findByImsProjectAndHasUnsyncedData(
         imsProject: String, hasUnsyncedData: Boolean
     ): List<IssuePileData>
 }
 
+/**
+ * A service for issue piles
+ * @param issuePileRepository The issue pile repository
+ */
 @Service
 class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePileRepository by issuePileRepository {
+
+    /**
+     * Integrate an issue into the database
+     * @param imsProject The IMS project
+     * @param data The issue data
+     */
     @Transactional
     suspend fun integrateIssue(
         imsProject: IMSProject, data: IssueReadQuery.Data.Repository.Issues.Node
@@ -147,6 +219,10 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
         issuePileRepository.save(pile).awaitSingle()
     }
 
+    /**
+     * Mark an issue as needing no new timeline request
+     * @param issue The issue
+     */
     @Transactional
     suspend fun markIssueTimelineDone(
         issue: ObjectId
@@ -156,6 +232,11 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
         issuePileRepository.save(pile).awaitSingle()
     }
 
+    /**
+     * Map a TimelineItem from the API to the Database
+     * @param data The API data
+     * @return The database data
+     */
     fun mapTimelineItem(data: TimelineReadQuery.Data.IssueNode.TimelineItems.Node): GithubTimelineItem? {
         return when (data) {
             is IssueCommentTimelineItemData -> {
@@ -202,6 +283,11 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
         }
     }
 
+    /**
+     * Integrate a timeline item into the database
+     * @param issue The issue
+     * @param data The timeline item data
+     */
     @Transactional
     suspend fun integrateTimelineItem(issue: ObjectId, data: TimelineReadQuery.Data.IssueNode.TimelineItems.Node) {
         val pile = issuePileRepository.findById(issue).awaitSingle()
@@ -214,6 +300,13 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
         }
     }
 
+    /**
+     * Mark a comment as needing no new comment request
+     * @param issue The issue
+     * @param comment The comment
+     * @param updatedAt The update date of the comment
+     * @param body The body of the comment
+     */
     @Transactional
     suspend fun markCommentDone(issue: ObjectId, comment: String, updatedAt: OffsetDateTime, body: String) {
         val pile = issuePileRepository.findById(issue).awaitSingle()
@@ -227,6 +320,10 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
         issuePileRepository.save(pile).awaitSingle()
     }
 
+    /**
+     * Mark an issue as done
+     * @param issue The issue
+     */
     @Transactional
     suspend fun markIssueSynced(issue: ObjectId) {
         val pile = issuePileRepository.findById(issue).awaitSingle()
@@ -235,13 +332,31 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
     }
 }
 
+/**
+ * Placeholder for mapping information
+ * @param imsProject The IMS project ID
+ * @param githubId The GitHub ID
+ */
 class TODOTimelineItemConversionInformation(
     imsProject: String, githubId: String
 ) : TimelineItemConversionInformation(imsProject, githubId, null) {}
 
+/**
+ * A timeline item that may be integrated into Gropius
+ * @param githubId The GitHub ID of the timeline item
+ * @param createdAt The creation date of the timeline item
+ * @param createdBy The GitHub user that created the timeline item
+ * @param oldTitle previous title
+ * @param newTitle new title
+ */
 class RenamedTitleEventTimelineItem(
     githubId: String, createdAt: OffsetDateTime, val createdBy: String?, val oldTitle: String, val newTitle: String
 ) : OwnedGithubTimelineItem(githubId, createdAt) {
+
+    /**
+     * Parse API data
+     * @param data The API data
+     */
     constructor(data: RenamedTitleEventTimelineItemData) : this(
         data.id, data.createdAt, data.actor?.login, data.previousTitle, data.currentTitle
     ) {
@@ -272,9 +387,21 @@ class RenamedTitleEventTimelineItem(
 
 }
 
+/**
+ * A timeline item that may be integrated into Gropius
+ * @param githubId The GitHub ID of the timeline item
+ * @param createdAt The creation date of the timeline item
+ * @param createdBy The GitHub user that created the timeline item
+ * @param label The label that was removed
+ */
 class UnlabeledEventTimelineItem(
     githubId: String, createdAt: OffsetDateTime, val createdBy: String?, val label: LabelData
 ) : OwnedGithubTimelineItem(githubId, createdAt) {
+
+    /**
+     * Parse API data
+     * @param data The API data
+     */
     constructor(data: UnlabeledEventTimelineItemData) : this(data.id, data.createdAt, data.actor?.login, data.label) {}
 
     override suspend fun gropiusTimelineItem(
@@ -302,9 +429,21 @@ class UnlabeledEventTimelineItem(
     }
 }
 
+/**
+ * A timeline item that may be integrated into Gropius
+ * @param githubId The GitHub ID of the timeline item
+ * @param createdAt The creation date of the timeline item
+ * @param createdBy The GitHub user that created the timeline item
+ * @param label The label that was added
+ */
 class LabeledEventTimelineItem(
     githubId: String, createdAt: OffsetDateTime, val createdBy: String?, val label: LabelData
 ) : OwnedGithubTimelineItem(githubId, createdAt) {
+
+    /**
+     * Parse API data
+     * @param data The API data
+     */
     constructor(data: LabeledEventTimelineItemData) : this(data.id, data.createdAt, data.actor?.login, data.label) {}
 
     override suspend fun gropiusTimelineItem(
@@ -332,9 +471,21 @@ class LabeledEventTimelineItem(
     }
 }
 
+/**
+ * A timeline item that may be integrated into Gropius
+ * @param githubId The GitHub ID of the timeline item
+ * @param createdAt The creation date of the timeline item
+ * @param createdBy The GitHub user that created the timeline item
+ * @param user The user to unassign
+ */
 class UnassignedTimelineItem(
     githubId: String, createdAt: OffsetDateTime, val createdBy: String?, val user: String
 ) : OwnedGithubTimelineItem(githubId, createdAt) {
+
+    /**
+     * Parse API data
+     * @param data The API data
+     */
     constructor(data: UnassignedEventTimelineItemData) : this(
         data.id, data.createdAt, data.actor?.login, data.assignee?.userData()?.login ?: "ghost"
     ) {
@@ -365,9 +516,21 @@ class UnassignedTimelineItem(
     }
 }
 
+/**
+ * A timeline item that may be integrated into Gropius
+ * @param githubId The GitHub ID of the timeline item
+ * @param createdAt The creation date of the timeline item
+ * @param createdBy The GitHub user that created the timeline item
+ * @param user The user to assign
+ */
 class AssignedTimelineItem(
     githubId: String, createdAt: OffsetDateTime, val createdBy: String?, val user: String
 ) : OwnedGithubTimelineItem(githubId, createdAt) {
+
+    /**
+     * Parse API data
+     * @param data The API data
+     */
     constructor(data: AssignedEventTimelineItemData) : this(
         data.id, data.createdAt, data.actor?.login, data.assignee?.userData()?.login ?: "ghost"
     ) {
@@ -398,8 +561,19 @@ class AssignedTimelineItem(
     }
 }
 
+/**
+ * A timeline item that may be integrated into Gropius
+ * @param githubId The GitHub ID of the timeline item
+ * @param createdAt The creation date of the timeline item
+ * @param createdBy The GitHub user that created the timeline item
+ */
 class ReopenedEventTimelineItem(githubId: String, createdAt: OffsetDateTime, val createdBy: String?) :
     OwnedGithubTimelineItem(githubId, createdAt) {
+
+    /**
+     * Parse API data
+     * @param data The API data
+     */
     constructor(data: ReopenedEventTimelineItemData) : this(data.id, data.createdAt, data.actor?.login) {}
 
     override suspend fun gropiusTimelineItem(
@@ -428,8 +602,19 @@ class ReopenedEventTimelineItem(githubId: String, createdAt: OffsetDateTime, val
     }
 }
 
+/**
+ * A timeline item that may be integrated into Gropius
+ * @param githubId The GitHub ID of the timeline item
+ * @param createdAt The creation date of the timeline item
+ * @param createdBy The GitHub user that created the timeline item
+ */
 class ClosedEventTimelineItem(githubId: String, createdAt: OffsetDateTime, val createdBy: String?) :
     OwnedGithubTimelineItem(githubId, createdAt) {
+
+    /**
+     * Parse API data
+     * @param data The API data
+     */
     constructor(data: ClosedEventTimelineItemData) : this(data.id, data.createdAt, data.actor?.login) {}
 
     override suspend fun gropiusTimelineItem(
@@ -458,6 +643,14 @@ class ClosedEventTimelineItem(githubId: String, createdAt: OffsetDateTime, val c
     }
 }
 
+/**
+ * A timeline item that may be integrated into Gropius
+ * @param githubId The GitHub ID of the timeline item
+ * @param createdAt The creation date of the timeline item
+ * @param body The body of the comment
+ * @param createdBy The GitHub user that created the timeline item
+ * @param recheckDone Whether the comment has been checked for being done
+ */
 class IssueCommentTimelineItem(
     githubId: String,
     createdAt: OffsetDateTime,
@@ -465,6 +658,11 @@ class IssueCommentTimelineItem(
     val createdBy: String?,
     var recheckDone: Boolean = false
 ) : OwnedGithubTimelineItem(githubId, createdAt) {
+
+    /**
+     * Parse API data
+     * @param data The API data
+     */
     constructor(data: IssueCommentTimelineItemData) : this(
         data.id, data.createdAt, data.body, data.author?.login
     ) {
@@ -495,6 +693,11 @@ class IssueCommentTimelineItem(
     }
 }
 
+/**
+ * Placeholder to stop querying unsupported TimelineItems
+ * @param githubId The GitHub ID of the timeline item
+ * @param createdAt The creation date of the timeline item
+ */
 class UnknownTimelineItem(
     githubId: String, createdAt: OffsetDateTime
 ) : OwnedGithubTimelineItem(githubId, createdAt) {
