@@ -277,7 +277,7 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
             is SubscribedEventTimelineItemData -> UnknownTimelineItem(data.id, data.createdAt)
             is UnsubscribedEventTimelineItemData -> UnknownTimelineItem(data.id, data.createdAt)
             else -> {
-                //throw IllegalArgumentException("Invalid GraphQL query response in timeline")
+                //throw IllegalArgumentException("Invalid GraphQL query response in timeline") // TODO: Check if exception or null better
                 null
             }
         }
