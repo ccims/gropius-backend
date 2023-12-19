@@ -47,12 +47,9 @@ class CommentWalker(
                 comment = comment
             )
             val response = apolloClient.query(query).execute()
-            var isRateLimited = false
-            response.errors?.forEach {
-                if (it.nonStandardFields?.get("type") == "RATE_LIMITED") {
-                    isRateLimited = true;
-                }
-            };
+            val isRateLimited = response.errors?.any {
+                it.nonStandardFields?.get("type") == "RATE_LIMITED"
+            } ?: false
             if (isRateLimited) {
                 return GithubGithubResourceWalkerBudgetUsageType()//TODO: rate limit max err
             }

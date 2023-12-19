@@ -48,16 +48,12 @@ class TimelineWalker(
                     issue = issuePile.githubId, since = since, cursor = cursor, issueCount = config.count
                 )
                 val response = apolloClient.query(query).execute()
-                cursor =
-                    if (response.data?.node?.asIssue()?.timelineItems?.pageInfo?.hasNextPage == true) {
-                        response.data?.node?.asIssue()?.timelineItems?.pageInfo?.endCursor
-                    } else null;
-                var isRateLimited = false
-                response.errors?.forEach {
-                    if (it.nonStandardFields?.get("type") == "RATE_LIMITED") {
-                        isRateLimited = true;
-                    }
-                };
+                cursor = if (response.data?.node?.asIssue()?.timelineItems?.pageInfo?.hasNextPage == true) {
+                    response.data?.node?.asIssue()?.timelineItems?.pageInfo?.endCursor
+                } else null;
+                val isRateLimited = response.errors?.any {
+                    it.nonStandardFields?.get("type") == "RATE_LIMITED"
+                } ?: false
                 if (isRateLimited) {
                     return GithubGithubResourceWalkerBudgetUsageType()//TODO: rate limit max err
                 }

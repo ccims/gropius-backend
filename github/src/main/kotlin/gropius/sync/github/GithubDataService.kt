@@ -81,7 +81,7 @@ class GithubDataService(
             labelData.createdAt ?: OffsetDateTime.MIN,
             labelData.name,
             "GitHub Label",
-            "000000"
+            labelData.color
         )
         label.createdBy().value = userMapper.mapUser(imsProject, "github-user")
         label.lastModifiedBy().value = label.createdBy().value

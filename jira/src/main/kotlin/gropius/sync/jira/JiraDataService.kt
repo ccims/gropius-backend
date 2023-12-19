@@ -88,7 +88,7 @@ class JiraDataService(
         val trackable = imsProject.trackable().value
         val labels = trackable.labels().filter { it.name == label }
         if (labels.isEmpty()) {
-            val label = Label(OffsetDateTime.now(), OffsetDateTime.now(), label, "Jira Lebl", "000000")
+            val label = Label(OffsetDateTime.now(), OffsetDateTime.now(), label, "Jira Label", "000000")
             label.createdBy().value = userMapper.mapUser(imsProject, "jira-user")
             label.lastModifiedBy().value = label.createdBy().value
             label.trackables() += trackable

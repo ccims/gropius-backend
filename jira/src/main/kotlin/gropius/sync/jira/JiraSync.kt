@@ -1,7 +1,5 @@
 package gropius.sync.jira
 
-//import gropius.sync.github.config.IMSConfigManager
-//import gropius.sync.github.config.IMSProjectConfig
 import gropius.model.architecture.IMSProject
 import gropius.model.issue.Issue
 import gropius.model.issue.Label
@@ -100,21 +98,33 @@ final class JiraSync(
         return imsProjectConfig.enableOutgoingState
     }
 
-    @OptIn(ExperimentalEncodingApi::class)
     override suspend fun fetchData(imsProjects: List<IMSProject>) {
         for (imsProject in imsProjects) {
             val issueList = mutableListOf<String>()
+            fetchIssueList(imsProject, issueList)
+            fetchIssueContent(issueList, imsProject)
+        }
+    }
+
+    @OptIn(ExperimentalEncodingApi::class)
+    private suspend fun fetchIssueContent(
+        issueList: MutableList<String>,
+        imsProject: IMSProject
+    ) {
+        logger.info("ISSUE LIST $issueList")
+        for (issueId in issueList) {
             var startAt = 0
             while (true) {
                 val imsProjectConfig = IMSProjectConfig(helper, imsProject)
                 val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
-                val basicContent: String = System.getenv("JIRA_DUMMY_EMAIL") + ":" + System.getenv("JIRA_DUMMY_TOKEN")
+                val basicContent: String =
+                    System.getenv("JIRA_DUMMY_EMAIL") + ":" + System.getenv("JIRA_DUMMY_TOKEN")
                 val basicToken = Base64.encode(basicContent.toByteArray())
                 val q = client.get(imsConfig.rootUrl.toString()) {
                     url {
-                        appendPathSegments("search")
-                        parameters.append("jql", "project=${imsProjectConfig.repo}")
-                        parameters.append("expand", "names,schema,editmeta,changelog")
+                        appendPathSegments("issue")
+                        appendPathSegments(issueId)
+                        appendPathSegments("comment")
                         parameters.append("startAt", "$startAt")
                     }
                     headers {
@@ -122,43 +132,46 @@ final class JiraSync(
                             HttpHeaders.Authorization, "Basic ${basicToken}"
                         )
                     }
-                }.body<ProjectQuery>()
-                q.issues(imsProject).forEach {
-                    issueList.add(it.jiraId)
-                    issueDataService.insertIssue(imsProject, it)
+                }.body<CommentQuery>()
+                q.comments.forEach {
+                    issueDataService.insertComment(imsProject, issueId, it)
                 }
-                startAt = q.startAt + q.issues.size
+                startAt = q.startAt + q.comments.size
                 if (startAt >= q.total) break
             }
-            logger.info("ILST $issueList")
-            for (issueId in issueList) {
-                var startAt = 0
-                while (true) {
-                    val imsProjectConfig = IMSProjectConfig(helper, imsProject)
-                    val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
-                    val basicContent: String =
-                        System.getenv("JIRA_DUMMY_EMAIL") + ":" + System.getenv("JIRA_DUMMY_TOKEN")
-                    val basicToken = Base64.encode(basicContent.toByteArray())
-                    val q = client.get(imsConfig.rootUrl.toString()) {
-                        url {
-                            appendPathSegments("issue")
-                            appendPathSegments(issueId)
-                            appendPathSegments("comment")
-                            parameters.append("startAt", "$startAt")
-                        }
-                        headers {
-                            append(
-                                HttpHeaders.Authorization, "Basic ${basicToken}"
-                            )
-                        }
-                    }.body<CommentQuery>()
-                    q.comments.forEach {
-                        issueDataService.insertComment(imsProject, issueId, it)
-                    }
-                    startAt = q.startAt + q.comments.size
-                    if (startAt >= q.total) break
+        }
+    }
+
+    @OptIn(ExperimentalEncodingApi::class)
+    private suspend fun fetchIssueList(
+        imsProject: IMSProject,
+        issueList: MutableList<String>
+    ) {
+        var startAt = 0
+        while (true) {
+            val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+            val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+            val basicContent: String = System.getenv("JIRA_DUMMY_EMAIL") + ":" + System.getenv("JIRA_DUMMY_TOKEN")
+            val basicToken = Base64.encode(basicContent.toByteArray())
+            val q = client.get(imsConfig.rootUrl.toString()) {
+                url {
+                    appendPathSegments("search")
+                    parameters.append("jql", "project=${imsProjectConfig.repo}")
+                    parameters.append("expand", "names,schema,editmeta,changelog")
+                    parameters.append("startAt", "$startAt")
                 }
+                headers {
+                    append(
+                        HttpHeaders.Authorization, "Basic ${basicToken}"
+                    )
+                }
+            }.body<ProjectQuery>()
+            q.issues(imsProject).forEach {
+                issueList.add(it.jiraId)
+                issueDataService.insertIssue(imsProject, it)
             }
+            startAt = q.startAt + q.issues.size
+            if (startAt >= q.total) break
         }
     }
 

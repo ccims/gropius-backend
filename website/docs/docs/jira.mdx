@@ -36,7 +36,7 @@ To mark an `IMS` to connect to Jira, the sync service creates the Jira `IMSTempl
 
 This can be used to create an `IMS`, which requires:
 * the id of an `IMSUser` owning the token which is then used to query the issues (`null` until an `IMSUser` is created for this `IMS`)
-* and the URL of the GraphQL endpoint of the Jira instance (e.g. `https://api.jira.com/graphql` for the Jira Jira)
+* and the URL of the REST endpoint of the Jira instance (e.g. `https://<Something>.atlassian.net/rest/api/2` for the Jira Jira)
 in the appropriate `templatedFields`.
 
 If using the dev-login-service, the `IMSUser` is not created automatically and has to be created via request to the internal api (should be port 8081) with the mutation `createIMSUser`.
@@ -201,7 +201,7 @@ mutation {
 Execute sync once or twice
 
 See Result with
-```
+```gql
 query {
   projects(first: 100) {
     nodes {

@@ -28,6 +28,7 @@ fragment LabelData on Label {
     name
     isDefault
     createdAt
+    color
 }
 fragment IssueData on Issue {
     id

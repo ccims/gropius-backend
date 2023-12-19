@@ -64,7 +64,7 @@ class HeuristicDereplicator(val issueThreshold: Double, val commentThreshold: Do
             issueNamedNode.relationshipTo(bodyNamedNode, Issue.BODY).asCondition()
                 .and(issueNamedNode.relationshipFrom(trackableNamedNode, Trackable.ISSUE).asCondition())
         ).toIterable().map { it.rawId!! }.toSet()
-        logger.trace("OISSUE ${issue.rawId} ${issue.title} $titleMatches $createdByMatches $bodyMatches")
+        logger.trace("OTHER ISSUES ${issue.rawId} ${issue.title} $titleMatches $createdByMatches $bodyMatches")
         for (otherIssue in otherIssues) {
             if (matchIssue(
                     issue,
