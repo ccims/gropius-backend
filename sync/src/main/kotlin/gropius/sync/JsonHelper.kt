@@ -48,4 +48,13 @@ class JsonHelper(
         val d = objectMapper.readTree(input)
         return if (d.isNumber) d.doubleValue() else null
     }
+
+    fun parseLabelStateMap(input: String?): Map<String, String> {
+        if (input == null) {
+            return mapOf()
+        }
+        return objectMapper.readTree(input).toList().map {
+            it["label"].textValue() to it["state"].textValue()
+        }.toMap()
+    }
 }
