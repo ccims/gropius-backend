@@ -26,6 +26,7 @@ class IssueRelation(
 
     companion object {
         const val TYPE = "TYPE"
+        const val INITIAL_TYPE = "INITIAL_TYPE"
         const val RELATED_ISSUE = "RELATED_ISSUE"
     }
 
@@ -33,6 +34,11 @@ class IssueRelation(
     @GraphQLDescription("The type of the relation, e.g. DUPLICATES. Allowed types are defined by the IssueTemplate.")
     @FilterProperty
     val type by NodeProperty<IssueRelationType?>()
+
+    @NodeRelationship(INITIAL_TYPE, Direction.OUTGOING)
+    @GraphQLDescription("The initial type of the relation, e.g. DUPLICATES. Allowed types are defined by the IssueTemplate.")
+    @FilterProperty
+    val initialType by NodeProperty<IssueRelationType?>()
 
     @NodeRelationship(RELATED_ISSUE, Direction.OUTGOING)
     @GraphQLDescription("The end of the relation, null if deleted.")

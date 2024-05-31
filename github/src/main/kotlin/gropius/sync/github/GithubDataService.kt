@@ -74,7 +74,21 @@ class GithubDataService(
      * Find and ensure the IMSTemplate in the database
      * @return the IssueTemplate
      */
-    suspend fun issueTemplate(): IssueTemplate {
+    suspend fun issueTemplate(imsProject: IMSProject): IssueTemplate {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        if (imsProjectConfig.defaultTemplate != null) {
+            val template = neoOperations.findById<IssueTemplate>(imsProjectConfig.defaultTemplate)
+            if (template != null) {
+                return template
+            }
+        }
+        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+        if (imsConfig.defaultTemplate != null) {
+            val template = neoOperations.findById<IssueTemplate>(imsConfig.defaultTemplate)
+            if (template != null) {
+                return template
+            }
+        }
         return neoOperations.findAll(IssueTemplate::class.java).awaitFirstOrNull() ?: neoOperations.save(
             IssueTemplate("noissue", "", mutableMapOf(), false)
         ).awaitSingle()
@@ -123,9 +137,27 @@ class GithubDataService(
      * Find and ensure the IMSIssueTemplate in the database
      * @return the IssueType
      */
-    suspend fun issueType(): IssueType {
+    suspend fun issueType(imsProject: IMSProject): IssueType {
+        val template = issueTemplate(imsProject)
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        if (imsProjectConfig.defaultType != null) {
+            val type = neoOperations.findById<IssueType>(imsProjectConfig.defaultType)
+            if ((type != null) && (type.partOf().contains(template))) {
+                return type
+            }
+        }
+        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+        if (imsConfig.defaultType != null) {
+            val type = neoOperations.findById<IssueType>(imsConfig.defaultType)
+            if ((type != null) && (type.partOf().contains(template))) {
+                return type
+            }
+        }
+        if (template.issueTypes().isNotEmpty()) {
+            return template.issueTypes().first()
+        }
         val newIssueType = IssueType("type", "", "")
-        newIssueType.partOf() += issueTemplate()
+        newIssueType.partOf() += template
         return neoOperations.findAll(IssueType::class.java).awaitFirstOrNull() ?: neoOperations.save(newIssueType)
             .awaitSingle()
     }
@@ -135,11 +167,12 @@ class GithubDataService(
      * @param isOpen whether the state is open or closed
      * @return the IssueState
      */
-    suspend fun issueState(isOpen: Boolean): IssueState {
+    suspend fun issueState(imsProject: IMSProject, isOpen: Boolean): IssueState {
+        val template = issueTemplate(imsProject)
         val newIssueState = IssueState(if (isOpen) "open" else "closed", "", isOpen)
-        newIssueState.partOf() += issueTemplate()
-        return neoOperations.findAll(IssueState::class.java).filter { it.isOpen == isOpen }.awaitFirstOrNull()
-            ?: neoOperations.save(newIssueState).awaitSingle()
+        newIssueState.partOf() += template
+        return template.issueStates().firstOrNull { it.isOpen == isOpen } ?: neoOperations.save(newIssueState)
+            .awaitSingle()
     }
 
     /**
@@ -193,8 +226,7 @@ class GithubDataService(
         }
         logger.info("Requesting with users: $userList")
         return tokenManager.executeUntilWorking(imsProject.ims().value, userList) { token ->
-            val apolloClient = ApolloClient.Builder()
-                .serverUrl(imsConfig.graphQLUrl.toString())
+            val apolloClient = ApolloClient.Builder().serverUrl(imsConfig.graphQLUrl.toString())
                 .addHttpHeader("Authorization", "Bearer ${token.token}").build()
             val res = apolloClient.mutation(body).execute()
             logger.info("Response Code for request with token $token is ${res.data} ${res.errors}")

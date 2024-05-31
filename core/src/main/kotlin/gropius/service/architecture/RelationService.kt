@@ -2,6 +2,7 @@ package gropius.service.architecture
 
 import com.expediagroup.graphql.generator.scalars.ID
 import gropius.authorization.GropiusAuthorizationContext
+import gropius.dto.input.architecture.BulkCreateRelationInput
 import gropius.dto.input.architecture.CreateRelationInput
 import gropius.dto.input.architecture.UpdateRelationInput
 import gropius.dto.input.common.DeleteNodeInput
@@ -73,6 +74,22 @@ class RelationService(
         val graphUpdater = ComponentGraphUpdater()
         graphUpdater.createRelation(relation)
         return graphUpdater.save(relation, nodeRepository)
+    }
+
+    /**
+     * Creates multiple [Relation]s based on the provided [input]
+     * Checks the authorization status
+     *
+     * @param authorizationContext used to check for the required permission
+     * @param input defines the [Relation]s
+     * @return the saved created [Relation]s
+     */
+    suspend fun bulkCreateRelation(
+        authorizationContext: GropiusAuthorizationContext, input: BulkCreateRelationInput
+    ): List<Relation> {
+        input.validate()
+        val relations = input.relations.map { createRelation(authorizationContext, it) }
+        return relations
     }
 
     /**

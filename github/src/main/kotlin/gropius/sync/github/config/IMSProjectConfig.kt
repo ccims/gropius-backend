@@ -1,6 +1,5 @@
 package gropius.sync.github.config
 
-import com.lectra.koson.arr
 import com.lectra.koson.obj
 import gropius.model.architecture.IMSProject
 import gropius.sync.JsonHelper
@@ -22,7 +21,9 @@ data class IMSProjectConfig(
     val enableOutgoingComments: Boolean,
     val enableOutgoingAssignments: Boolean,
     val enableOutgoingTitleChanges: Boolean,
-    val enableOutgoingState: Boolean
+    val enableOutgoingState: Boolean,
+    val defaultType: String?,
+    val defaultTemplate: String?
 ) {
     /**
      * @param imsProject the Gropius IMSProject to use as input
@@ -41,7 +42,9 @@ data class IMSProjectConfig(
         enableOutgoingComments = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-comments"]),
         enableOutgoingAssignments = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-assignments"]),
         enableOutgoingTitleChanges = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-title-changes"]),
-        enableOutgoingState = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-state"])
+        enableOutgoingState = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-state"]),
+        defaultType = helper.parseString(imsProject.templatedFields["default-type"]),
+        defaultTemplate = helper.parseString(imsProject.templatedFields["default-template"])
     )
 
     companion object {
@@ -64,6 +67,18 @@ data class IMSProjectConfig(
             }
             "metadata" to obj {
                 "gropius-type" to "github-owner"
+            }
+        }.toString(), "default-template" to obj {
+            "nullable" to true
+            "type" to "string"
+            "metadata" to obj {
+                "gropius-node" to "IssueTemplate"
+            }
+        }.toString(), "default-type" to obj {
+            "nullable" to true
+            "type" to "string"
+            "metadata" to obj {
+                "gropius-node" to "IssueType"
             }
         }.toString(), "enable-outgoing" to obj {
             "nullable" to true

@@ -80,7 +80,7 @@ class JiraDataService(
      * Get the default issue template
      * @return the default issue template
      */
-    suspend fun issueTemplate(): IssueTemplate {
+    suspend fun issueTemplate(imsProject: IMSProject): IssueTemplate {
         val newTemplate = IssueTemplate("noissue", "", mutableMapOf(), false)
         newTemplate.issueStates() += IssueState("open", "", true)
         newTemplate.issueStates() += IssueState("closed", "", false)
@@ -94,9 +94,9 @@ class JiraDataService(
      * Get the default issue type
      * @return the default issue type
      */
-    suspend fun issueType(): IssueType {
+    suspend fun issueType(imsProject: IMSProject): IssueType {
         val newIssueType = IssueType("type", "", "")
-        newIssueType.partOf() += issueTemplate()
+        newIssueType.partOf() += issueTemplate(imsProject)
         return neoOperations.findAll(IssueType::class.java).awaitFirstOrNull() ?: neoOperations.save(newIssueType)
             .awaitSingle()
     }
@@ -106,9 +106,9 @@ class JiraDataService(
      * @param isOpen whether the issue state is open or closed
      * @return the default issue state
      */
-    suspend fun issueState(isOpen: Boolean): IssueState {
+    suspend fun issueState(imsProject: IMSProject, isOpen: Boolean): IssueState {
         val newIssueState = IssueState(if (isOpen) "open" else "closed", "", isOpen)
-        newIssueState.partOf() += issueTemplate()
+        newIssueState.partOf() += issueTemplate(imsProject)
         return neoOperations.findAll(IssueState::class.java).filter { it.isOpen == isOpen }.awaitFirstOrNull()
             ?: neoOperations.save(newIssueState).awaitSingle()
     }

@@ -5,6 +5,10 @@ import gropius.model.template.*
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.toSet
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.neo4j.core.ReactiveNeo4jOperations
 import org.springframework.data.neo4j.core.findAll
@@ -102,6 +106,38 @@ class IMSConfigManager(
         possibleTemplate: BaseTemplate<*, *>, referenceName: String, referenceType: Map<String, String>
     ): Boolean {
         //TODO: Replace with matching logic of template update operation
+        if (possibleTemplate.name != referenceName) {
+            return false;
+        }
+        for ((destinationKey, destinationType) in referenceType) {
+            val destinationTypedef = Json.parseToJsonElement(destinationType).jsonObject
+            if (possibleTemplate.templateFieldSpecifications.containsKey(destinationKey)) {
+                val possibleType = possibleTemplate.templateFieldSpecifications[destinationKey]
+                if (destinationType == possibleType) {
+                    continue
+                } else {
+                    //TODO: More graceful comparison
+                    return false
+                }
+            } else if (destinationTypedef["nullable"]?.jsonPrimitive?.boolean == true) {
+                continue
+            } else {
+                return false
+            }
+        }
+        return true
+    }
+
+    /**
+     * Check if a given Template is identical.
+     * @param possibleTemplate a random template
+     * @param referenceName the title to check
+     * @param referenceType check if all values specified by possibleTemplate are valid using the referenceType schemas
+     * @return true if valid
+     */
+    private fun isContentIdentical(
+        possibleTemplate: BaseTemplate<*, *>, referenceName: String, referenceType: Map<String, String>
+    ): Boolean {
         return (possibleTemplate.name == referenceName) && (possibleTemplate.templateFieldSpecifications == referenceType)
     }
 
@@ -123,7 +159,20 @@ class IMSConfigManager(
                 it.imsUserTemplate().value, IMS_USER_TEMPLATE_NAME, IMS_USER_TEMPLATE_FIELDS
             )
         }.toSet().toMutableSet()
-        if (acceptableTemplates.isEmpty()) {
+        val identicalTemplates = neoOperations.findAll<IMSTemplate>().filter {
+            (!it.isDeprecated) && isContentIdentical(
+                it, IMSConfig.IMS_TEMPLATE_NAME, IMSConfig.IMS_TEMPLATE_FIELDS
+            ) && isContentIdentical(
+                it.imsProjectTemplate().value,
+                IMSProjectConfig.IMS_PROJECT_TEMPLATE_NAME,
+                IMSProjectConfig.IMS_PROJECT_TEMPLATE_FIELDS
+            ) && isContentIdentical(
+                it.imsIssueTemplate().value, IMS_ISSUE_TEMPLATE_NAME, IMS_ISSUE_TEMPLATE_FIELDS
+            ) && isContentIdentical(
+                it.imsUserTemplate().value, IMS_USER_TEMPLATE_NAME, IMS_USER_TEMPLATE_FIELDS
+            )
+        }.toSet().toMutableSet()
+        if (identicalTemplates.isEmpty()) {
             val imsTemplate =
                 IMSTemplate(IMSConfig.IMS_TEMPLATE_NAME, "", IMSConfig.IMS_TEMPLATE_FIELDS.toMutableMap(), false)
             imsTemplate.imsProjectTemplate().value = IMSProjectTemplate(

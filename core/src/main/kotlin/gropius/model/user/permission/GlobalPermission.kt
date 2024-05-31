@@ -13,7 +13,7 @@ import io.github.graphglue.model.DomainNode
  */
 const val GLOBAL_PERMISSION_ENTRY_NAME = "PermissionEntry"
 
-@DomainNode(searchQueryName = "searchGlobalPermissions")
+@DomainNode("globalPermissions", searchQueryName = "searchGlobalPermissions")
 @GraphQLDescription(
     """Permission associated with a set of users.
     Can have NodePermissions to grant permissions on specific Nodes.

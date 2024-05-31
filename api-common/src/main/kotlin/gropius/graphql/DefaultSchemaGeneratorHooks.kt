@@ -48,8 +48,9 @@ object DefaultSchemaGeneratorHooks : SchemaGeneratorHooks {
         kClass: KClass<*>, function: KFunction<*>, fieldDefinition: GraphQLFieldDefinition
     ): GraphQLFieldDefinition {
         return if (function.hasAnnotation<AutoPayloadType>()) {
-            val fieldName = fieldDefinition.type.asFieldName
-            val description = function.findAnnotation<AutoPayloadType>()!!.description
+            val annotation = function.findAnnotation<AutoPayloadType>()!!
+            val fieldName = annotation.fieldName.ifEmpty { fieldDefinition.type.asFieldName }
+            val description = annotation.description
             val payloadType =
                 GraphQLObjectType.newObject().name(fieldDefinition.name.replaceFirstChar(Char::titlecase) + "Payload")
                     .field {

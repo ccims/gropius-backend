@@ -214,8 +214,8 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
             )
         titleChangedEvent.createdBy().value = jiraService.mapUser(imsProject, author)
         titleChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
-        titleChangedEvent.oldState().value = jiraService.issueState(data.fromString == null)
-        titleChangedEvent.newState().value = jiraService.issueState(data.toString == null)
+        titleChangedEvent.oldState().value = jiraService.issueState(imsProject, data.fromString == null)
+        titleChangedEvent.newState().value = jiraService.issueState(imsProject, data.toString == null)
         return listOf<TimelineItem>(
             titleChangedEvent
         ) to convInfo;
@@ -359,6 +359,12 @@ data class IssueData(
         //TODO("Not yet implemented")
     }
 
+    override suspend fun fillImsIssueTemplatedFields(
+        templatedFields: MutableMap<String, String>,
+        service: SyncDataService
+    ) {
+    }
+
     override suspend fun createIssue(imsProject: IMSProject, service: SyncDataService): Issue {
         val jiraService = (service as JiraDataService)
         val created = OffsetDateTime.parse(
@@ -388,10 +394,10 @@ data class IssueData(
         issue.createdBy().value = jiraService.mapUser(imsProject, fields["creator"]!!)
         issue.lastModifiedBy().value = jiraService.mapUser(imsProject, fields["creator"]!!)
         issue.body().value.issue().value = issue
-        issue.state().value = jiraService.issueState(true)
-        issue.template().value = jiraService.issueTemplate()
+        issue.state().value = jiraService.issueState(imsProject, true)
+        issue.template().value = jiraService.issueTemplate(imsProject)
         issue.trackables() += jiraService.neoOperations.findAll(Project::class.java).awaitFirst()
-        issue.type().value = jiraService.issueType()
+        issue.type().value = jiraService.issueType(imsProject)
         return issue
     }
 }

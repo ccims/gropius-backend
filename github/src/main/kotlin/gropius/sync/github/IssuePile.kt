@@ -1,5 +1,6 @@
 package gropius.sync.github
 
+import com.fasterxml.jackson.databind.JsonNode
 import gropius.model.architecture.IMSProject
 import gropius.model.architecture.Project
 import gropius.model.issue.Issue
@@ -83,6 +84,8 @@ data class IssuePileData(
     var createdAt: OffsetDateTime,
     val timelineItems: MutableList<GithubTimelineItem>,
     val createdBy: UserData?,
+    var number: Int = 0,
+    var url: String = "",
     @Indexed
     var needsTimelineRequest: Boolean = true,
     @Indexed
@@ -113,16 +116,7 @@ data class IssuePileData(
     override suspend fun createIssue(imsProject: IMSProject, service: SyncDataService): Issue {
         val githubService = (service as GithubDataService)
         val issue = Issue(
-            createdAt,
-            lastUpdate,
-            mutableMapOf(),
-            initialTitle,
-            initialDescription,
-            lastUpdate,
-            null,
-            null,
-            null,
-            null
+            createdAt, lastUpdate, mutableMapOf(), initialTitle, initialDescription, lastUpdate, null, null, null, null
         )
         issue.body().value = Body(createdAt, lastUpdate, lastUpdate)
         issue.body().value.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
@@ -131,11 +125,37 @@ data class IssuePileData(
         issue.createdBy().value = githubService.mapUser(imsProject, createdBy)
         issue.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
         issue.body().value.issue().value = issue
-        issue.state().value = githubService.issueState(true)
-        issue.template().value = githubService.issueTemplate()
+        issue.state().value = githubService.issueState(imsProject, true)
+        issue.template().value = githubService.issueTemplate(imsProject)
         issue.trackables() += githubService.neoOperations.findAll(Project::class.java).awaitFirst()
-        issue.type().value = githubService.issueType()
+        issue.type().value = githubService.issueType(imsProject)
         return issue
+    }
+
+    override suspend fun fillImsIssueTemplatedFields(
+        templatedFields: MutableMap<String, String>, service: SyncDataService
+    ) {
+        val githubService = (service as GithubDataService)
+        val encodedNumber = githubService.jsonNodeMapper.jsonNodeToDeterministicString(
+            githubService.objectMapper.valueToTree<JsonNode>(
+                number
+            )
+        )
+        templatedFields["number"] = encodedNumber
+
+        val encodedUrl = githubService.jsonNodeMapper.jsonNodeToDeterministicString(
+            githubService.objectMapper.valueToTree<JsonNode>(
+                url
+            )
+        )
+        templatedFields["url"] = encodedUrl
+
+        val encodedId = githubService.jsonNodeMapper.jsonNodeToDeterministicString(
+            githubService.objectMapper.valueToTree<JsonNode>(
+                githubId
+            )
+        )
+        templatedFields["id"] = encodedId
     }
 }
 
@@ -220,7 +240,9 @@ class IssuePileService(val issuePileRepository: IssuePileRepository) : IssuePile
             data.updatedAt,
             data.createdAt,
             mutableListOf(),
-            data.author
+            data.author,
+            data.number,
+            data.url.toString()
         )
         pile.lastUpdate = data.updatedAt
         pile.needsTimelineRequest = true;
@@ -361,11 +383,7 @@ class TODOTimelineItemConversionInformation(
  * @param newTitle new title
  */
 class RenamedTitleEventTimelineItem(
-    githubId: String,
-    createdAt: OffsetDateTime,
-    val createdBy: UserData?,
-    val oldTitle: String,
-    val newTitle: String
+    githubId: String, createdAt: OffsetDateTime, val createdBy: UserData?, val oldTitle: String, val newTitle: String
 ) : OwnedGithubTimelineItem(githubId, createdAt) {
 
     /**
@@ -373,11 +391,7 @@ class RenamedTitleEventTimelineItem(
      * @param data The API data
      */
     constructor(data: RenamedTitleEventTimelineItemData) : this(
-        data.id,
-        data.createdAt,
-        data.actor,
-        data.previousTitle,
-        data.currentTitle
+        data.id, data.createdAt, data.actor, data.previousTitle, data.currentTitle
     ) {
     }
 
@@ -619,8 +633,8 @@ class ReopenedEventTimelineItem(githubId: String, createdAt: OffsetDateTime, val
             }
             event.createdBy().value = githubService.mapUser(imsProject, createdBy)
             event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
-            event.newState().value = githubService.issueState(true)
-            event.oldState().value = githubService.issueState(false)
+            event.newState().value = githubService.issueState(imsProject, true)
+            event.oldState().value = githubService.issueState(imsProject, false)
             return listOf<TimelineItem>(event) to convInfo;
         }
         return listOf<TimelineItem>() to convInfo;
@@ -661,8 +675,8 @@ class ClosedEventTimelineItem(githubId: String, createdAt: OffsetDateTime, val c
             }
             event.createdBy().value = githubService.mapUser(imsProject, createdBy)
             event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
-            event.newState().value = githubService.issueState(false)
-            event.oldState().value = githubService.issueState(true)
+            event.newState().value = githubService.issueState(imsProject, false)
+            event.oldState().value = githubService.issueState(imsProject, true)
             return listOf<TimelineItem>(event) to convInfo;
         }
         return listOf<TimelineItem>() to convInfo;

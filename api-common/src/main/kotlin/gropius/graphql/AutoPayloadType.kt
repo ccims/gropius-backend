@@ -7,7 +7,8 @@ package gropius.graphql
  * annotated with this annotation
  *
  * @param description the description of the single field of the generated payload type
+ * @param fieldName the name of the field in the generated payload type, defaults to lowercased return type name
  */
 @MustBeDocumented
 @Target(AnnotationTarget.FUNCTION)
-annotation class AutoPayloadType(val description: String)
+annotation class AutoPayloadType(val description: String, val fieldName: String = "")

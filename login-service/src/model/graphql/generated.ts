@@ -377,6 +377,8 @@ export type AssignmentFilterInput = {
   /** Filter by id */
   id?: InputMaybe<IdFilterInput>;
   /** Filters for nodes where the related node match this filter */
+  initialType?: InputMaybe<AssignmentTypeFilterInput>;
+  /** Filters for nodes where the related node match this filter */
   issue?: InputMaybe<IssueFilterInput>;
   /** Filter by lastModifiedAt */
   lastModifiedAt?: InputMaybe<DateTimeFilterInput>;
@@ -1058,6 +1060,24 @@ export type GlobalPermissionFilterInput = {
   /** Filter by users */
   users?: InputMaybe<GropiusUserListFilterInput>;
 };
+
+/** Defines the order of a GlobalPermission list */
+export type GlobalPermissionOrder = {
+  /** The direction to order by, defaults to ASC */
+  direction?: InputMaybe<OrderDirection>;
+  /** The field to order by, defaults to ID */
+  field?: InputMaybe<GlobalPermissionOrderField>;
+};
+
+/** Fields a list of GlobalPermission can be sorted by */
+export enum GlobalPermissionOrderField {
+  /** Order by allUsers */
+  AllUsers = 'ALL_USERS',
+  /** Order by id */
+  Id = 'ID',
+  /** Order by name */
+  Name = 'NAME'
+}
 
 /** Filter used to filter GropiusUser */
 export type GropiusUserFilterInput = {
@@ -2312,6 +2332,8 @@ export type IssueRelationFilterInput = {
   createdBy?: InputMaybe<UserFilterInput>;
   /** Filter by id */
   id?: InputMaybe<IdFilterInput>;
+  /** Filters for nodes where the related node match this filter */
+  initialType?: InputMaybe<IssueRelationTypeFilterInput>;
   /** Filters for nodes where the related node match this filter */
   issue?: InputMaybe<IssueFilterInput>;
   /** Filter by lastModifiedAt */

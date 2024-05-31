@@ -59,6 +59,19 @@ class ArchitectureMutations(
         return componentService.createComponent(dfe.gropiusAuthorizationContext, input)
     }
 
+    @GraphQLDescription(
+        """Creates multiple Components, requires CAN_CREATE_COMPONENTS.
+        Automatically generates a default ComponentPermission which grants the authenticated user READ and ADMIN
+        """
+    )
+    @AutoPayloadType("The created Components", "components")
+    suspend fun bulkCreateComponent(
+        @GraphQLDescription("Defines the created Components")
+        input: BulkCreateComponentInput, dfe: DataFetchingEnvironment
+    ): List<Component> {
+        return componentService.bulkCreateComponent(dfe.gropiusAuthorizationContext, input)
+    }
+
     @GraphQLDescription("Updates the specified Component, requires ADMIN on the component to update")
     @AutoPayloadType("The updated Component")
     suspend fun updateComponent(
@@ -313,6 +326,20 @@ class ArchitectureMutations(
         input: CreateRelationInput, dfe: DataFetchingEnvironment
     ): Relation {
         return relationService.createRelation(
+            dfe.gropiusAuthorizationContext, input
+        )
+    }
+
+    @GraphQLDescription(
+        """Creates multiple Relations, requires RELATE_FROM_COMPONENT on the Component associated with start.
+        """
+    )
+    @AutoPayloadType("The created Relations", "relations")
+    suspend fun bulkCreateRelation(
+        @GraphQLDescription("Defines the created Relations")
+        input: BulkCreateRelationInput, dfe: DataFetchingEnvironment
+    ): List<Relation> {
+        return relationService.bulkCreateRelation(
             dfe.gropiusAuthorizationContext, input
         )
     }

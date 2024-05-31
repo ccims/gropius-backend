@@ -20,6 +20,7 @@ class Assignment(createdAt: OffsetDateTime, lastModifiedAt: OffsetDateTime) : Pu
 
     companion object {
         const val TYPE = "TYPE"
+        const val INITIAL_TYPE = "INITIAL_TYPE"
         const val USER = "USER"
     }
 
@@ -27,6 +28,11 @@ class Assignment(createdAt: OffsetDateTime, lastModifiedAt: OffsetDateTime) : Pu
     @GraphQLDescription("The type of Assignment, e.g. REVIEWER. Allowed types are defined by the IssueTemplate.")
     @FilterProperty
     val type by NodeProperty<AssignmentType?>()
+
+    @NodeRelationship(INITIAL_TYPE, Direction.OUTGOING)
+    @GraphQLDescription("The initial type of Assignment, e.g. REVIEWER. Allowed types are defined by the IssueTemplate.")
+    @FilterProperty
+    val initialType by NodeProperty<AssignmentType?>()
 
     @NodeRelationship(USER, Direction.OUTGOING)
     @GraphQLDescription("The User assigned to the Issue.")

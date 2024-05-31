@@ -64,4 +64,12 @@ abstract class IncomingIssue() {
      * @return The gropius issue.
      */
     abstract suspend fun createIssue(imsProject: IMSProject, service: SyncDataService): Issue
+
+    /**
+     * This function sets the templated fields on an IMSIssue.
+     * @param service The service used to sync the data.
+     */
+    abstract suspend fun fillImsIssueTemplatedFields(
+        templatedFields: MutableMap<String, String>, service: SyncDataService
+    )
 }

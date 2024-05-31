@@ -96,10 +96,10 @@ final class GithubSync(
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         val budget = generalBudget as GithubResourceWalkerBudget
 
-        githubDataService.issueTemplate()
-        githubDataService.issueType()
-        githubDataService.issueState(true)
-        githubDataService.issueState(false)
+        githubDataService.issueTemplate(imsProject)
+        githubDataService.issueType(imsProject)
+        githubDataService.issueState(imsProject, true)
+        githubDataService.issueState(imsProject, false)
 
         val walkers = mutableListOf<ResourceWalker>()
         walkers += IssueWalker(

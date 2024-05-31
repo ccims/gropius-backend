@@ -377,13 +377,13 @@ class IssueService(
         if (issue.type().value !in newTemplate.issueTypes()) {
             val existingType = type ?: throw IllegalStateException("Old IssueType not compatible")
             event.childItems() += changeIssueType(
-                issue, issue.type().value, existingType, atTime, byUser
+                issue, issue.type().value, existingType, atTime, byUser, false
             )
         }
         if (issue.state().value !in newTemplate.issueStates()) {
             val existingState = state ?: throw IllegalStateException("Old IssueState not compatible")
             event.childItems() += changeIssueState(
-                issue, issue.state().value, existingState, atTime, byUser
+                issue, issue.state().value, existingState, atTime, byUser, false
             )
         }
         if (issue.priority().value !in newTemplate.issuePriorities()) {
@@ -1263,19 +1263,27 @@ class IssueService(
      * @param newState the new `state`
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
+     * @param doAggregation whether the aggregation should be updated, defaults to `true`
      * @returns the created [StateChangedEvent]
      */
     suspend fun changeIssueState(
-        issue: Issue, oldState: IssueState, newState: IssueState, atTime: OffsetDateTime, byUser: User
+        issue: Issue,
+        oldState: IssueState,
+        newState: IssueState,
+        atTime: OffsetDateTime,
+        byUser: User,
+        doAggregation: Boolean = true
     ): StateChangedEvent {
         checkIssueStateCompatibility(issue, newState)
         val event = StateChangedEvent(atTime, atTime)
         event.newState().value = newState
         event.oldState().value = oldState
         changeIssueProperty(issue, newState, atTime, byUser, issue.state()::value, event)
-        val aggregationUpdater = IssueAggregationUpdater()
-        aggregationUpdater.changedIssueStateOrType(issue, oldState, issue.type().value)
-        aggregationUpdater.save(nodeRepository)
+        if (doAggregation) {
+            val aggregationUpdater = IssueAggregationUpdater()
+            aggregationUpdater.changedIssueStateOrType(issue, oldState, issue.type().value)
+            aggregationUpdater.save(nodeRepository)
+        }
         return event
     }
 
@@ -1326,19 +1334,27 @@ class IssueService(
      * @param newType the new `type`
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
+     * @param doAggregation whether the aggregation should be updated, defaults to `true`
      * @returns the created [TypeChangedEvent]
      */
     suspend fun changeIssueType(
-        issue: Issue, oldType: IssueType, newType: IssueType, atTime: OffsetDateTime, byUser: User
+        issue: Issue,
+        oldType: IssueType,
+        newType: IssueType,
+        atTime: OffsetDateTime,
+        byUser: User,
+        doAggregation: Boolean = true
     ): TypeChangedEvent {
         checkIssueTypeCompatibility(issue, newType)
         val event = TypeChangedEvent(atTime, atTime)
         event.newType().value = newType
         event.oldType().value = oldType
         changeIssueProperty(issue, newType, atTime, byUser, issue.type()::value, event)
-        val aggregationUpdater = IssueAggregationUpdater()
-        aggregationUpdater.changedIssueStateOrType(issue, issue.state().value, oldType)
-        aggregationUpdater.save(nodeRepository)
+        if (doAggregation) {
+            val aggregationUpdater = IssueAggregationUpdater()
+            aggregationUpdater.changedIssueStateOrType(issue, issue.state().value, oldType)
+            aggregationUpdater.save(nodeRepository)
+        }
         return event
     }
 
@@ -1597,8 +1613,10 @@ class IssueService(
         val event = Assignment(atTime, atTime)
         event.user().value = user
         event.type().value = assignmentType
+        event.initialType().value = assignmentType
         createdTimelineItem(issue, event, atTime, byUser)
         issue.assignments() += event
+        issue.participants() += user
         return event
     }
 
@@ -1784,6 +1802,7 @@ class IssueService(
         val relation = IssueRelation(atTime, atTime)
         relation.relatedIssue().value = relatedIssue
         relation.type().value = issueRelationType
+        relation.initialType().value = issueRelationType
         createdTimelineItem(issue, relation, atTime, byUser)
         issue.outgoingRelations() += relation
         val relatedEvent = RelatedByIssueEvent(atTime, atTime)
