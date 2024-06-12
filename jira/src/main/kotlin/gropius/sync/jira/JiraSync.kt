@@ -12,6 +12,7 @@ import gropius.sync.jira.config.IMSConfigManager
 import gropius.sync.jira.config.IMSProjectConfig
 import gropius.sync.jira.model.*
 import io.ktor.client.call.*
+import io.ktor.client.plugins.*
 import io.ktor.http.*
 import kotlinx.serialization.json.*
 import org.slf4j.LoggerFactory
@@ -297,24 +298,28 @@ final class JiraSync(
     }
 
     override suspend fun createOutgoingIssue(imsProject: IMSProject, issue: Issue): IssueConversionInformation? {
-        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
-        val iid = jiraDataService.request(
-            imsProject,
-            listOf(issue.createdBy().value, issue.lastModifiedBy().value) + issue.timelineItems()
-                .map { it.createdBy().value },
-            HttpMethod.Post,
-            IssueQueryRequest(
-                IssueQueryRequestFields(
-                    issue.title,
-                    issue.bodyBody,
-                    IssueTypeRequest("Bug"),
-                    ProjectRequest(imsProjectConfig.repo),
-                    listOf()
+        try {
+            val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+            val iid = jiraDataService.request(
+                imsProject,
+                listOf(issue.createdBy().value, issue.lastModifiedBy().value) + issue.timelineItems()
+                    .map { it.createdBy().value },
+                HttpMethod.Post,
+                IssueQueryRequest(
+                    IssueQueryRequestFields(
+                        issue.title,
+                        issue.bodyBody,
+                        IssueTypeRequest("Bug"),
+                        ProjectRequest(imsProjectConfig.repo),
+                        listOf()
+                    )
                 )
-            )
-        ) {
-            appendPathSegments("issue")
-        }.second.body<JsonObject>()["id"]!!.jsonPrimitive.content
-        return IssueConversionInformation(imsProject.rawId!!, iid, issue.rawId!!)
+            ) {
+                appendPathSegments("issue")
+            }.second.body<JsonObject>()["id"]!!.jsonPrimitive.content
+            return IssueConversionInformation(imsProject.rawId!!, iid, issue.rawId!!)
+        } catch (e: ClientRequestException) {
+            return null
+        }
     }
 }

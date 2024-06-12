@@ -47,7 +47,7 @@ data class ChangeLogEntry(
  */
 @Serializable
 @Document
-data class ChangeLogContainer(val histories: List<ChangeLogEntry>)
+data class ChangeLogContainer(val histories: MutableList<ChangeLogEntry>)
 
 /**
  * Kotlin representation of the Issue JSON
