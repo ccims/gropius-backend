@@ -12,6 +12,8 @@ import java.net.URI
  * @param readUser the read user string extracted from the template
  * @param rootUrl the read url extracted from the template
  * @param imsTemplate the template of the current IMS
+ * @param defaultType the type of newly created issues
+ * @param defaultTemplate the template of newly created issues
  */
 data class IMSConfig(
     val botUser: String,

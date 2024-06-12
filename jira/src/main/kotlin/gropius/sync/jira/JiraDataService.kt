@@ -80,6 +80,7 @@ class JiraDataService(
 
     /**
      * Find and ensure the IMSTemplate in the database
+     * @param imsProject The IMSProject to work with
      * @return the IssueTemplate
      */
     suspend fun issueTemplate(imsProject: IMSProject): IssueTemplate {
@@ -104,6 +105,7 @@ class JiraDataService(
 
     /**
      * Find and ensure the IMSIssueTemplate in the database
+     * @param imsProject The IMSProject to work with
      * @return the IssueType
      */
     suspend fun issueType(imsProject: IMSProject): IssueType {
