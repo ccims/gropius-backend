@@ -99,10 +99,9 @@ final class JiraSync(
     }
 
     @OptIn(ExperimentalEncodingApi::class)
-    private suspend fun fetchIssueContent(
+    private suspend fun fetchIssueContentChangelog(
         issueList: MutableList<String>, imsProject: IMSProject
     ) {
-        logger.info("ISSUE LIST $issueList")
         for (issueId in issueList) {
             var startAt = 0
             while (true) {
@@ -121,6 +120,12 @@ final class JiraSync(
                 }
             }
         }
+    }
+
+    @OptIn(ExperimentalEncodingApi::class)
+    private suspend fun fetchIssueContentComments(
+        issueList: MutableList<String>, imsProject: IMSProject
+    ) {
         for (issueId in issueList) {
             var startAt = 0
             while (true) {
@@ -140,6 +145,15 @@ final class JiraSync(
                 }
             }
         }
+    }
+
+    @OptIn(ExperimentalEncodingApi::class)
+    private suspend fun fetchIssueContent(
+        issueList: MutableList<String>, imsProject: IMSProject
+    ) {
+        logger.info("ISSUE LIST $issueList")
+        fetchIssueContentChangelog(issueList, imsProject)
+        fetchIssueContentComments(issueList, imsProject)
     }
 
     @OptIn(ExperimentalEncodingApi::class)
