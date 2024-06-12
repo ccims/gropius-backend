@@ -50,6 +50,14 @@ data class ChangeLogEntry(
 data class ChangeLogContainer(val histories: MutableList<ChangeLogEntry>)
 
 /**
+ * A container for the changelog
+ * @param histories The changelog entries
+ */
+@Serializable
+@Document
+data class ValueChangeLogContainer(val values: List<ChangeLogEntry>, val startAt: Int, val total: Int)
+
+/**
  * Kotlin representation of the Issue JSON
  * @param expand The expand string
  * @param id The id of the issue

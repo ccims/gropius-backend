@@ -514,4 +514,19 @@ class IssueDataService(val issuePileRepository: IssueDataRepository) : IssueData
             issuePileRepository.save(issueData).awaitSingle()
         }
     }
+
+    /**
+     * Insert a comment into the database
+     * @param imsProject the IMSProject the comment belongs to
+     * @param jiraId the JiraId of the issue the comment belongs to
+     * @param comment the comment
+     */
+    @Transactional
+    suspend fun insertChangelogEntry(imsProject: IMSProject, jiraId: String, changeLogEntry: ChangeLogEntry) {
+        val issueData = findByImsProjectAndJiraId(imsProject.rawId!!, jiraId)!!
+        if (issueData.changelog.histories.none { it.id == changeLogEntry.id }) {
+            issueData.changelog.histories.add(changeLogEntry)
+            issuePileRepository.save(issueData).awaitSingle()
+        }
+    }
 }
