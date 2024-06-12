@@ -285,32 +285,6 @@ class IssueMutations(
     }
 
     @GraphQLDescription(
-        """Changes the `dueDate` of an Issue requires MANAGE_ISSUES on any of the Trackables the Issue is on.
-        If the `dueDate` is equal to the already existing `dueDate`, no event is created.
-        """
-    )
-    @AutoPayloadType("The created event, if present")
-    suspend fun changeIssueDueDate(
-        @GraphQLDescription("Defines the Issue and new `dueDate`")
-        input: ChangeIssueDueDateInput, dfe: DataFetchingEnvironment
-    ): DueDateChangedEvent? {
-        return issueService.changeIssueDueDate(dfe.gropiusAuthorizationContext, input)
-    }
-
-    @GraphQLDescription(
-        """Changes the `estimatedTime` of an Issue requires MANAGE_ISSUES on any of the Trackables the Issue is on.
-        If the `estimatedTime` is equal to the already existing `estimatedTime`, no event is created.
-        """
-    )
-    @AutoPayloadType("The created event, if present")
-    suspend fun changeIssueEstimatedTime(
-        @GraphQLDescription("Defines the Issue and new `estimatedTime`")
-        input: ChangeIssueEstimatedTimeInput, dfe: DataFetchingEnvironment
-    ): EstimatedTimeChangedEvent? {
-        return issueService.changeIssueEstimatedTime(dfe.gropiusAuthorizationContext, input)
-    }
-
-    @GraphQLDescription(
         """Changes the `priority` of an Issue requires MANAGE_ISSUES on any of the Trackables the Issue is on.
         Additionally, the IssuePriority must be defined by the Template of the Issue.
         If the `priority` is equal to the already existing `priority`, no event is created.
@@ -322,32 +296,6 @@ class IssueMutations(
         input: ChangeIssuePriorityInput, dfe: DataFetchingEnvironment
     ): PriorityChangedEvent? {
         return issueService.changeIssuePriority(dfe.gropiusAuthorizationContext, input)
-    }
-
-    @GraphQLDescription(
-        """Changes the `spentTime` of an Issue requires MANAGE_ISSUES on any of the Trackables the Issue is on.
-        If the `spentTime` is equal to the already existing `spentTime`, no event is created.
-        """
-    )
-    @AutoPayloadType("The created event, if present")
-    suspend fun changeIssueSpentTime(
-        @GraphQLDescription("Defines the Issue and new `spentTime`")
-        input: ChangeIssueSpentTimeInput, dfe: DataFetchingEnvironment
-    ): SpentTimeChangedEvent? {
-        return issueService.changeIssueSpentTime(dfe.gropiusAuthorizationContext, input)
-    }
-
-    @GraphQLDescription(
-        """Changes the `startDate` of an Issue requires MANAGE_ISSUES on any of the Trackables the Issue is on.
-        If the `startDate` is equal to the already existing `startDate`, no event is created.
-        """
-    )
-    @AutoPayloadType("The created event, if present")
-    suspend fun changeIssueStartDate(
-        @GraphQLDescription("Defines the Issue and new `startDate`")
-        input: ChangeIssueStartDateInput, dfe: DataFetchingEnvironment
-    ): StartDateChangedEvent? {
-        return issueService.changeIssueStartDate(dfe.gropiusAuthorizationContext, input)
     }
 
     @GraphQLDescription(

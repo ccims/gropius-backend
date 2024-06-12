@@ -8,7 +8,6 @@ import io.github.graphglue.model.Rule
 import org.neo4j.cypherdsl.core.Condition
 import org.neo4j.cypherdsl.core.Cypher
 import org.neo4j.cypherdsl.core.Node
-import org.neo4j.cypherdsl.core.RelationshipPattern
 
 /**
  * Permission rule generator which checks for a Node that is related via a [NodePermission] which

@@ -19,7 +19,6 @@ import gropius.service.issue.IssueAggregationUpdater
 import gropius.service.template.TemplatedNodeService
 import io.github.graphglue.authorization.Permission
 import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
 
 /**

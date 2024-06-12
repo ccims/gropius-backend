@@ -22,9 +22,6 @@ import gropius.service.NodeBatchUpdateContext
 import gropius.service.common.NodeService
 import gropius.service.template.TemplatedNodeService
 import io.github.graphglue.authorization.Permission
-import io.github.graphglue.model.Node
-import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
 
 /**
@@ -141,6 +138,7 @@ class RelationService(
 
     /**
      * Validates that a start, end and relationPartner combination is valid
+     * This includes checking that a relation is not created in the context of the same [ComponentVersion]
      *
      * @param start the start of the Relation
      * @param end the end of the Relation
@@ -154,6 +152,19 @@ class RelationService(
         val endTemplate = end.relationPartnerTemplate()
         if (template.relationConditions().none { startTemplate in it.from() && endTemplate in it.to() }) {
             throw IllegalArgumentException("No RelationCondition allows the chosen relationTemplate & start & end combination")
+        }
+        val startComponentVersion = if (start is Interface) {
+            start.interfaceDefinition().value.componentVersion().value
+        } else {
+            start as ComponentVersion
+        }
+        val endComponentVersion = if (end is Interface) {
+            end.interfaceDefinition().value.componentVersion().value
+        } else {
+            end as ComponentVersion
+        }
+        if (startComponentVersion == endComponentVersion) {
+            throw IllegalArgumentException("A Relation cannot be created in the context of the same ComponentVersion")
         }
     }
 
@@ -194,7 +205,11 @@ class RelationService(
      * @param updateContext the context used to save the updated nodes
      * @return the updated nodes to save
      */
-    private suspend fun updateRelationTemplate(input: UpdateRelationInput, relation: Relation, updateContext: NodeBatchUpdateContext) {
+    private suspend fun updateRelationTemplate(
+        input: UpdateRelationInput,
+        relation: Relation,
+        updateContext: NodeBatchUpdateContext
+    ) {
         input.template.ifPresent { templateId ->
             val template = relationTemplateRepository.findById(templateId)
             validateRelationStartAndEnd(relation.start().value, relation.end().value, template)

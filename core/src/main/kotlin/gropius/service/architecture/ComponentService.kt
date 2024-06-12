@@ -18,13 +18,10 @@ import gropius.repository.architecture.ComponentRepository
 import gropius.repository.findById
 import gropius.repository.template.ComponentTemplateRepository
 import gropius.service.NodeBatchUpdateContext
-import gropius.service.issue.IssueAggregationUpdater
 import gropius.service.template.TemplatedNodeService
 import gropius.service.user.permission.ComponentPermissionService
 import io.github.graphglue.authorization.Permission
-import io.github.graphglue.model.Node
 import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
 
 /**

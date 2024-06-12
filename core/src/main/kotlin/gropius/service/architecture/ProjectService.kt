@@ -14,7 +14,6 @@ import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.ProjectPermission
 import gropius.repository.architecture.ComponentVersionRepository
 import gropius.repository.architecture.ProjectRepository
-import gropius.repository.common.NodeRepository
 import gropius.repository.findById
 import gropius.service.user.permission.ProjectPermissionService
 import io.github.graphglue.authorization.Permission

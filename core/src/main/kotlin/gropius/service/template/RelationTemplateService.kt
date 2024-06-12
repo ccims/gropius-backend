@@ -7,9 +7,6 @@ import gropius.dto.input.template.CreateRelationTemplateInput
 import gropius.dto.input.template.RelationConditionInput
 import gropius.model.template.*
 import gropius.model.template.style.StrokeStyle
-import gropius.repository.findAllById
-import gropius.repository.template.InterfaceSpecificationTemplateRepository
-import gropius.repository.template.RelationPartnerTemplateRepository
 import gropius.repository.template.RelationTemplateRepository
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service
