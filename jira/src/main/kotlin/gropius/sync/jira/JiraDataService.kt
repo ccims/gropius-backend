@@ -12,6 +12,7 @@ import gropius.repository.user.GropiusUserRepository
 import gropius.sync.JsonHelper
 import gropius.sync.SyncDataService
 import gropius.sync.jira.config.IMSConfig
+import gropius.sync.jira.config.IMSProjectConfig
 import gropius.util.JsonNodeMapper
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -29,6 +30,7 @@ import kotlinx.serialization.json.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.neo4j.core.ReactiveNeo4jOperations
+import org.springframework.data.neo4j.core.findById
 import org.springframework.stereotype.Component
 import java.net.URI
 import java.time.OffsetDateTime
@@ -77,26 +79,56 @@ class JiraDataService(
     }
 
     /**
-     * Get the default issue template
-     * @return the default issue template
+     * Find and ensure the IMSTemplate in the database
+     * @param imsProject The IMSProject to work with
+     * @return the IssueTemplate
      */
     suspend fun issueTemplate(imsProject: IMSProject): IssueTemplate {
-        val newTemplate = IssueTemplate("noissue", "", mutableMapOf(), false)
-        newTemplate.issueStates() += IssueState("open", "", true)
-        newTemplate.issueStates() += IssueState("closed", "", false)
-        for (t in newTemplate.issueStates()) t.partOf() += newTemplate
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        if (imsProjectConfig.defaultTemplate != null) {
+            val template = neoOperations.findById<IssueTemplate>(imsProjectConfig.defaultTemplate)
+            if (template != null) {
+                return template
+            }
+        }
+        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+        if (imsConfig.defaultTemplate != null) {
+            val template = neoOperations.findById<IssueTemplate>(imsConfig.defaultTemplate)
+            if (template != null) {
+                return template
+            }
+        }
         return neoOperations.findAll(IssueTemplate::class.java).awaitFirstOrNull() ?: neoOperations.save(
-            newTemplate
+            IssueTemplate("noissue", "", mutableMapOf(), false)
         ).awaitSingle()
     }
 
     /**
-     * Get the default issue type
-     * @return the default issue type
+     * Find and ensure the IMSIssueTemplate in the database
+     * @param imsProject The IMSProject to work with
+     * @return the IssueType
      */
     suspend fun issueType(imsProject: IMSProject): IssueType {
+        val template = issueTemplate(imsProject)
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        if (imsProjectConfig.defaultType != null) {
+            val type = neoOperations.findById<IssueType>(imsProjectConfig.defaultType)
+            if ((type != null) && (type.partOf().contains(template))) {
+                return type
+            }
+        }
+        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+        if (imsConfig.defaultType != null) {
+            val type = neoOperations.findById<IssueType>(imsConfig.defaultType)
+            if ((type != null) && (type.partOf().contains(template))) {
+                return type
+            }
+        }
+        if (template.issueTypes().isNotEmpty()) {
+            return template.issueTypes().first()
+        }
         val newIssueType = IssueType("type", "", "")
-        newIssueType.partOf() += issueTemplate(imsProject)
+        newIssueType.partOf() += template
         return neoOperations.findAll(IssueType::class.java).awaitFirstOrNull() ?: neoOperations.save(newIssueType)
             .awaitSingle()
     }

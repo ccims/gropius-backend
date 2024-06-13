@@ -6,7 +6,6 @@ import gropius.dto.input.architecture.InterfaceSpecificationVersionInput
 import gropius.dto.input.architecture.UpdateInterfaceSpecificationVersionInput
 import gropius.dto.input.common.DeleteNodeInput
 import gropius.dto.input.ifPresent
-import gropius.dto.input.orElse
 import gropius.model.architecture.Component
 import gropius.model.architecture.InterfacePart
 import gropius.model.architecture.InterfaceSpecification
@@ -17,11 +16,9 @@ import gropius.repository.architecture.InterfaceSpecificationRepository
 import gropius.repository.architecture.InterfaceSpecificationVersionRepository
 import gropius.repository.common.NodeRepository
 import gropius.repository.findById
-import gropius.service.issue.IssueAggregationUpdater
 import gropius.service.template.TemplatedNodeService
 import io.github.graphglue.authorization.Permission
 import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
 
 /**

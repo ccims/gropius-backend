@@ -5,8 +5,6 @@ import graphql.schema.GraphQLInputType
 import gropius.model.architecture.Trackable
 import io.github.graphglue.authorization.Permission
 import io.github.graphglue.connection.filter.definition.FilterEntryDefinition
-import io.github.graphglue.connection.filter.definition.SubFilterGenerator
-import io.github.graphglue.connection.filter.definition.generateFilterDefinition
 import io.github.graphglue.connection.filter.model.FilterEntry
 import io.github.graphglue.data.execution.CypherConditionGenerator
 import io.github.graphglue.definition.NodeDefinitionCollection

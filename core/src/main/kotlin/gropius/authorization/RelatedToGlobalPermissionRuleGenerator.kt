@@ -9,7 +9,6 @@ import io.github.graphglue.model.Rule
 import org.neo4j.cypherdsl.core.Condition
 import org.neo4j.cypherdsl.core.Cypher
 import org.neo4j.cypherdsl.core.Node
-import org.neo4j.cypherdsl.core.RelationshipPattern
 
 /**
  * Permission to check that a [GropiusUser] is connected to a [GlobalPermission] with the specified [Permission]
@@ -25,8 +24,18 @@ class RelatedToGlobalPermissionRuleGenerator(
         node: Node, rule: Rule, permission: Permission
     ): Condition {
         val nodePermissionNode = nodePermissionDefinition.node().named("g_2")
+
         val nodePermissionPredicate =
             Cypher.anonParameter(permission.name).`in`(nodePermissionNode.property(GlobalPermission::entries.name))
-        return Cypher.match(node.relationshipTo(nodePermissionNode, GropiusUser.PERMISSION)).where(nodePermissionPredicate).asCondition()
+        val userSpecificPermissionCondition = Cypher.match(
+            node.relationshipTo(nodePermissionNode, GropiusUser.PERMISSION)
+        ).where(nodePermissionPredicate).asCondition()
+
+        val allUsersPredicate = nodePermissionNode.property(GlobalPermission::allUsers.name).isTrue
+        val allUsersPermissionCondition = Cypher.match(
+            nodePermissionNode
+        ).where(nodePermissionPredicate.and(allUsersPredicate)).asCondition()
+
+        return allUsersPermissionCondition.or(userSpecificPermissionCondition)
     }
 }

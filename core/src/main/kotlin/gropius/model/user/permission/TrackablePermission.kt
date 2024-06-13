@@ -1,6 +1,7 @@
 package gropius.model.user.permission
 
 import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
+import gropius.model.architecture.AffectedByIssue
 import gropius.model.architecture.IMSProject
 import gropius.model.architecture.InterfaceSpecification
 import gropius.model.architecture.Trackable
@@ -8,7 +9,6 @@ import gropius.model.issue.Artefact
 import gropius.model.issue.Issue
 import gropius.model.issue.Label
 import gropius.model.issue.timeline.Comment
-import gropius.model.architecture.AffectedByIssue
 import io.github.graphglue.model.DomainNode
 
 /**

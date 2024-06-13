@@ -18,7 +18,6 @@ import gropius.repository.architecture.TrackableRepository
 import gropius.repository.common.NodeRepository
 import gropius.repository.findById
 import gropius.service.common.NamedNodeService
-import gropius.service.common.NodeService
 import gropius.service.template.TemplatedNodeService
 import io.github.graphglue.authorization.Permission
 import io.github.graphglue.model.Node

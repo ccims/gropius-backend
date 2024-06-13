@@ -1,5 +1,6 @@
 package gropius.sync.jira.model
 
+import com.fasterxml.jackson.databind.JsonNode
 import gropius.model.architecture.IMSProject
 import gropius.model.architecture.Project
 import gropius.model.issue.Issue
@@ -9,6 +10,8 @@ import gropius.sync.IncomingTimelineItem
 import gropius.sync.SyncDataService
 import gropius.sync.TimelineItemConversionInformation
 import gropius.sync.jira.JiraDataService
+import gropius.util.schema.Schema
+import gropius.util.schema.Type
 import jakarta.transaction.Transactional
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.awaitSingle
@@ -55,7 +58,8 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
-        timelineItemConversionInformation: TimelineItemConversionInformation?
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val jiraService = (service as JiraDataService)
         if (data.fieldId == "summary") {
@@ -65,13 +69,61 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
                 timelineItemConversionInformation, imsProject, service, jiraService
             )
         } else if (data.fieldId == "labels") {
-            gropiusLabels(
+            return gropiusLabels(
                 timelineItemConversionInformation, imsProject, service, jiraService
             )
+        }
+        if (issue.template().value.templateFieldSpecifications.containsKey(data.field)) {
+            val schema = issue.template().value.templateFieldSpecifications[data.field]!!
+            val parsedSchema = jiraService.objectMapper.readValue(schema, Schema::class.java)
+
+            if (parsedSchema.type == Type.STRING) {
+                return gropiusTemplatedField(
+                    timelineItemConversionInformation, imsProject, service, jiraService, parsedSchema.nullable
+                )
+            }
         }
         val convInfo =
             timelineItemConversionInformation ?: JiraTimelineItemConversionInformation(imsProject.rawId!!, id);
         return listOf<TimelineItem>() to convInfo;
+    }
+
+    private suspend fun gropiusTemplatedField(
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        imsProject: IMSProject,
+        service: JiraDataService,
+        jiraService: JiraDataService,
+        isNull: Boolean
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
+        val convInfo =
+            timelineItemConversionInformation ?: JiraTimelineItemConversionInformation(imsProject.rawId!!, id);
+        val timelineId = timelineItemConversionInformation?.gropiusId
+        val source = data.from
+        val destination = data.to
+        logger.info("GOING FROM $source to $destination")
+        val templateEvent: TemplatedFieldChangedEvent =
+            (if (timelineId != null) service.neoOperations.findById<TemplatedFieldChangedEvent>(
+                timelineId
+            ) else null) ?: TemplatedFieldChangedEvent(
+                OffsetDateTime.parse(
+                    created, IssueData.formatter
+                ), OffsetDateTime.parse(
+                    created, IssueData.formatter
+                ), data.field, service.jsonNodeMapper.jsonNodeToDeterministicString(
+                    service.objectMapper.valueToTree<JsonNode>(
+                        data.from ?: data.fromString ?: (if (!isNull) "" else null)
+                    )
+                ), service.jsonNodeMapper.jsonNodeToDeterministicString(
+                    service.objectMapper.valueToTree<JsonNode>(
+                        data.to ?: data.toString ?: (if (!isNull) "" else null)
+                    )
+                )
+            )
+        templateEvent.createdBy().value = jiraService.mapUser(imsProject, author)
+        templateEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
+        return listOf<TimelineItem>(
+            templateEvent
+        ) to convInfo;
     }
 
     /**
@@ -217,7 +269,8 @@ class JiraCommentTimelineItem(val issueId: String, val comment: JiraComment) : I
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
-        timelineItemConversionInformation: TimelineItemConversionInformation?
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val jiraService = (service as JiraDataService)
         val convInfo = timelineItemConversionInformation ?: JiraTimelineItemConversionInformation(
@@ -430,6 +483,12 @@ class IssueDataService(val issuePileRepository: IssueDataRepository) : IssueData
         logger.info("LOOKING FOR ${imsProject.rawId!!} AND ${rawIssueData.jiraId}")
         val issueData = findByImsProjectAndJiraId(imsProject.rawId!!, rawIssueData.jiraId) ?: rawIssueData
         logger.info("ISSUE ${issueData.id}")
+        val knownParts = issueData.changelog.histories.map { it.id }.toSet()
+        rawIssueData.changelog.histories.forEach {
+            if (!knownParts.contains(it.id)) {
+                issueData.changelog.histories.add(it)
+            }
+        }
         issuePileRepository.save(issueData).awaitSingle()
     }
 
@@ -444,6 +503,21 @@ class IssueDataService(val issuePileRepository: IssueDataRepository) : IssueData
         val issueData = findByImsProjectAndJiraId(imsProject.rawId!!, jiraId)!!
         if (!issueData.comments.containsKey(comment.id)) {
             issueData.comments.put(comment.id, comment)
+            issuePileRepository.save(issueData).awaitSingle()
+        }
+    }
+
+    /**
+     * Insert a comment into the database
+     * @param imsProject the IMSProject the comment belongs to
+     * @param jiraId the JiraId of the issue the comment belongs to
+     * @param comment the comment
+     */
+    @Transactional
+    suspend fun insertChangelogEntry(imsProject: IMSProject, jiraId: String, changeLogEntry: ChangeLogEntry) {
+        val issueData = findByImsProjectAndJiraId(imsProject.rawId!!, jiraId)!!
+        if (issueData.changelog.histories.none { it.id == changeLogEntry.id }) {
+            issueData.changelog.histories.add(changeLogEntry)
             issuePileRepository.save(issueData).awaitSingle()
         }
     }

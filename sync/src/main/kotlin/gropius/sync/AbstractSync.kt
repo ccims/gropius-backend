@@ -353,7 +353,7 @@ abstract class AbstractSync(
             imsProject.rawId!!, timelineItem.identification()
         )
         var (rawTimelineItems, newInfo) = timelineItem.gropiusTimelineItem(
-            imsProject, syncDataService(), oldInfo
+            imsProject, syncDataService(), oldInfo, issue
         )
         if (issue.rawId != null) {
             val dereplicationResult =
@@ -715,6 +715,7 @@ abstract class AbstractSync(
      * Sync all data
      */
     suspend fun sync() {
+        logger.info("Starting Sync Cycle")
         val imsTemplates = findTemplates()
         logger.info("Found ${imsTemplates.size} IMSTemplate")
         val imss = mutableListOf<IMS>()
@@ -728,5 +729,6 @@ abstract class AbstractSync(
             doIncoming(imsProject)
             doOutgoing(imsProject)
         }
+        logger.info("Finished Sync Cycle")
     }
 }

@@ -98,10 +98,33 @@ final class JiraSync(
     }
 
     @OptIn(ExperimentalEncodingApi::class)
-    private suspend fun fetchIssueContent(
+    private suspend fun fetchIssueContentChangelog(
         issueList: MutableList<String>, imsProject: IMSProject
     ) {
-        logger.info("ISSUE LIST $issueList")
+        for (issueId in issueList) {
+            var startAt = 0
+            while (true) {
+                val issueCommentList = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get) {
+                    appendPathSegments("issue")
+                    appendPathSegments(issueId)
+                    appendPathSegments("changelog")
+                    parameters.append("startAt", "$startAt")
+                }.second.body<ValueChangeLogContainer>()
+                issueCommentList.values.forEach {
+                    issueDataService.insertChangelogEntry(imsProject, issueId, it)
+                }
+                startAt = issueCommentList.startAt + issueCommentList.values.size
+                if (startAt >= issueCommentList.total) {
+                    break
+                }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalEncodingApi::class)
+    private suspend fun fetchIssueContentComments(
+        issueList: MutableList<String>, imsProject: IMSProject
+    ) {
         for (issueId in issueList) {
             var startAt = 0
             while (true) {
@@ -109,15 +132,27 @@ final class JiraSync(
                     appendPathSegments("issue")
                     appendPathSegments(issueId)
                     appendPathSegments("comment")
+                    parameters.append("expand", "names,schema,editmeta,changelog")
                     parameters.append("startAt", "$startAt")
                 }.second.body<CommentQuery>()
                 issueCommentList.comments.forEach {
                     issueDataService.insertComment(imsProject, issueId, it)
                 }
                 startAt = issueCommentList.startAt + issueCommentList.comments.size
-                if (startAt >= issueCommentList.total) break
+                if (startAt >= issueCommentList.total) {
+                    break
+                }
             }
         }
+    }
+
+    @OptIn(ExperimentalEncodingApi::class)
+    private suspend fun fetchIssueContent(
+        issueList: MutableList<String>, imsProject: IMSProject
+    ) {
+        logger.info("ISSUE LIST $issueList")
+        fetchIssueContentChangelog(issueList, imsProject)
+        fetchIssueContentComments(issueList, imsProject)
     }
 
     @OptIn(ExperimentalEncodingApi::class)
@@ -152,13 +187,14 @@ final class JiraSync(
         if (issueComment.body.isNullOrEmpty()) {
             return null
         }
-        val iid = jiraDataService.request(
+        val response = jiraDataService.request(
             imsProject, users, HttpMethod.Post, JsonObject(mapOf("body" to JsonPrimitive(issueComment.body)))
         ) {
             appendPathSegments("issue")
             appendPathSegments(issueId)
             appendPathSegments("comment")
-        }.second.body<JsonObject>()["id"]!!.jsonPrimitive.content
+        }.second.body<JsonObject>()
+        val iid = response["id"]!!.jsonPrimitive.content
         return JiraTimelineItemConversionInformation(imsProject.rawId!!, iid)
     }
 

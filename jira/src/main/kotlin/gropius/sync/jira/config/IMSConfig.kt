@@ -12,9 +12,16 @@ import java.net.URI
  * @param readUser the read user string extracted from the template
  * @param rootUrl the read url extracted from the template
  * @param imsTemplate the template of the current IMS
+ * @param defaultType the type of newly created issues
+ * @param defaultTemplate the template of newly created issues
  */
 data class IMSConfig(
-    val botUser: String, val readUser: String?, val rootUrl: URI, val imsTemplate: IMSTemplate
+    val botUser: String,
+    val readUser: String?,
+    val rootUrl: URI,
+    val imsTemplate: IMSTemplate,
+    val defaultType: String?,
+    val defaultTemplate: String?
 ) {
     /**
      * @param ims the Gropius ims to use as input
@@ -27,7 +34,9 @@ data class IMSConfig(
         botUser = helper.parseString(ims.templatedFields["bot-user"]) ?: "jira-bot",
         readUser = helper.parseString(ims.templatedFields["read-user"]),
         rootUrl = URI(helper.parseString(ims.templatedFields["root-url"])!!),
-        imsTemplate = imsTemplate
+        imsTemplate = imsTemplate,
+        defaultType = helper.parseString(ims.templatedFields["default-type"]),
+        defaultTemplate = helper.parseString(ims.templatedFields["default-template"])
     )
 
     companion object {
@@ -50,6 +59,18 @@ data class IMSConfig(
             "type" to "string"
             "metadata" to obj {
                 "format" to "uri"
+            }
+        }.toString(), "default-type" to obj {
+            "nullable" to true
+            "type" to "string"
+            "metadata" to obj {
+                "gropius-node" to "IssueType"
+            }
+        }.toString(), "default-template" to obj {
+            "nullable" to true
+            "type" to "string"
+            "metadata" to obj {
+                "gropius-node" to "IssueTemplate"
             }
         }.toString()) + IMSConfigManager.COMMON_TEMPLATE_FIELDS
     }

@@ -71,6 +71,19 @@ class IssueCleaner(
     }
 
     /**
+     * Clean the templated fields on this issue into a consistent state
+     * @param issue issue to work on
+     */
+    private suspend fun cleanTemplatedFields(issue: Issue) {
+        issue.templatedFields.clear()
+        for (item in issue.timelineItems().sortedBy { it.createdAt }) {
+            if (item is TemplatedFieldChangedEvent) {
+                issue.templatedFields[item.fieldName] = item.newValue
+            }
+        }
+    }
+
+    /**
      * Clean the open state on this issue into a consistent state
      * @param issue issue to work on
      */
@@ -108,6 +121,7 @@ class IssueCleaner(
         cleanState(issue)
         cleanTitle(issue)
         cleanComments(issue)
+        cleanTemplatedFields(issue)
         issue = neoOperations.save(issue).awaitSingle()
     }
 }

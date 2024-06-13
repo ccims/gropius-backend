@@ -4,8 +4,8 @@ import org.neo4j.cypherdsl.core.renderer.Dialect
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.neo4j.core.convert.Neo4jConversions
-import org.neo4j.cypherdsl.core.renderer.Configuration as CypherDslConfiguration
 import java.time.OffsetDateTime
+import org.neo4j.cypherdsl.core.renderer.Configuration as CypherDslConfiguration
 
 /**
  * Configuration for the Neo4j database

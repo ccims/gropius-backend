@@ -4,8 +4,6 @@ import gropius.authorization.GropiusAuthorizationContext
 import gropius.dto.input.orElse
 import gropius.dto.input.template.CreateInterfaceSpecificationTemplateInput
 import gropius.model.template.*
-import gropius.repository.findAllById
-import gropius.repository.template.ComponentTemplateRepository
 import gropius.repository.template.InterfaceSpecificationTemplateRepository
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service

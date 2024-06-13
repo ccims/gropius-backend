@@ -39,7 +39,6 @@ import io.github.graphglue.authorization.Permission
 import io.github.graphglue.model.Node
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service
-import java.time.Duration
 import java.time.OffsetDateTime
 import java.util.*
 import kotlin.reflect.KMutableProperty0
@@ -1001,175 +1000,6 @@ class IssueService(
     }
 
     /**
-     * Changes the `startDate` of an [Issue], returns the created [StartDateChangedEvent] or null if the `startDate`
-     * was not changed.
-     * Checks the authorization status
-     *
-     * @param authorizationContext used to check for the required permission
-     * @param input defines the new `startDate` and of which issue to change it
-     * @return the saved created [StartDateChangedEvent] or `null` if no event was created
-     */
-    suspend fun changeIssueStartDate(
-        authorizationContext: GropiusAuthorizationContext, input: ChangeIssueStartDateInput
-    ): StartDateChangedEvent? {
-        input.validate()
-        val issue = repository.findById(input.issue)
-        return changeIssueProperty(
-            authorizationContext, issue, issue.startDate, input.startDate, ::changeIssueStartDate
-        )
-    }
-
-    /**
-     * Changes the `startDate` of an [issue] at [atTime] as [byUser] and adds a [StartDateChangedEvent] to the timeline.
-     * Creates the event even if the `startDate` was not changed.
-     * Only changes the `startDate` if no newer timeline item exists which changes it.
-     * Does not check the authorization status.
-     * Does neither save the created [StartDateChangedEvent] nor the [issue].
-     * It is necessary to save the [issue] or returned [StartDateChangedEvent] afterwards.
-     *
-     * @param issue the [Issue] where the `startDate` should be changed
-     * @param oldStartDate the old `startDate`
-     * @param newStartDate the new `startDate`
-     * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
-     * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
-     * @returns the created [StartDateChangedEvent]
-     */
-    suspend fun changeIssueStartDate(
-        issue: Issue, oldStartDate: OffsetDateTime?, newStartDate: OffsetDateTime?, atTime: OffsetDateTime, byUser: User
-    ): StartDateChangedEvent {
-        val event = StartDateChangedEvent(atTime, atTime, oldStartDate, newStartDate)
-        changeIssueProperty(issue, newStartDate, atTime, byUser, issue::startDate, event)
-        return event
-    }
-
-    /**
-     * Changes the `dueDate` of an [Issue], returns the created [DueDateChangedEvent] or null if the `dueDate`
-     * was not changed.
-     * Checks the authorization status
-     *
-     * @param authorizationContext used to check for the required permission
-     * @param input defines the new `dueDate` and of which issue to change it
-     * @return the saved created [DueDateChangedEvent] or `null` if no event was created
-     */
-    suspend fun changeIssueDueDate(
-        authorizationContext: GropiusAuthorizationContext, input: ChangeIssueDueDateInput
-    ): DueDateChangedEvent? {
-        input.validate()
-        val issue = repository.findById(input.issue)
-        return changeIssueProperty(
-            authorizationContext, issue, issue.dueDate, input.dueDate, ::changeIssueDueDate
-        )
-    }
-
-    /**
-     * Changes the `dueDate` of an [issue] at [atTime] as [byUser] and adds a [DueDateChangedEvent] to the timeline.
-     * Creates the event even if the `dueDate` was not changed.
-     * Only changes the `dueDate` if no newer timeline item exists which changes it.
-     * Does not check the authorization status.
-     * Does neither save the created [DueDateChangedEvent] nor the [issue].
-     * It is necessary to save the [issue] or returned [DueDateChangedEvent] afterwards.
-     *
-     * @param issue the [Issue] where the `dueDate` should be changed
-     * @param oldDueDate the old `dueDate`
-     * @param newDueDate the new `dueDate`
-     * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
-     * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
-     * @returns the created [DueDateChangedEvent]
-     */
-    suspend fun changeIssueDueDate(
-        issue: Issue, oldDueDate: OffsetDateTime?, newDueDate: OffsetDateTime?, atTime: OffsetDateTime, byUser: User
-    ): DueDateChangedEvent {
-        val event = DueDateChangedEvent(atTime, atTime, oldDueDate, newDueDate)
-        changeIssueProperty(issue, newDueDate, atTime, byUser, issue::dueDate, event)
-        return event
-    }
-
-    /**
-     * Changes the `estimatedTime` of an [Issue], returns the created [EstimatedTimeChangedEvent] or null if the
-     * `estimatedTime` was not changed.
-     * Checks the authorization status
-     *
-     * @param authorizationContext used to check for the required permission
-     * @param input defines the new `estimatedTime` and of which issue to change it
-     * @return the saved created [EstimatedTimeChangedEvent] or `null` if no event was created
-     */
-    suspend fun changeIssueEstimatedTime(
-        authorizationContext: GropiusAuthorizationContext, input: ChangeIssueEstimatedTimeInput
-    ): EstimatedTimeChangedEvent? {
-        input.validate()
-        val issue = repository.findById(input.issue)
-        return changeIssueProperty(
-            authorizationContext, issue, issue.estimatedTime, input.estimatedTime, ::changeIssueEstimatedTime
-        )
-    }
-
-    /**
-     * Changes the `estimatedTime` of an [issue] at [atTime] as [byUser] and adds a [EstimatedTimeChangedEvent]
-     * to the timeline.
-     * Creates the event even if the `estimatedTime` was not changed.
-     * Only changes the `estimatedTime` if no newer timeline item exists which changes it.
-     * Does not check the authorization status.
-     * Does neither save the created [EstimatedTimeChangedEvent] nor the [issue].
-     * It is necessary to save the [issue] or returned [EstimatedTimeChangedEvent] afterwards.
-     *
-     * @param issue the [Issue] where the `estimatedTime` should be changed
-     * @param oldEstimatedTime the old `estimatedTime`
-     * @param newEstimatedTime the new `estimatedTime`
-     * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
-     * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
-     * @returns the created [EstimatedTimeChangedEvent]
-     */
-    suspend fun changeIssueEstimatedTime(
-        issue: Issue, oldEstimatedTime: Duration?, newEstimatedTime: Duration?, atTime: OffsetDateTime, byUser: User
-    ): EstimatedTimeChangedEvent {
-        val event = EstimatedTimeChangedEvent(atTime, atTime, oldEstimatedTime, newEstimatedTime)
-        changeIssueProperty(issue, newEstimatedTime, atTime, byUser, issue::estimatedTime, event)
-        return event
-    }
-
-    /**
-     * Changes the `spentTime` of an [Issue], returns the created [SpentTimeChangedEvent] or null if the `spentTime`
-     * was not changed.
-     * Checks the authorization status
-     *
-     * @param authorizationContext used to check for the required permission
-     * @param input defines the new `spentTime` and of which issue to change it
-     * @return the saved created [SpentTimeChangedEvent] or `null` if no event was created
-     */
-    suspend fun changeIssueSpentTime(
-        authorizationContext: GropiusAuthorizationContext, input: ChangeIssueSpentTimeInput
-    ): SpentTimeChangedEvent? {
-        input.validate()
-        val issue = repository.findById(input.issue)
-        return changeIssueProperty(
-            authorizationContext, issue, issue.spentTime, input.spentTime, ::changeIssueSpentTime
-        )
-    }
-
-    /**
-     * Changes the `spentTime` of an [issue] at [atTime] as [byUser] and adds a [SpentTimeChangedEvent] to the timeline.
-     * Creates the event even if the `spentTime` was not changed.
-     * Only changes the `spentTime` if no newer timeline item exists which changes it.
-     * Does not check the authorization status.
-     * Does neither save the created [SpentTimeChangedEvent] nor the [issue].
-     * It is necessary to save the [issue] or returned [SpentTimeChangedEvent] afterwards.
-     *
-     * @param issue the [Issue] where the `spentTime` should be changed
-     * @param oldSpentTime the old `spentTime`
-     * @param newSpentTime the new `spentTime`
-     * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
-     * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
-     * @returns the created [SpentTimeChangedEvent]
-     */
-    suspend fun changeIssueSpentTime(
-        issue: Issue, oldSpentTime: Duration?, newSpentTime: Duration?, atTime: OffsetDateTime, byUser: User
-    ): SpentTimeChangedEvent {
-        val event = SpentTimeChangedEvent(atTime, atTime, oldSpentTime, newSpentTime)
-        changeIssueProperty(issue, newSpentTime, atTime, byUser, issue::spentTime, event)
-        return event
-    }
-
-    /**
      * Changes the `priority` of an [Issue], returns the created [PriorityChangedEvent] or null if the `priority`
      * was not changed.
      * Checks the authorization status, and check that the new [IssuePriority] can be used on the [Issue]
@@ -1765,6 +1595,7 @@ class IssueService(
         input.validate()
         val issue = repository.findById(input.issue)
         val relatedIssue = repository.findById(input.relatedIssue)
+        require(issue != relatedIssue) { "An Issue cannot be related to itself" }
         checkManageIssuesPermission(issue, authorizationContext)
         checkPermission(
             relatedIssue,
@@ -1953,8 +1784,9 @@ class IssueService(
     suspend fun removeIssueRelation(
         issueRelation: IssueRelation, atTime: OffsetDateTime, byUser: User
     ): RemovedOutgoingRelationEvent {
-        val issue = issueRelation.issue().value
-        val relatedIssue = issueRelation.relatedIssue().value
+        val aggregationUpdater = IssueAggregationUpdater()
+        val issue = issueRelation.issue(aggregationUpdater.cache).value
+        val relatedIssue = issueRelation.relatedIssue(aggregationUpdater.cache).value
         val event = RemovedOutgoingRelationEvent(atTime, atTime)
         event.removedRelation().value = issueRelation
         createdTimelineItem(issue, event, atTime, byUser)
@@ -1964,7 +1796,6 @@ class IssueService(
         issue.outgoingRelations() -= issueRelation
         relatedIssue.incomingRelations() -= issueRelation
 
-        val aggregationUpdater = IssueAggregationUpdater()
         aggregationUpdater.deletedIssueRelation(issueRelation)
         aggregationUpdater.save(nodeRepository)
 

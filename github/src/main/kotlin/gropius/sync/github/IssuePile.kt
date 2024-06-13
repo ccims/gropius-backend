@@ -398,7 +398,8 @@ class RenamedTitleEventTimelineItem(
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
-        timelineItemConversionInformation: TimelineItemConversionInformation?
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
@@ -440,7 +441,8 @@ class UnlabeledEventTimelineItem(
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
-        timelineItemConversionInformation: TimelineItemConversionInformation?
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
@@ -476,7 +478,8 @@ class LabeledEventTimelineItem(
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
-        timelineItemConversionInformation: TimelineItemConversionInformation?
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
@@ -527,7 +530,8 @@ class UnassignedTimelineItem(
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
-        timelineItemConversionInformation: TimelineItemConversionInformation?
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
@@ -572,7 +576,8 @@ class AssignedTimelineItem(
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
-        timelineItemConversionInformation: TimelineItemConversionInformation?
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
@@ -612,7 +617,8 @@ class ReopenedEventTimelineItem(githubId: String, createdAt: OffsetDateTime, val
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
-        timelineItemConversionInformation: TimelineItemConversionInformation?
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
@@ -653,7 +659,8 @@ class ClosedEventTimelineItem(githubId: String, createdAt: OffsetDateTime, val c
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
-        timelineItemConversionInformation: TimelineItemConversionInformation?
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
@@ -704,7 +711,8 @@ class IssueCommentTimelineItem(
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
-        timelineItemConversionInformation: TimelineItemConversionInformation?
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
@@ -737,7 +745,8 @@ class UnknownTimelineItem(
     override suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
-        timelineItemConversionInformation: TimelineItemConversionInformation?
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);

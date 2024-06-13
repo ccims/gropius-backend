@@ -19,7 +19,8 @@ abstract class IncomingTimelineItem() {
     abstract suspend fun gropiusTimelineItem(
         imsProject: IMSProject,
         service: SyncDataService,
-        timelineItemConversionInformation: TimelineItemConversionInformation?
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation>;
 
     /**

@@ -4,7 +4,6 @@ import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.execution.OptionalInput
 import com.expediagroup.graphql.generator.scalars.ID
 import gropius.dto.input.common.UpdateNamedNodeInput
-import gropius.dto.input.common.UpdateNodeInput
 import gropius.dto.input.ensureDisjoint
 import gropius.dto.input.ifPresent
 import gropius.model.user.permission.BasePermission

@@ -1,6 +1,5 @@
 package gropius.service.architecture
 
-import com.expediagroup.graphql.generator.scalars.ID
 import gropius.authorization.GropiusAuthorizationContext
 import gropius.dto.input.architecture.CreateInterfacePartInput
 import gropius.dto.input.architecture.InterfacePartInput
@@ -14,7 +13,6 @@ import gropius.repository.architecture.InterfacePartRepository
 import gropius.repository.architecture.InterfaceSpecificationRepository
 import gropius.repository.architecture.InterfaceSpecificationVersionRepository
 import gropius.repository.common.NodeRepository
-import gropius.repository.findAllById
 import gropius.repository.findById
 import gropius.service.issue.IssueAggregationUpdater
 import gropius.service.template.TemplatedNodeService

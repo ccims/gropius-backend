@@ -22,8 +22,8 @@ data class ChangelogFieldEntry(
     val field: String,
     val fieldtype: String,
     val fieldId: String? = null,
-    val from: JsonElement,
-    val to: JsonElement,
+    val from: String?,
+    val to: String?,
     val fromString: String?,
     val toString: String?
 )
@@ -47,7 +47,15 @@ data class ChangeLogEntry(
  */
 @Serializable
 @Document
-data class ChangeLogContainer(val histories: List<ChangeLogEntry>)
+data class ChangeLogContainer(val histories: MutableList<ChangeLogEntry>)
+
+/**
+ * A container for the changelog
+ * @param histories The changelog entries
+ */
+@Serializable
+@Document
+data class ValueChangeLogContainer(val values: List<ChangeLogEntry>, val startAt: Int, val total: Int)
 
 /**
  * Kotlin representation of the Issue JSON
