@@ -44,7 +44,12 @@ class JiraTimelineItemConversionInformation(
  * @param author the author of the timeline item
  * @param data the data of the timeline item
  */
-class JiraTimelineItem(val id: String, val created: String, val author: JsonObject, val data: ChangelogFieldEntry) :
+data class JiraTimelineItem(
+    val id: String,
+    val created: String,
+    val author: JsonObject,
+    val data: ChangelogFieldEntry
+) :
     IncomingTimelineItem() {
     /**
      * Logger used to print notifications
@@ -73,9 +78,12 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
                 timelineItemConversionInformation, imsProject, service, jiraService
             )
         }
+        println("SPECS ${issue.template().value.templateFieldSpecifications} for ${data.field}")
         if (issue.template().value.templateFieldSpecifications.containsKey(data.field)) {
             val schema = issue.template().value.templateFieldSpecifications[data.field]!!
             val parsedSchema = jiraService.objectMapper.readValue(schema, Schema::class.java)
+
+            println("Parsed schema ${issue.template().value.templateFieldSpecifications[data.field]!!} to $parsedSchema is ${parsedSchema.type == Type.STRING}")
 
             if (parsedSchema.type == Type.STRING) {
                 return gropiusTemplatedField(
