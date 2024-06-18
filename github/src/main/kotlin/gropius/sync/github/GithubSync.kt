@@ -60,6 +60,11 @@ final class GithubSync(
         return imsConfigManager.findTemplates()
     }
 
+    override suspend fun labelStateMap(imsProject: IMSProject): Map<String, String> {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        return imsProjectConfig.labelStateMapper
+    }
+
     override suspend fun isOutgoingEnabled(imsProject: IMSProject): Boolean {
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         return imsProjectConfig.enableOutgoing

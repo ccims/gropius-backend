@@ -23,7 +23,8 @@ data class IMSProjectConfig(
     val enableOutgoingTitleChanges: Boolean,
     val enableOutgoingState: Boolean,
     val defaultType: String?,
-    val defaultTemplate: String?
+    val defaultTemplate: String?,
+    val labelStateMapper: Map<String, String>
 ) {
     /**
      * @param imsProject the Gropius IMSProject to use as input
@@ -44,7 +45,8 @@ data class IMSProjectConfig(
         enableOutgoingTitleChanges = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-title-changes"]),
         enableOutgoingState = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-state"]),
         defaultType = helper.parseString(imsProject.templatedFields["default-type"]),
-        defaultTemplate = helper.parseString(imsProject.templatedFields["default-template"])
+        defaultTemplate = helper.parseString(imsProject.templatedFields["default-template"]),
+        labelStateMapper = helper.parseLabelStateMap(imsProject.templatedFields["label-state-mapper"])
     )
 
     companion object {
@@ -95,6 +97,21 @@ data class IMSProjectConfig(
         }.toString(), "enable-outgoing-title-changes" to obj {
             "nullable" to true
             "type" to "boolean"
+        }.toString(), "enable-outgoing-state" to obj {
+            "nullable" to true
+            "type" to "boolean"
+        }.toString(), "label-state-mapper" to obj {
+            "nullable" to true
+            "elements" to obj {
+                "properties" to obj {
+                    "label" to obj {
+                        "type" to "string"
+                    }
+                    "state" to obj {
+                        "type" to "string"
+                    }
+                }
+            }
         }.toString(), "enable-outgoing-state" to obj {
             "nullable" to true
             "type" to "boolean"

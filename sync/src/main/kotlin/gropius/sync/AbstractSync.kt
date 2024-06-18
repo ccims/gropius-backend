@@ -106,6 +106,13 @@ abstract class AbstractSync(
     abstract suspend fun findTemplates(): Set<IMSTemplate>
 
     /**
+     * Get the template used to create new issues
+     */
+    open suspend fun labelStateMap(imsProject: IMSProject): Map<String, String> {
+        return mapOf()
+    }
+
+    /**
      * Incorporate a comment
      * @param imsProject IMS project to sync
      * @param issueId GitHub ID of the issue
@@ -324,6 +331,78 @@ abstract class AbstractSync(
     }
 
     /**
+     * Lookup a state by its ID
+     * @param id ID of the state
+     * @return State with the given ID or null if given null
+     */
+    private suspend fun lookupState(id: String?): IssueState? {
+        if (id != null) {
+            return collectedSyncInfo.neoOperations.findById(id)!!
+        }
+        return null
+    }
+
+    private suspend fun integrateLabelToState(
+        timelineItems: MutableList<TimelineItem>,
+        rawTimelineItems: List<TimelineItem>,
+        issue: Issue,
+        imsProject: IMSProject
+    ) {
+        rawTimelineItems.toList().forEach { timelineItem ->
+            var lastState: IssueState = issue.state().value
+            val activeLabels = mutableSetOf<Label>()
+            issue.timelineItems().filter { it.createdAt < timelineItem.createdAt }
+                .sortedBy { it.createdAt }.forEach {
+                    val addingItem = it as? AddedLabelEvent
+                    if (addingItem != null) {
+                        activeLabels.add(addingItem.addedLabel().value!!)
+                    }
+                    val removingItem = it as? RemovedLabelEvent
+                    if (removingItem != null) {
+                        activeLabels.add(removingItem.removedLabel().value!!)
+                    }
+                    val stateChangedEvent = it as? StateChangedEvent
+                    if (stateChangedEvent != null) {
+                        lastState = stateChangedEvent.newState().value
+                    }
+                }
+            val mappedStates = activeLabels.mapNotNull { lookupState(labelStateMap(imsProject)[it.name]) }
+            if (timelineItem is StateChangedEvent) {
+                if (mappedStates.isNotEmpty()) {
+                    timelineItems.remove(timelineItem)
+                }
+            }
+            if (timelineItem is AddedLabelEvent) {
+                val mappedState = lookupState(labelStateMap(imsProject)[timelineItem.addedLabel().value?.name])
+                if ((mappedState != null) && !mappedStates.contains(mappedState)) {
+                    timelineItems.remove(timelineItem)
+                    val newStateChange = StateChangedEvent(
+                        timelineItem.createdAt, timelineItem.lastModifiedAt
+                    )
+                    newStateChange.oldState().value = lastState
+                    newStateChange.newState().value = mappedState
+                    newStateChange.createdBy().value = timelineItem.createdBy().value
+                    newStateChange.lastModifiedBy().value = timelineItem.lastModifiedBy().value
+                    timelineItems.add(newStateChange)
+                    issue.timelineItems().add(newStateChange)
+                }
+            }
+            if (timelineItem is RemovedLabelEvent) {
+                timelineItems.remove(timelineItem)
+                val newStateChange = StateChangedEvent(
+                    timelineItem.createdAt, timelineItem.lastModifiedAt
+                )
+                newStateChange.oldState().value = lastState
+                newStateChange.newState().value = mappedStates.firstOrNull() ?: TODO("Restore State out of nothing")
+                newStateChange.createdBy().value = timelineItem.createdBy().value
+                newStateChange.lastModifiedBy().value = timelineItem.lastModifiedBy().value
+                timelineItems.add(newStateChange)
+                issue.timelineItems().add(newStateChange)
+            }
+        }
+    }
+
+    /**
      * Sync one incoming timeline item
      * @param imsProject IMS project to sync
      * @param timelineItem Timeline item to sync
@@ -345,18 +424,21 @@ abstract class AbstractSync(
         val oldInfo = collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGithubId(
             imsProject.rawId!!, timelineItem.identification()
         )
-        var (timelineItem, newInfo) = timelineItem.gropiusTimelineItem(
+        var (rawTimelineItems, newInfo) = timelineItem.gropiusTimelineItem(
             imsProject, syncDataService(), oldInfo, issue
         )
         if (issue.rawId != null) {
-            val dereplicationResult = issueDereplicator.validateTimelineItem(issue, timelineItem, dereplicatorRequest)
-            timelineItem = dereplicationResult.resultingTimelineItems
+            val dereplicationResult =
+                issueDereplicator.validateTimelineItem(issue, rawTimelineItems, dereplicatorRequest)
+            rawTimelineItems = dereplicationResult.resultingTimelineItems
         }
-        if (timelineItem.isNotEmpty()) {//TODO: Handle multiple
-            timelineItem.forEach { it.issue().value = issue }
-            issue.timelineItems() += timelineItem
-            issue.issueComments() += timelineItem.mapNotNull { it as? IssueComment }
-            nodesToSave.add(timelineItem.single())
+        val timelineItems = rawTimelineItems.toMutableList()
+        integrateLabelToState(timelineItems, rawTimelineItems, issue, imsProject)
+        if (timelineItems.isNotEmpty()) {//TODO: Handle multiple
+            timelineItems.forEach { it.issue().value = issue }
+            issue.timelineItems() += timelineItems
+            issue.issueComments() += timelineItems.mapNotNull { it as? IssueComment }
+            nodesToSave.add(timelineItems.single())
             savedNodeHandlers.add { savedNode ->
                 newInfo.gropiusId = (savedNode as TimelineItem).rawId
                 if (oldInfo?.id != null) {
