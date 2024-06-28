@@ -1,14 +1,8 @@
 import {
-    CanActivate,
-    ExecutionContext,
-    HttpException,
-    HttpStatus,
     Injectable,
     Logger,
     UnauthorizedException,
 } from "@nestjs/common";
-import { Request, Response } from "express";
-import { Observable } from "rxjs";
 import { TokenService } from "src/backend-services/token.service";
 import { ActiveLogin } from "src/model/postgres/ActiveLogin.entity";
 import { LoginUser } from "src/model/postgres/LoginUser.entity";
