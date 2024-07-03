@@ -127,7 +127,7 @@ data class IssuePileData(
         issue.body().value.issue().value = issue
         issue.state().value = githubService.issueState(imsProject, true)
         issue.template().value = githubService.issueTemplate(imsProject)
-        issue.trackables() += githubService.neoOperations.findAll(Project::class.java).awaitFirst()
+        issue.trackables() += imsProject.trackable().value
         issue.type().value = githubService.issueType(imsProject)
         return issue
     }
