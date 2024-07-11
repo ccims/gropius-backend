@@ -48,6 +48,7 @@ class ComponentVersion(
     @NodeRelationship(BaseTemplate.USED_IN, Direction.INCOMING)
     @GraphQLDescription("The Template of this ComponentVersion")
     @FilterProperty
+    @OrderProperty
     override val template by NodeProperty<ComponentVersionTemplate>()
 
     @NodeRelationship(Component.VERSION, Direction.INCOMING)

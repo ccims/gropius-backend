@@ -127,7 +127,7 @@ data class IssuePileData(
         issue.body().value.issue().value = issue
         issue.state().value = githubService.issueState(imsProject, true)
         issue.template().value = githubService.issueTemplate(imsProject)
-        issue.trackables() += githubService.neoOperations.findAll(Project::class.java).awaitFirst()
+        issue.trackables() += imsProject.trackable().value
         issue.type().value = githubService.issueType(imsProject)
         return issue
     }
@@ -536,7 +536,8 @@ class UnassignedTimelineItem(
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
         val githubService = service as GithubDataService
-        if (TODO() && (createdBy != null)) {
+        // TODO
+        if ((createdBy != null)) {
             val gropiusId = convInfo.gropiusId
             val event = if (gropiusId != null) githubService.neoOperations.findById<RemovedAssignmentEvent>(
                 gropiusId

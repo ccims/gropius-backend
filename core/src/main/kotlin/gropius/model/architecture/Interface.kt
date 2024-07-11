@@ -43,6 +43,7 @@ class Interface(
     @NodeRelationship(BaseTemplate.USED_IN, Direction.INCOMING)
     @GraphQLDescription("The Template of this Interface.")
     @FilterProperty
+    @OrderProperty
     override val template by NodeProperty<InterfaceTemplate>()
 
     @NodeRelationship(DEFINITION, Direction.OUTGOING)

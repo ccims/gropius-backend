@@ -35,6 +35,7 @@ class InterfacePart(
     @NodeRelationship(BaseTemplate.USED_IN, Direction.INCOMING)
     @GraphQLDescription("The Template of this InterfacePart")
     @FilterProperty
+    @OrderProperty
     override val template by NodeProperty<InterfacePartTemplate>()
 
     @NodeRelationship(Relation.START_PART, Direction.INCOMING)

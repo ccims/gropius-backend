@@ -6,7 +6,6 @@ import gropius.model.template.TemplatedNode
 import gropius.util.JsonNodeMapper
 import io.github.graphglue.connection.filter.model.FilterEntry
 import org.neo4j.cypherdsl.core.Condition
-import org.neo4j.cypherdsl.core.Conditions
 import org.neo4j.cypherdsl.core.Cypher
 import org.neo4j.cypherdsl.core.Node
 import kotlin.reflect.KProperty
@@ -24,9 +23,9 @@ class TemplatedFieldsFilterEntry(
 
     override fun generateCondition(node: Node): Condition {
         return if (value.isEmpty()) {
-            Conditions.isTrue()
+            Cypher.isTrue()
         } else {
-            value.fold(Conditions.noCondition()) { condition, entry ->
+            value.fold(Cypher.noCondition()) { condition, entry ->
                 entry as Map<*, *>
                 val templatedFieldProperty: KProperty<*> = TemplatedNode::templatedFields
                 val property =

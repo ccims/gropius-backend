@@ -4,7 +4,6 @@ import gropius.model.user.permission.TrackablePermission
 import io.github.graphglue.authorization.Permission
 import io.github.graphglue.connection.filter.model.FilterEntry
 import org.neo4j.cypherdsl.core.Condition
-import org.neo4j.cypherdsl.core.Conditions
 import org.neo4j.cypherdsl.core.Cypher
 import org.neo4j.cypherdsl.core.Node
 
@@ -29,7 +28,7 @@ class AffectedByIssueRelatedToFilterEntry(
         val authCondition = if (permission != null) {
             relatedToFilterEntryDefinition.generateAuthorizationCondition(permission).generateCondition(relatedNode)
         } else {
-            Conditions.noCondition()
+            Cypher.noCondition()
         }
         val idCondition = relatedNode.property("id").isEqualTo(Cypher.anonParameter(trackableId))
         return Cypher.match(relationship).where(idCondition.and(authCondition)).asCondition()

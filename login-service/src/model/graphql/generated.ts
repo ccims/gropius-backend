@@ -1,22 +1,24 @@
-import { GraphQLClient } from 'graphql-request';
-import * as Dom from 'graphql-request/dist/types.dom';
+import { GraphQLClient, RequestOptions } from 'graphql-request';
 import gql from 'graphql-tag';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
+export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
+export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+type GraphQLClientRequestHeaders = RequestOptions['requestHeaders'];
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: string;
-  String: string;
-  Boolean: boolean;
-  Int: number;
-  Float: number;
-  DateTime: any;
-  Duration: any;
-  JSON: any;
-  URL: any;
+  ID: { input: string; output: string; }
+  String: { input: string; output: string; }
+  Boolean: { input: boolean; output: boolean; }
+  Int: { input: number; output: number; }
+  Float: { input: number; output: number; }
+  DateTime: { input: any; output: any; }
+  Duration: { input: any; output: any; }
+  JSON: { input: any; output: any; }
+  URL: { input: any; output: any; }
 };
 
 /** Filter used to filter AffectedByIssue */
@@ -36,7 +38,7 @@ export type AffectedByIssueFilterInput = {
   /** Connects all subformulas via or */
   or?: InputMaybe<Array<AffectedByIssueFilterInput>>;
   /** Filters for AffectedByIssues which are related to a Trackable */
-  relatedTo?: InputMaybe<Scalars['ID']>;
+  relatedTo?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** Used to filter by a connection-based property. Fields are joined by AND */
@@ -603,9 +605,9 @@ export type BodyFilterInput = {
 /** Filter which can be used to filter for Nodes with a specific Boolean field */
 export type BooleanFilterInput = {
   /** Matches values which are equal to the provided value */
-  eq?: InputMaybe<Scalars['Boolean']>;
+  eq?: InputMaybe<Scalars['Boolean']['input']>;
   /** Matches values which are equal to any of the provided values */
-  in?: InputMaybe<Array<Scalars['Boolean']>>;
+  in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
 };
 
 /** Filter used to filter Comment */
@@ -669,7 +671,7 @@ export type ComponentFilterInput = {
   /** Filter by pinnedIssues */
   pinnedIssues?: InputMaybe<IssueListFilterInput>;
   /** Filters for AffectedByIssues which are related to a Trackable */
-  relatedTo?: InputMaybe<Scalars['ID']>;
+  relatedTo?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by repositoryURL */
   repositoryURL?: InputMaybe<NullableStringFilterInput>;
   /** Filter by syncsTo */
@@ -705,7 +707,11 @@ export enum ComponentOrderField {
   /** Order by id */
   Id = 'ID',
   /** Order by name */
-  Name = 'NAME'
+  Name = 'NAME',
+  /** Order by template_id */
+  TemplateId = 'TEMPLATE_ID',
+  /** Order by template_name */
+  TemplateName = 'TEMPLATE_NAME'
 }
 
 /** ComponentPermission entry enum type. */
@@ -924,9 +930,9 @@ export type ComponentVersionFilterInput = {
   /** Filter by outgoingRelations */
   outgoingRelations?: InputMaybe<RelationListFilterInput>;
   /** Filters for RelationPartners which are part of a Project's component graph */
-  partOfProject?: InputMaybe<Scalars['ID']>;
+  partOfProject?: InputMaybe<Scalars['ID']['input']>;
   /** Filters for AffectedByIssues which are related to a Trackable */
-  relatedTo?: InputMaybe<Scalars['ID']>;
+  relatedTo?: InputMaybe<Scalars['ID']['input']>;
   /** Filters for nodes where the related node match this filter */
   template?: InputMaybe<ComponentVersionTemplateFilterInput>;
   /** Filter for templated fields with matching key and values. Entries are joined by AND */
@@ -959,6 +965,10 @@ export enum ComponentVersionOrderField {
   Id = 'ID',
   /** Order by name */
   Name = 'NAME',
+  /** Order by template_id */
+  TemplateId = 'TEMPLATE_ID',
+  /** Order by template_name */
+  TemplateName = 'TEMPLATE_NAME',
   /** Order by version */
   Version = 'VERSION'
 }
@@ -982,63 +992,63 @@ export type ComponentVersionTemplateFilterInput = {
 /** Input for the createGropiusUser mutation */
 export type CreateGropiusUserInput = {
   /** The avatar of the created GropiusUser */
-  avatar?: InputMaybe<Scalars['URL']>;
+  avatar?: InputMaybe<Scalars['URL']['input']>;
   /** The displayName of the created User */
-  displayName: Scalars['String'];
+  displayName: Scalars['String']['input'];
   /** The email of the created User if present */
-  email?: InputMaybe<Scalars['String']>;
+  email?: InputMaybe<Scalars['String']['input']>;
   /** If true, the created GropiusUser is a global admin */
-  isAdmin: Scalars['Boolean'];
+  isAdmin: Scalars['Boolean']['input'];
   /** The username of the created GropiusUser, must be unique, must match /^[a-zA-Z0-9_-]+$/ */
-  username: Scalars['String'];
+  username: Scalars['String']['input'];
 };
 
 /** Input for the createIMSUser mutation */
 export type CreateImsUserInput = {
   /** The displayName of the created User */
-  displayName: Scalars['String'];
+  displayName: Scalars['String']['input'];
   /** The email of the created User if present */
-  email?: InputMaybe<Scalars['String']>;
+  email?: InputMaybe<Scalars['String']['input']>;
   /** If present, the id of the GropiusUser the created IMSUser is associated with */
-  gropiusUser?: InputMaybe<Scalars['ID']>;
+  gropiusUser?: InputMaybe<Scalars['ID']['input']>;
   /** The id of the IMS the created IMSUser is part of */
-  ims: Scalars['ID'];
+  ims: Scalars['ID']['input'];
   /** Initial values for all templatedFields */
   templatedFields: Array<JsonFieldInput>;
   /** The username of the created IMSUser, must be unique */
-  username?: InputMaybe<Scalars['String']>;
+  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Filter which can be used to filter for Nodes with a specific DateTime field */
 export type DateTimeFilterInput = {
   /** Matches values which are equal to the provided value */
-  eq?: InputMaybe<Scalars['DateTime']>;
+  eq?: InputMaybe<Scalars['DateTime']['input']>;
   /** Matches values which are greater than the provided value */
-  gt?: InputMaybe<Scalars['DateTime']>;
+  gt?: InputMaybe<Scalars['DateTime']['input']>;
   /** Matches values which are greater than or equal to the provided value */
-  gte?: InputMaybe<Scalars['DateTime']>;
+  gte?: InputMaybe<Scalars['DateTime']['input']>;
   /** Matches values which are equal to any of the provided values */
-  in?: InputMaybe<Array<Scalars['DateTime']>>;
+  in?: InputMaybe<Array<Scalars['DateTime']['input']>>;
   /** Matches values which are lesser than the provided value */
-  lt?: InputMaybe<Scalars['DateTime']>;
+  lt?: InputMaybe<Scalars['DateTime']['input']>;
   /** Matches values which are lesser than or equal to the provided value */
-  lte?: InputMaybe<Scalars['DateTime']>;
+  lte?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
 /** Filter which can be used to filter for Nodes with a specific Float field */
 export type FloatFilterInput = {
   /** Matches values which are equal to the provided value */
-  eq?: InputMaybe<Scalars['Float']>;
+  eq?: InputMaybe<Scalars['Float']['input']>;
   /** Matches values which are greater than the provided value */
-  gt?: InputMaybe<Scalars['Float']>;
+  gt?: InputMaybe<Scalars['Float']['input']>;
   /** Matches values which are greater than or equal to the provided value */
-  gte?: InputMaybe<Scalars['Float']>;
+  gte?: InputMaybe<Scalars['Float']['input']>;
   /** Matches values which are equal to any of the provided values */
-  in?: InputMaybe<Array<Scalars['Float']>>;
+  in?: InputMaybe<Array<Scalars['Float']['input']>>;
   /** Matches values which are lesser than the provided value */
-  lt?: InputMaybe<Scalars['Float']>;
+  lt?: InputMaybe<Scalars['Float']['input']>;
   /** Matches values which are lesser than or equal to the provided value */
-  lte?: InputMaybe<Scalars['Float']>;
+  lte?: InputMaybe<Scalars['Float']['input']>;
 };
 
 /** Filter used to filter GlobalPermission */
@@ -1146,9 +1156,9 @@ export enum GropiusUserOrderField {
 /** Filter which can be used to filter for Nodes with a specific ID field */
 export type IdFilterInput = {
   /** Matches values which are equal to the provided value */
-  eq?: InputMaybe<Scalars['ID']>;
+  eq?: InputMaybe<Scalars['ID']['input']>;
   /** Matches values which are equal to any of the provided values */
-  in?: InputMaybe<Array<Scalars['ID']>>;
+  in?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 /** Filter used to filter IMS */
@@ -1222,7 +1232,11 @@ export type ImsIssueOrder = {
 /** Fields a list of IMSIssue can be sorted by */
 export enum ImsIssueOrderField {
   /** Order by id */
-  Id = 'ID'
+  Id = 'ID',
+  /** Order by template_id */
+  TemplateId = 'TEMPLATE_ID',
+  /** Order by template_name */
+  TemplateName = 'TEMPLATE_NAME'
 }
 
 /** Filter used to filter IMSIssueTemplate */
@@ -1264,7 +1278,11 @@ export enum ImsOrderField {
   /** Order by id */
   Id = 'ID',
   /** Order by name */
-  Name = 'NAME'
+  Name = 'NAME',
+  /** Order by template_id */
+  TemplateId = 'TEMPLATE_ID',
+  /** Order by template_name */
+  TemplateName = 'TEMPLATE_NAME'
 }
 
 /** IMSPermission entry enum type. */
@@ -1383,7 +1401,11 @@ export enum ImsProjectOrderField {
   /** Order by id */
   Id = 'ID',
   /** Order by name */
-  Name = 'NAME'
+  Name = 'NAME',
+  /** Order by template_id */
+  TemplateId = 'TEMPLATE_ID',
+  /** Order by template_name */
+  TemplateName = 'TEMPLATE_NAME'
 }
 
 /** Filter used to filter IMSProjectTemplate */
@@ -1531,17 +1553,17 @@ export type ImsUserTemplateFilterInput = {
 /** Filter which can be used to filter for Nodes with a specific Int field */
 export type IntFilterInput = {
   /** Matches values which are equal to the provided value */
-  eq?: InputMaybe<Scalars['Int']>;
+  eq?: InputMaybe<Scalars['Int']['input']>;
   /** Matches values which are greater than the provided value */
-  gt?: InputMaybe<Scalars['Int']>;
+  gt?: InputMaybe<Scalars['Int']['input']>;
   /** Matches values which are greater than or equal to the provided value */
-  gte?: InputMaybe<Scalars['Int']>;
+  gte?: InputMaybe<Scalars['Int']['input']>;
   /** Matches values which are equal to any of the provided values */
-  in?: InputMaybe<Array<Scalars['Int']>>;
+  in?: InputMaybe<Array<Scalars['Int']['input']>>;
   /** Matches values which are lesser than the provided value */
-  lt?: InputMaybe<Scalars['Int']>;
+  lt?: InputMaybe<Scalars['Int']['input']>;
   /** Matches values which are lesser than or equal to the provided value */
-  lte?: InputMaybe<Scalars['Int']>;
+  lte?: InputMaybe<Scalars['Int']['input']>;
 };
 
 /** Filter used to filter InterfaceDefinition */
@@ -1598,6 +1620,10 @@ export enum InterfaceDefinitionOrderField {
   Id = 'ID',
   /** Order by invisibleSelfDefined */
   InvisibleSelfDefined = 'INVISIBLE_SELF_DEFINED',
+  /** Order by template_id */
+  TemplateId = 'TEMPLATE_ID',
+  /** Order by template_name */
+  TemplateName = 'TEMPLATE_NAME',
   /** Order by visibleSelfDefined */
   VisibleSelfDefined = 'VISIBLE_SELF_DEFINED'
 }
@@ -1645,9 +1671,9 @@ export type InterfaceFilterInput = {
   /** Filter by outgoingRelations */
   outgoingRelations?: InputMaybe<RelationListFilterInput>;
   /** Filters for RelationPartners which are part of a Project's component graph */
-  partOfProject?: InputMaybe<Scalars['ID']>;
+  partOfProject?: InputMaybe<Scalars['ID']['input']>;
   /** Filters for AffectedByIssues which are related to a Trackable */
-  relatedTo?: InputMaybe<Scalars['ID']>;
+  relatedTo?: InputMaybe<Scalars['ID']['input']>;
   /** Filters for nodes where the related node match this filter */
   template?: InputMaybe<InterfaceTemplateFilterInput>;
   /** Filter for templated fields with matching key and values. Entries are joined by AND */
@@ -1667,7 +1693,11 @@ export enum InterfaceOrderField {
   /** Order by id */
   Id = 'ID',
   /** Order by name */
-  Name = 'NAME'
+  Name = 'NAME',
+  /** Order by template_id */
+  TemplateId = 'TEMPLATE_ID',
+  /** Order by template_name */
+  TemplateName = 'TEMPLATE_NAME'
 }
 
 /** Filter used to filter InterfacePart */
@@ -1695,7 +1725,7 @@ export type InterfacePartFilterInput = {
   /** Filters for nodes where the related node match this filter */
   partOf?: InputMaybe<InterfaceSpecificationVersionFilterInput>;
   /** Filters for AffectedByIssues which are related to a Trackable */
-  relatedTo?: InputMaybe<Scalars['ID']>;
+  relatedTo?: InputMaybe<Scalars['ID']['input']>;
   /** Filters for nodes where the related node match this filter */
   template?: InputMaybe<InterfacePartTemplateFilterInput>;
   /** Filter for templated fields with matching key and values. Entries are joined by AND */
@@ -1725,7 +1755,11 @@ export enum InterfacePartOrderField {
   /** Order by id */
   Id = 'ID',
   /** Order by name */
-  Name = 'NAME'
+  Name = 'NAME',
+  /** Order by template_id */
+  TemplateId = 'TEMPLATE_ID',
+  /** Order by template_name */
+  TemplateName = 'TEMPLATE_NAME'
 }
 
 /** Filter used to filter InterfacePartTemplate */
@@ -1815,7 +1849,7 @@ export type InterfaceSpecificationFilterInput = {
   /** Connects all subformulas via or */
   or?: InputMaybe<Array<InterfaceSpecificationFilterInput>>;
   /** Filters for AffectedByIssues which are related to a Trackable */
-  relatedTo?: InputMaybe<Scalars['ID']>;
+  relatedTo?: InputMaybe<Scalars['ID']['input']>;
   /** Filters for nodes where the related node match this filter */
   template?: InputMaybe<InterfaceSpecificationTemplateFilterInput>;
   /** Filter for templated fields with matching key and values. Entries are joined by AND */
@@ -1847,7 +1881,11 @@ export enum InterfaceSpecificationOrderField {
   /** Order by id */
   Id = 'ID',
   /** Order by name */
-  Name = 'NAME'
+  Name = 'NAME',
+  /** Order by template_id */
+  TemplateId = 'TEMPLATE_ID',
+  /** Order by template_name */
+  TemplateName = 'TEMPLATE_NAME'
 }
 
 /** Filter used to filter InterfaceSpecificationTemplate */
@@ -1931,7 +1969,7 @@ export type InterfaceSpecificationVersionFilterInput = {
   /** Filter by parts */
   parts?: InputMaybe<InterfacePartListFilterInput>;
   /** Filters for AffectedByIssues which are related to a Trackable */
-  relatedTo?: InputMaybe<Scalars['ID']>;
+  relatedTo?: InputMaybe<Scalars['ID']['input']>;
   /** Filters for nodes where the related node match this filter */
   template?: InputMaybe<InterfaceSpecificationVersionTemplateFilterInput>;
   /** Filter for templated fields with matching key and values. Entries are joined by AND */
@@ -1964,6 +2002,10 @@ export enum InterfaceSpecificationVersionOrderField {
   Id = 'ID',
   /** Order by name */
   Name = 'NAME',
+  /** Order by template_id */
+  TemplateId = 'TEMPLATE_ID',
+  /** Order by template_name */
+  TemplateName = 'TEMPLATE_NAME',
   /** Order by version */
   Version = 'VERSION'
 }
@@ -2262,12 +2304,32 @@ export enum IssueOrderField {
   LastModifiedAt = 'LAST_MODIFIED_AT',
   /** Order by lastUpdatedAt */
   LastUpdatedAt = 'LAST_UPDATED_AT',
+  /** Order by priority_id */
+  PriorityId = 'PRIORITY_ID',
+  /** Order by priority_name */
+  PriorityName = 'PRIORITY_NAME',
+  /** Order by priority_value */
+  PriorityValue = 'PRIORITY_VALUE',
   /** Order by spentTime */
   SpentTime = 'SPENT_TIME',
   /** Order by startDate */
   StartDate = 'START_DATE',
+  /** Order by state_id */
+  StateId = 'STATE_ID',
+  /** Order by state_isOpen */
+  StateIsOpen = 'STATE_IS_OPEN',
+  /** Order by state_name */
+  StateName = 'STATE_NAME',
+  /** Order by template_id */
+  TemplateId = 'TEMPLATE_ID',
+  /** Order by template_name */
+  TemplateName = 'TEMPLATE_NAME',
   /** Order by title */
-  Title = 'TITLE'
+  Title = 'TITLE',
+  /** Order by type_id */
+  TypeId = 'TYPE_ID',
+  /** Order by type_name */
+  TypeName = 'TYPE_NAME'
 }
 
 /** Filter used to filter IssuePriority */
@@ -2589,9 +2651,9 @@ export enum IssueTypeOrderField {
 /** Input set update the value of a JSON field, like an extension field or a templated field. */
 export type JsonFieldInput = {
   /** The name of the field */
-  name: Scalars['String'];
+  name: Scalars['String']['input'];
   /** The new value of the field */
-  value?: InputMaybe<Scalars['JSON']>;
+  value?: InputMaybe<Scalars['JSON']['input']>;
 };
 
 /** Filter used to filter Label */
@@ -2676,7 +2738,7 @@ export enum MarkerType {
 
 export type NodePermissionFilterEntry = {
   /** The node where the user must have the permission */
-  node: Scalars['ID'];
+  node: Scalars['ID']['input'];
   /** The permission the user must have on the node */
   permission: AllPermissionEntry;
 };
@@ -2684,81 +2746,81 @@ export type NodePermissionFilterEntry = {
 /** Filter which can be used to filter for Nodes with a specific DateTime field */
 export type NullableDateTimeFilterInput = {
   /** Matches values which are equal to the provided value */
-  eq?: InputMaybe<Scalars['DateTime']>;
+  eq?: InputMaybe<Scalars['DateTime']['input']>;
   /** Matches values which are greater than the provided value */
-  gt?: InputMaybe<Scalars['DateTime']>;
+  gt?: InputMaybe<Scalars['DateTime']['input']>;
   /** Matches values which are greater than or equal to the provided value */
-  gte?: InputMaybe<Scalars['DateTime']>;
+  gte?: InputMaybe<Scalars['DateTime']['input']>;
   /** Matches values which are equal to any of the provided values */
-  in?: InputMaybe<Array<Scalars['DateTime']>>;
+  in?: InputMaybe<Array<Scalars['DateTime']['input']>>;
   /** If true, matches only null values, if false, matches only non-null values */
-  isNull?: InputMaybe<Scalars['Boolean']>;
+  isNull?: InputMaybe<Scalars['Boolean']['input']>;
   /** Matches values which are lesser than the provided value */
-  lt?: InputMaybe<Scalars['DateTime']>;
+  lt?: InputMaybe<Scalars['DateTime']['input']>;
   /** Matches values which are lesser than or equal to the provided value */
-  lte?: InputMaybe<Scalars['DateTime']>;
+  lte?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
 /** Filter which can be used to filter for Nodes with a specific Duration field */
 export type NullableDurationFilterInputFilterInput = {
   /** Matches values which are equal to the provided value */
-  eq?: InputMaybe<Scalars['Duration']>;
+  eq?: InputMaybe<Scalars['Duration']['input']>;
   /** Matches values which are greater than the provided value */
-  gt?: InputMaybe<Scalars['Duration']>;
+  gt?: InputMaybe<Scalars['Duration']['input']>;
   /** Matches values which are greater than or equal to the provided value */
-  gte?: InputMaybe<Scalars['Duration']>;
+  gte?: InputMaybe<Scalars['Duration']['input']>;
   /** Matches values which are equal to any of the provided values */
-  in?: InputMaybe<Array<Scalars['Duration']>>;
+  in?: InputMaybe<Array<Scalars['Duration']['input']>>;
   /** If true, matches only null values, if false, matches only non-null values */
-  isNull?: InputMaybe<Scalars['Boolean']>;
+  isNull?: InputMaybe<Scalars['Boolean']['input']>;
   /** Matches values which are lesser than the provided value */
-  lt?: InputMaybe<Scalars['Duration']>;
+  lt?: InputMaybe<Scalars['Duration']['input']>;
   /** Matches values which are lesser than or equal to the provided value */
-  lte?: InputMaybe<Scalars['Duration']>;
+  lte?: InputMaybe<Scalars['Duration']['input']>;
 };
 
 /** Filter which can be used to filter for Nodes with a specific Int field */
 export type NullableIntFilterInput = {
   /** Matches values which are equal to the provided value */
-  eq?: InputMaybe<Scalars['Int']>;
+  eq?: InputMaybe<Scalars['Int']['input']>;
   /** Matches values which are greater than the provided value */
-  gt?: InputMaybe<Scalars['Int']>;
+  gt?: InputMaybe<Scalars['Int']['input']>;
   /** Matches values which are greater than or equal to the provided value */
-  gte?: InputMaybe<Scalars['Int']>;
+  gte?: InputMaybe<Scalars['Int']['input']>;
   /** Matches values which are equal to any of the provided values */
-  in?: InputMaybe<Array<Scalars['Int']>>;
+  in?: InputMaybe<Array<Scalars['Int']['input']>>;
   /** If true, matches only null values, if false, matches only non-null values */
-  isNull?: InputMaybe<Scalars['Boolean']>;
+  isNull?: InputMaybe<Scalars['Boolean']['input']>;
   /** Matches values which are lesser than the provided value */
-  lt?: InputMaybe<Scalars['Int']>;
+  lt?: InputMaybe<Scalars['Int']['input']>;
   /** Matches values which are lesser than or equal to the provided value */
-  lte?: InputMaybe<Scalars['Int']>;
+  lte?: InputMaybe<Scalars['Int']['input']>;
 };
 
 /** Filter which can be used to filter for Nodes with a specific String field */
 export type NullableStringFilterInput = {
   /** Matches Strings which contain the provided value */
-  contains?: InputMaybe<Scalars['String']>;
+  contains?: InputMaybe<Scalars['String']['input']>;
   /** Matches Strings which end with the provided value */
-  endsWith?: InputMaybe<Scalars['String']>;
+  endsWith?: InputMaybe<Scalars['String']['input']>;
   /** Matches values which are equal to the provided value */
-  eq?: InputMaybe<Scalars['String']>;
+  eq?: InputMaybe<Scalars['String']['input']>;
   /** Matches values which are greater than the provided value */
-  gt?: InputMaybe<Scalars['String']>;
+  gt?: InputMaybe<Scalars['String']['input']>;
   /** Matches values which are greater than or equal to the provided value */
-  gte?: InputMaybe<Scalars['String']>;
+  gte?: InputMaybe<Scalars['String']['input']>;
   /** Matches values which are equal to any of the provided values */
-  in?: InputMaybe<Array<Scalars['String']>>;
+  in?: InputMaybe<Array<Scalars['String']['input']>>;
   /** If true, matches only null values, if false, matches only non-null values */
-  isNull?: InputMaybe<Scalars['Boolean']>;
+  isNull?: InputMaybe<Scalars['Boolean']['input']>;
   /** Matches values which are lesser than the provided value */
-  lt?: InputMaybe<Scalars['String']>;
+  lt?: InputMaybe<Scalars['String']['input']>;
   /** Matches values which are lesser than or equal to the provided value */
-  lte?: InputMaybe<Scalars['String']>;
+  lte?: InputMaybe<Scalars['String']['input']>;
   /** Matches Strings using the provided RegEx */
-  matches?: InputMaybe<Scalars['String']>;
+  matches?: InputMaybe<Scalars['String']['input']>;
   /** Matches Strings which start with the provided value */
-  startsWith?: InputMaybe<Scalars['String']>;
+  startsWith?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Possible direction in which a list of nodes can be ordered */
@@ -2838,7 +2900,7 @@ export type ProjectFilterInput = {
   /** Filter by pinnedIssues */
   pinnedIssues?: InputMaybe<IssueListFilterInput>;
   /** Filters for AffectedByIssues which are related to a Trackable */
-  relatedTo?: InputMaybe<Scalars['ID']>;
+  relatedTo?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by repositoryURL */
   repositoryURL?: InputMaybe<NullableStringFilterInput>;
   /** Filter by syncsTo */
@@ -3081,8 +3143,20 @@ export type RelationOrder = {
 
 /** Fields a list of Relation can be sorted by */
 export enum RelationOrderField {
+  /** Order by end_id */
+  EndId = 'END_ID',
+  /** Order by end_name */
+  EndName = 'END_NAME',
   /** Order by id */
-  Id = 'ID'
+  Id = 'ID',
+  /** Order by start_id */
+  StartId = 'START_ID',
+  /** Order by start_name */
+  StartName = 'START_NAME',
+  /** Order by template_id */
+  TemplateId = 'TEMPLATE_ID',
+  /** Order by template_name */
+  TemplateName = 'TEMPLATE_NAME'
 }
 
 /** Filter used to filter RelationPartner */
@@ -3108,9 +3182,9 @@ export type RelationPartnerFilterInput = {
   /** Filter by outgoingRelations */
   outgoingRelations?: InputMaybe<RelationListFilterInput>;
   /** Filters for RelationPartners which are part of a Project's component graph */
-  partOfProject?: InputMaybe<Scalars['ID']>;
+  partOfProject?: InputMaybe<Scalars['ID']['input']>;
   /** Filters for AffectedByIssues which are related to a Trackable */
-  relatedTo?: InputMaybe<Scalars['ID']>;
+  relatedTo?: InputMaybe<Scalars['ID']['input']>;
   /** Filter for templated fields with matching key and values. Entries are joined by AND */
   templatedFields?: InputMaybe<Array<InputMaybe<JsonFieldInput>>>;
 };
@@ -3230,25 +3304,25 @@ export enum ShapeType {
 /** Filter which can be used to filter for Nodes with a specific String field */
 export type StringFilterInput = {
   /** Matches Strings which contain the provided value */
-  contains?: InputMaybe<Scalars['String']>;
+  contains?: InputMaybe<Scalars['String']['input']>;
   /** Matches Strings which end with the provided value */
-  endsWith?: InputMaybe<Scalars['String']>;
+  endsWith?: InputMaybe<Scalars['String']['input']>;
   /** Matches values which are equal to the provided value */
-  eq?: InputMaybe<Scalars['String']>;
+  eq?: InputMaybe<Scalars['String']['input']>;
   /** Matches values which are greater than the provided value */
-  gt?: InputMaybe<Scalars['String']>;
+  gt?: InputMaybe<Scalars['String']['input']>;
   /** Matches values which are greater than or equal to the provided value */
-  gte?: InputMaybe<Scalars['String']>;
+  gte?: InputMaybe<Scalars['String']['input']>;
   /** Matches values which are equal to any of the provided values */
-  in?: InputMaybe<Array<Scalars['String']>>;
+  in?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Matches values which are lesser than the provided value */
-  lt?: InputMaybe<Scalars['String']>;
+  lt?: InputMaybe<Scalars['String']['input']>;
   /** Matches values which are lesser than or equal to the provided value */
-  lte?: InputMaybe<Scalars['String']>;
+  lte?: InputMaybe<Scalars['String']['input']>;
   /** Matches Strings using the provided RegEx */
-  matches?: InputMaybe<Scalars['String']>;
+  matches?: InputMaybe<Scalars['String']['input']>;
   /** Matches Strings which start with the provided value */
-  startsWith?: InputMaybe<Scalars['String']>;
+  startsWith?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Filter used to filter SyncPermissionTarget */
@@ -3450,7 +3524,7 @@ export type TrackableFilterInput = {
   /** Filter by pinnedIssues */
   pinnedIssues?: InputMaybe<IssueListFilterInput>;
   /** Filters for AffectedByIssues which are related to a Trackable */
-  relatedTo?: InputMaybe<Scalars['ID']>;
+  relatedTo?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by repositoryURL */
   repositoryURL?: InputMaybe<NullableStringFilterInput>;
   /** Filter by syncsTo */
@@ -3486,21 +3560,21 @@ export enum TrackableOrderField {
 /** Input for the updateIMSUser mutation */
 export type UpdateImsUserInput = {
   /** The new displayName of the User to update */
-  displayName?: InputMaybe<Scalars['String']>;
+  displayName?: InputMaybe<Scalars['String']['input']>;
   /** The new email of the User to update */
-  email?: InputMaybe<Scalars['String']>;
+  email?: InputMaybe<Scalars['String']['input']>;
   /**
    * The id of the GropiusUser the updated IMSUser is associated with, replaces existing association
    *         or removes it if null is provided.
    *
    */
-  gropiusUser?: InputMaybe<Scalars['ID']>;
+  gropiusUser?: InputMaybe<Scalars['ID']['input']>;
   /** The id of the node to update */
-  id: Scalars['ID'];
+  id: Scalars['ID']['input'];
   /** Values for templatedFields to update */
   templatedFields?: InputMaybe<Array<JsonFieldInput>>;
   /** The new username of the updated IMSUser */
-  username?: InputMaybe<Scalars['String']>;
+  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Filter used to filter User */
@@ -3560,14 +3634,14 @@ export enum UserOrderField {
 export type ImsUserWithDetailFragment = { __typename: 'IMSUser', id: string, username?: string | null, displayName: string, email?: string | null, templatedFields: Array<{ __typename: 'JSONField', name: string, value?: any | null }>, ims: { __typename: 'IMS', id: string, name: string, description: string, templatedFields: Array<{ __typename: 'JSONField', name: string, value?: any | null }> } };
 
 export type GetBasicImsUserDataQueryVariables = Exact<{
-  imsUserId: Scalars['ID'];
+  imsUserId: Scalars['ID']['input'];
 }>;
 
 
 export type GetBasicImsUserDataQuery = { __typename?: 'Query', node?: { __typename: 'AddedAffectedEntityEvent', id: string } | { __typename: 'AddedArtefactEvent', id: string } | { __typename: 'AddedLabelEvent', id: string } | { __typename: 'AddedToPinnedIssuesEvent', id: string } | { __typename: 'AddedToTrackableEvent', id: string } | { __typename: 'AggregatedIssue', id: string } | { __typename: 'AggregatedIssueRelation', id: string } | { __typename: 'Artefact', id: string } | { __typename: 'ArtefactTemplate', id: string } | { __typename: 'Assignment', id: string } | { __typename: 'AssignmentType', id: string } | { __typename: 'AssignmentTypeChangedEvent', id: string } | { __typename: 'Body', id: string } | { __typename: 'Component', id: string } | { __typename: 'ComponentPermission', id: string } | { __typename: 'ComponentTemplate', id: string } | { __typename: 'ComponentVersion', id: string } | { __typename: 'ComponentVersionTemplate', id: string } | { __typename: 'FillStyle', id: string } | { __typename: 'GlobalPermission', id: string } | { __typename: 'GropiusUser', id: string } | { __typename: 'IMS', id: string } | { __typename: 'IMSIssue', id: string } | { __typename: 'IMSIssueTemplate', id: string } | { __typename: 'IMSPermission', id: string } | { __typename: 'IMSProject', id: string } | { __typename: 'IMSProjectTemplate', id: string } | { __typename: 'IMSTemplate', id: string } | { __typename: 'IMSUser', id: string } | { __typename: 'IMSUserTemplate', id: string } | { __typename: 'IncomingRelationTypeChangedEvent', id: string } | { __typename: 'Interface', id: string } | { __typename: 'InterfaceDefinition', id: string } | { __typename: 'InterfaceDefinitionTemplate', id: string } | { __typename: 'InterfacePart', id: string } | { __typename: 'InterfacePartTemplate', id: string } | { __typename: 'InterfaceSpecification', id: string } | { __typename: 'InterfaceSpecificationDerivationCondition', id: string } | { __typename: 'InterfaceSpecificationTemplate', id: string } | { __typename: 'InterfaceSpecificationVersion', id: string } | { __typename: 'InterfaceSpecificationVersionTemplate', id: string } | { __typename: 'InterfaceTemplate', id: string } | { __typename: 'IntraComponentDependencyParticipant', id: string } | { __typename: 'IntraComponentDependencySpecification', id: string } | { __typename: 'Issue', id: string } | { __typename: 'IssueComment', id: string } | { __typename: 'IssuePriority', id: string } | { __typename: 'IssueRelation', id: string } | { __typename: 'IssueRelationType', id: string } | { __typename: 'IssueState', id: string } | { __typename: 'IssueTemplate', id: string } | { __typename: 'IssueType', id: string } | { __typename: 'Label', id: string } | { __typename: 'OutgoingRelationTypeChangedEvent', id: string } | { __typename: 'PriorityChangedEvent', id: string } | { __typename: 'Project', id: string } | { __typename: 'ProjectPermission', id: string } | { __typename: 'RelatedByIssueEvent', id: string } | { __typename: 'Relation', id: string } | { __typename: 'RelationCondition', id: string } | { __typename: 'RelationTemplate', id: string } | { __typename: 'RemovedAffectedEntityEvent', id: string } | { __typename: 'RemovedArtefactEvent', id: string } | { __typename: 'RemovedAssignmentEvent', id: string } | { __typename: 'RemovedFromPinnedIssuesEvent', id: string } | { __typename: 'RemovedFromTrackableEvent', id: string } | { __typename: 'RemovedIncomingRelationEvent', id: string } | { __typename: 'RemovedLabelEvent', id: string } | { __typename: 'RemovedOutgoingRelationEvent', id: string } | { __typename: 'RemovedTemplatedFieldEvent', id: string } | { __typename: 'StateChangedEvent', id: string } | { __typename: 'StrokeStyle', id: string } | { __typename: 'TemplateChangedEvent', id: string } | { __typename: 'TemplatedFieldChangedEvent', id: string } | { __typename: 'TitleChangedEvent', id: string } | { __typename: 'TypeChangedEvent', id: string } | null };
 
 export type GetImsUserDetailsQueryVariables = Exact<{
-  imsUserId: Scalars['ID'];
+  imsUserId: Scalars['ID']['input'];
 }>;
 
 
@@ -3589,21 +3663,21 @@ export type CreateNewImsUserInImsMutationVariables = Exact<{
 export type CreateNewImsUserInImsMutation = { __typename?: 'Mutation', createIMSUser: { __typename: 'CreateIMSUserPayload', imsUser: { __typename: 'IMSUser', id: string } } };
 
 export type GetBasicGropiusUserDataQueryVariables = Exact<{
-  id: Scalars['ID'];
+  id: Scalars['ID']['input'];
 }>;
 
 
 export type GetBasicGropiusUserDataQuery = { __typename?: 'Query', node?: { __typename?: 'AddedAffectedEntityEvent' } | { __typename?: 'AddedArtefactEvent' } | { __typename?: 'AddedLabelEvent' } | { __typename?: 'AddedToPinnedIssuesEvent' } | { __typename?: 'AddedToTrackableEvent' } | { __typename?: 'AggregatedIssue' } | { __typename?: 'AggregatedIssueRelation' } | { __typename?: 'Artefact' } | { __typename?: 'ArtefactTemplate' } | { __typename?: 'Assignment' } | { __typename?: 'AssignmentType' } | { __typename?: 'AssignmentTypeChangedEvent' } | { __typename?: 'Body' } | { __typename?: 'Component' } | { __typename?: 'ComponentPermission' } | { __typename?: 'ComponentTemplate' } | { __typename?: 'ComponentVersion' } | { __typename?: 'ComponentVersionTemplate' } | { __typename?: 'FillStyle' } | { __typename?: 'GlobalPermission' } | { __typename: 'GropiusUser', id: string, username: string, displayName: string, email?: string | null } | { __typename?: 'IMS' } | { __typename?: 'IMSIssue' } | { __typename?: 'IMSIssueTemplate' } | { __typename?: 'IMSPermission' } | { __typename?: 'IMSProject' } | { __typename?: 'IMSProjectTemplate' } | { __typename?: 'IMSTemplate' } | { __typename?: 'IMSUser' } | { __typename?: 'IMSUserTemplate' } | { __typename?: 'IncomingRelationTypeChangedEvent' } | { __typename?: 'Interface' } | { __typename?: 'InterfaceDefinition' } | { __typename?: 'InterfaceDefinitionTemplate' } | { __typename?: 'InterfacePart' } | { __typename?: 'InterfacePartTemplate' } | { __typename?: 'InterfaceSpecification' } | { __typename?: 'InterfaceSpecificationDerivationCondition' } | { __typename?: 'InterfaceSpecificationTemplate' } | { __typename?: 'InterfaceSpecificationVersion' } | { __typename?: 'InterfaceSpecificationVersionTemplate' } | { __typename?: 'InterfaceTemplate' } | { __typename?: 'IntraComponentDependencyParticipant' } | { __typename?: 'IntraComponentDependencySpecification' } | { __typename?: 'Issue' } | { __typename?: 'IssueComment' } | { __typename?: 'IssuePriority' } | { __typename?: 'IssueRelation' } | { __typename?: 'IssueRelationType' } | { __typename?: 'IssueState' } | { __typename?: 'IssueTemplate' } | { __typename?: 'IssueType' } | { __typename?: 'Label' } | { __typename?: 'OutgoingRelationTypeChangedEvent' } | { __typename?: 'PriorityChangedEvent' } | { __typename?: 'Project' } | { __typename?: 'ProjectPermission' } | { __typename?: 'RelatedByIssueEvent' } | { __typename?: 'Relation' } | { __typename?: 'RelationCondition' } | { __typename?: 'RelationTemplate' } | { __typename?: 'RemovedAffectedEntityEvent' } | { __typename?: 'RemovedArtefactEvent' } | { __typename?: 'RemovedAssignmentEvent' } | { __typename?: 'RemovedFromPinnedIssuesEvent' } | { __typename?: 'RemovedFromTrackableEvent' } | { __typename?: 'RemovedIncomingRelationEvent' } | { __typename?: 'RemovedLabelEvent' } | { __typename?: 'RemovedOutgoingRelationEvent' } | { __typename?: 'RemovedTemplatedFieldEvent' } | { __typename?: 'StateChangedEvent' } | { __typename?: 'StrokeStyle' } | { __typename?: 'TemplateChangedEvent' } | { __typename?: 'TemplatedFieldChangedEvent' } | { __typename?: 'TitleChangedEvent' } | { __typename?: 'TypeChangedEvent' } | null };
 
 export type GetUserByNameQueryVariables = Exact<{
-  username: Scalars['String'];
+  username: Scalars['String']['input'];
 }>;
 
 
 export type GetUserByNameQuery = { __typename?: 'Query', gropiusUser: { __typename: 'GropiusUser', id: string, username: string, displayName: string, email?: string | null } };
 
 export type CheckUserIsAdminQueryVariables = Exact<{
-  id: Scalars['ID'];
+  id: Scalars['ID']['input'];
 }>;
 
 
@@ -3622,8 +3696,8 @@ export type CreateNewUserMutationVariables = Exact<{
 export type CreateNewUserMutation = { __typename?: 'Mutation', createGropiusUser: { __typename?: 'CreateGropiusUserPayload', gropiusUser: { __typename: 'GropiusUser', id: string, username: string, displayName: string, email?: string | null } } };
 
 export type SetImsUserLinkMutationVariables = Exact<{
-  gropiusUserId: Scalars['ID'];
-  imsUserId: Scalars['ID'];
+  gropiusUserId: Scalars['ID']['input'];
+  imsUserId: Scalars['ID']['input'];
 }>;
 
 
@@ -3761,42 +3835,42 @@ export const SetImsUserLinkDocument = gql`
 }
     `;
 
-export type SdkFunctionWrapper = <T>(action: (requestHeaders?:Record<string, string>) => Promise<T>, operationName: string, operationType?: string) => Promise<T>;
+export type SdkFunctionWrapper = <T>(action: (requestHeaders?:Record<string, string>) => Promise<T>, operationName: string, operationType?: string, variables?: any) => Promise<T>;
 
 
-const defaultWrapper: SdkFunctionWrapper = (action, _operationName, _operationType) => action();
+const defaultWrapper: SdkFunctionWrapper = (action, _operationName, _operationType, _variables) => action();
 
 export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = defaultWrapper) {
   return {
-    getBasicImsUserData(variables: GetBasicImsUserDataQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetBasicImsUserDataQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetBasicImsUserDataQuery>(GetBasicImsUserDataDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getBasicImsUserData', 'query');
+    getBasicImsUserData(variables: GetBasicImsUserDataQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetBasicImsUserDataQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetBasicImsUserDataQuery>(GetBasicImsUserDataDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getBasicImsUserData', 'query', variables);
     },
-    getImsUserDetails(variables: GetImsUserDetailsQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetImsUserDetailsQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetImsUserDetailsQuery>(GetImsUserDetailsDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getImsUserDetails', 'query');
+    getImsUserDetails(variables: GetImsUserDetailsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetImsUserDetailsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetImsUserDetailsQuery>(GetImsUserDetailsDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getImsUserDetails', 'query', variables);
     },
-    getImsUsersByTemplatedFieldValues(variables: GetImsUsersByTemplatedFieldValuesQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetImsUsersByTemplatedFieldValuesQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetImsUsersByTemplatedFieldValuesQuery>(GetImsUsersByTemplatedFieldValuesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getImsUsersByTemplatedFieldValues', 'query');
+    getImsUsersByTemplatedFieldValues(variables: GetImsUsersByTemplatedFieldValuesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetImsUsersByTemplatedFieldValuesQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetImsUsersByTemplatedFieldValuesQuery>(GetImsUsersByTemplatedFieldValuesDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getImsUsersByTemplatedFieldValues', 'query', variables);
     },
-    createNewImsUserInIms(variables: CreateNewImsUserInImsMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<CreateNewImsUserInImsMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<CreateNewImsUserInImsMutation>(CreateNewImsUserInImsDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'createNewImsUserInIms', 'mutation');
+    createNewImsUserInIms(variables: CreateNewImsUserInImsMutationVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<CreateNewImsUserInImsMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreateNewImsUserInImsMutation>(CreateNewImsUserInImsDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'createNewImsUserInIms', 'mutation', variables);
     },
-    getBasicGropiusUserData(variables: GetBasicGropiusUserDataQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetBasicGropiusUserDataQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetBasicGropiusUserDataQuery>(GetBasicGropiusUserDataDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getBasicGropiusUserData', 'query');
+    getBasicGropiusUserData(variables: GetBasicGropiusUserDataQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetBasicGropiusUserDataQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetBasicGropiusUserDataQuery>(GetBasicGropiusUserDataDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getBasicGropiusUserData', 'query', variables);
     },
-    getUserByName(variables: GetUserByNameQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetUserByNameQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetUserByNameQuery>(GetUserByNameDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getUserByName', 'query');
+    getUserByName(variables: GetUserByNameQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetUserByNameQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetUserByNameQuery>(GetUserByNameDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getUserByName', 'query', variables);
     },
-    checkUserIsAdmin(variables: CheckUserIsAdminQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<CheckUserIsAdminQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<CheckUserIsAdminQuery>(CheckUserIsAdminDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'checkUserIsAdmin', 'query');
+    checkUserIsAdmin(variables: CheckUserIsAdminQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<CheckUserIsAdminQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CheckUserIsAdminQuery>(CheckUserIsAdminDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'checkUserIsAdmin', 'query', variables);
     },
-    getAllGrpiusUsers(variables?: GetAllGrpiusUsersQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<GetAllGrpiusUsersQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetAllGrpiusUsersQuery>(GetAllGrpiusUsersDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getAllGrpiusUsers', 'query');
+    getAllGrpiusUsers(variables?: GetAllGrpiusUsersQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<GetAllGrpiusUsersQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetAllGrpiusUsersQuery>(GetAllGrpiusUsersDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getAllGrpiusUsers', 'query', variables);
     },
-    createNewUser(variables: CreateNewUserMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<CreateNewUserMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<CreateNewUserMutation>(CreateNewUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'createNewUser', 'mutation');
+    createNewUser(variables: CreateNewUserMutationVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<CreateNewUserMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreateNewUserMutation>(CreateNewUserDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'createNewUser', 'mutation', variables);
     },
-    setImsUserLink(variables: SetImsUserLinkMutationVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<SetImsUserLinkMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<SetImsUserLinkMutation>(SetImsUserLinkDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'setImsUserLink', 'mutation');
+    setImsUserLink(variables: SetImsUserLinkMutationVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<SetImsUserLinkMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<SetImsUserLinkMutation>(SetImsUserLinkDocument, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'setImsUserLink', 'mutation', variables);
     }
   };
 }

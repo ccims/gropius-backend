@@ -89,6 +89,7 @@ class Issue(
     @NodeRelationship(BaseTemplate.USED_IN, Direction.INCOMING)
     @GraphQLDescription("The Template of this Issue.")
     @FilterProperty
+    @OrderProperty
     override val template by NodeProperty<IssueTemplate>()
 
     @NodeRelationship(AFFECTS, Direction.OUTGOING)
@@ -119,6 +120,7 @@ class Issue(
     @NodeRelationship(TYPE, Direction.OUTGOING)
     @GraphQLDescription("The type of the Issue, e.g. BUG. Allowed IssueTypes are defined by the template.")
     @FilterProperty
+    @OrderProperty
     val type by NodeProperty<IssueType>()
 
     @NodeRelationship(STATE, Direction.OUTGOING)
@@ -128,11 +130,13 @@ class Issue(
         """
     )
     @FilterProperty
+    @OrderProperty
     val state by NodeProperty<IssueState>()
 
     @NodeRelationship(PRIORITY, Direction.OUTGOING)
     @GraphQLDescription("The priority of the Issue, e.g. HIGH. Allowed IssuePriorities are defined by the template.")
     @FilterProperty
+    @OrderProperty
     val priority by NodeProperty<IssuePriority?>()
 
     @NodeRelationship(LABEL, Direction.OUTGOING)

@@ -8,4 +8,4 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  * @param maxMutationCount maximum number of mutations during single sync cycle
  */
 @ConfigurationProperties("gropius.sync.github")
-data class GithubConfigurationProperties(val maxMutationCount: Int = 100)
+data class GithubConfigurationProperties(val maxMutationCount: Int = 100, val dieOnError: Boolean = false)

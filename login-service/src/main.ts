@@ -1,7 +1,6 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
-import { TokenScope } from "./backend-services/token.service";
 import { OpenApiTag } from "./openapi-tag";
 import { ConfigModule } from "@nestjs/config";
 import { LogLevel } from "@nestjs/common";

@@ -1,5 +1,6 @@
 package gropius.sync.jira
 
+import gropius.JiraConfigurationProperties
 import gropius.sync.SyncConfigurationProperties
 import kotlinx.coroutines.runBlocking
 import org.springframework.context.annotation.Configuration
@@ -7,17 +8,27 @@ import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.SchedulingConfigurer
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
 import java.time.Instant
+import kotlin.system.exitProcess
 
 @Configuration
 @EnableScheduling
 class Scheduler(
-    private val githubSync: JiraSync, private val syncConfigurationProperties: SyncConfigurationProperties
+    private val githubSync: JiraSync, private val syncConfigurationProperties: SyncConfigurationProperties,
+    private val jiraConfigurationProperties: JiraConfigurationProperties
 ) : SchedulingConfigurer {
     override fun configureTasks(taskRegistrar: ScheduledTaskRegistrar) {
         var timeToNextExecution = 0L
         taskRegistrar.addTriggerTask({
-            runBlocking {
-                githubSync.sync()
+            try {
+                runBlocking {
+                    githubSync.sync()
+                    timeToNextExecution = syncConfigurationProperties.schedulerFallbackTime
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                if (jiraConfigurationProperties.dieOnError) {
+                    exitProcess(1)//Debug
+                }
                 timeToNextExecution = syncConfigurationProperties.schedulerFallbackTime
             }
         }, {

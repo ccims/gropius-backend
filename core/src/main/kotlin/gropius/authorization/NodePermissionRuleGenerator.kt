@@ -8,7 +8,6 @@ import io.github.graphglue.authorization.Permission
 import org.neo4j.cypherdsl.core.Condition
 import org.neo4j.cypherdsl.core.Cypher
 import org.neo4j.cypherdsl.core.Node
-import org.neo4j.cypherdsl.core.Predicates
 
 /**
  * Base class for all [NodePermission] based [AllowRuleGenerator]s
@@ -31,7 +30,7 @@ abstract class NodePermissionRuleGenerator() : AllowRuleGenerator {
     ): Condition {
         val context = permission.context as GropiusAuthorizationContextBase
         val permissionVariable = Cypher.name("p")
-        val nodePermissionPredicate = Predicates.any(permissionVariable).`in`(Cypher.anonParameter(permissionNames))
+        val nodePermissionPredicate = Cypher.any(permissionVariable).`in`(Cypher.anonParameter(permissionNames))
             .where(permissionVariable.`in`(nodePermissionNode.property(BasePermission::entries.name)))
 
         val gropiusUserPredicate = nodePermissionNode.property(BasePermission::allUsers.name).isTrue.or(

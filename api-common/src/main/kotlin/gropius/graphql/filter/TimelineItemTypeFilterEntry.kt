@@ -2,7 +2,7 @@ package gropius.graphql.filter
 
 import io.github.graphglue.connection.filter.model.FilterEntry
 import org.neo4j.cypherdsl.core.Condition
-import org.neo4j.cypherdsl.core.Conditions
+import org.neo4j.cypherdsl.core.Cypher
 import org.neo4j.cypherdsl.core.Node
 
 /**
@@ -17,9 +17,9 @@ class TimelineItemTypeFilterEntry(
 
     override fun generateCondition(node: Node): Condition {
         return if (value.isEmpty()) {
-            Conditions.isFalse()
+            Cypher.isFalse()
         } else {
-            value.fold(Conditions.noCondition()) { condition, entry ->
+            value.fold(Cypher.noCondition()) { condition, entry ->
                 condition.or(node.hasLabels(entry))
             }
         }

@@ -51,6 +51,7 @@ class Component(
     @NodeRelationship(BaseTemplate.USED_IN, Direction.INCOMING)
     @GraphQLDescription("The Template of this Component.")
     @FilterProperty
+    @OrderProperty
     override val template by NodeProperty<ComponentTemplate>()
 
     @NodeRelationship(InterfaceSpecification.COMPONENT, Direction.INCOMING)

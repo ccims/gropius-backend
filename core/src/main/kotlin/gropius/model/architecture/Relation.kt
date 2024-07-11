@@ -37,18 +37,21 @@ class Relation(
     @NodeRelationship(BaseTemplate.USED_IN, Direction.INCOMING)
     @GraphQLDescription("The Template of this Relation.")
     @FilterProperty
+    @OrderProperty
     override val template by NodeProperty<RelationTemplate>()
 
     @NodeRelationship(RelationPartner.INCOMING_RELATION, Direction.INCOMING)
     @GraphQLDescription("The end of this Relation.")
     @GraphQLNullable
     @FilterProperty
+    @OrderProperty
     val end by NodeProperty<RelationPartner>()
 
     @NodeRelationship(RelationPartner.OUTGOING_RELATION, Direction.INCOMING)
     @GraphQLDescription("The start of this Relation.")
     @GraphQLNullable
     @FilterProperty
+    @OrderProperty
     val start by NodeProperty<RelationPartner>()
 
     @NodeRelationship(START_PART, Direction.OUTGOING)

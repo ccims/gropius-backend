@@ -39,6 +39,7 @@ class IMS(
     @NodeRelationship(BaseTemplate.USED_IN, Direction.INCOMING)
     @GraphQLDescription("The Template of this Component.")
     @FilterProperty
+    @OrderProperty
     override val template by NodeProperty<IMSTemplate>()
 
     @NodeRelationship(PROJECT, Direction.OUTGOING)

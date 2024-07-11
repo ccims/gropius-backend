@@ -1,7 +1,6 @@
 import { Injectable, Optional } from "@nestjs/common";
 import { getSdk } from "./generated";
-import { GraphQLClient, RequestDocument, RequestOptions, Variables } from "graphql-request";
-import { RemoveIndex } from "graphql-request/dist/types";
+import { GraphQLClient } from "graphql-request";
 
 @Injectable()
 export class GraphqlService {
