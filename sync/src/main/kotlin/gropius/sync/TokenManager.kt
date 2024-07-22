@@ -77,8 +77,7 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
         val tokenResponse: ResponseType? =
             parseHttpBody(client.get(syncConfigurationProperties.loginServiceBase.toString()) {
                 url {
-                    appendPathSegments("syncApi", "getIMSToken")
-                    parameters.append("imsUser", imsUser.rawId!!)
+                    appendPathSegments("auth", "api", "sync", "get-ims-token", imsUser.rawId!!)
                 }
                 headers {
                     append(HttpHeaders.Authorization, "Bearer " + syncConfigurationProperties.apiSecret)

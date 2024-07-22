@@ -1,5 +1,6 @@
 package gropius.sync.jira.config
 
+import com.lectra.koson.arr
 import com.lectra.koson.obj
 import gropius.model.architecture.IMS
 import gropius.model.template.IMSTemplate
@@ -60,6 +61,8 @@ data class IMSConfig(
             "metadata" to obj {
                 "format" to "uri"
             }
+        }.toString(), "authentication-mode" to obj {
+            "enum" to arr["CLOUD_OAUTH", "CLOUD_PAT", "DATA_CENTER"]
         }.toString(), "default-type" to obj {
             "nullable" to true
             "type" to "string"
