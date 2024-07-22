@@ -337,7 +337,7 @@ abstract class AbstractSync(
      */
     private suspend fun lookupState(id: String?): IssueState? {
         if (id != null) {
-            return collectedSyncInfo.neoOperations.findById(id)!!
+            return collectedSyncInfo.neoOperations.findById<IssueState>(id)!!
         }
         return null
     }
@@ -366,14 +366,15 @@ abstract class AbstractSync(
                         lastState = stateChangedEvent.newState().value
                     }
                 }
-            val mappedStates = activeLabels.mapNotNull { lookupState(labelStateMap(imsProject)[it.name]) }
+            val labelStateMap = this.labelStateMap(imsProject)
+            val mappedStates = activeLabels.mapNotNull { lookupState(labelStateMap[it.name]) }
             if (timelineItem is StateChangedEvent) {
                 if (mappedStates.isNotEmpty()) {
                     timelineItems.remove(timelineItem)
                 }
             }
             if (timelineItem is AddedLabelEvent) {
-                val mappedState = lookupState(labelStateMap(imsProject)[timelineItem.addedLabel().value?.name])
+                val mappedState = lookupState(labelStateMap[timelineItem.addedLabel().value?.name])
                 if ((mappedState != null) && !mappedStates.contains(mappedState)) {
                     timelineItems.remove(timelineItem)
                     val newStateChange = StateChangedEvent(
@@ -393,7 +394,8 @@ abstract class AbstractSync(
                     timelineItem.createdAt, timelineItem.lastModifiedAt
                 )
                 newStateChange.oldState().value = lastState
-                newStateChange.newState().value = mappedStates.firstOrNull() ?: TODO("Restore State out of nothing")
+                newStateChange.newState().value =
+                    mappedStates.firstOrNull() ?: lastState//TODO("Restore State out of nothing")
                 newStateChange.createdBy().value = timelineItem.createdBy().value
                 newStateChange.lastModifiedBy().value = timelineItem.lastModifiedBy().value
                 timelineItems.add(newStateChange)
