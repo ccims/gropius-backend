@@ -61,8 +61,8 @@ data class IMSConfig(
             "metadata" to obj {
                 "format" to "uri"
             }
-        }.toString(), "authentication-mode" to obj {
-            "enum" to arr["CLOUD_OAUTH", "CLOUD_PAT", "DATA_CENTER"]
+        }.toString(), "jira-edition" to obj {
+            "enum" to arr["CLOUD", "DATA_CENTER"]
         }.toString(), "default-type" to obj {
             "nullable" to true
             "type" to "string"
