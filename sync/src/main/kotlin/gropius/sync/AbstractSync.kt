@@ -594,6 +594,7 @@ abstract class AbstractSync(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
         val stateLabelMap = this.labelStateMap(imsProject).map { it.value to it.key }.toMap()
+        val virtualIDs = mutableMapOf<TimelineItem, String>()
 
         val groups =
             (timeline.filter { (it is AddedLabelEvent) || (it is RemovedLabelEvent) } + timeline.filterIsInstance<StateChangedEvent>()
@@ -609,6 +610,7 @@ abstract class AbstractSync(
                             elem.lastModifiedBy().value = it.lastModifiedBy().value
                             elem.removedLabel().value = label
                             ret.add(elem)
+                            virtualIDs[elem] = it.rawId!! + "-removed"
                         }
                     }
                     if (stateLabelMap.containsKey(it.newState().value.rawId!!)) {
@@ -621,6 +623,7 @@ abstract class AbstractSync(
                             elem.lastModifiedBy().value = it.lastModifiedBy().value
                             elem.addedLabel().value = label
                             ret.add(elem)
+                            virtualIDs[elem] = it.rawId!! + "-added"
                         }
                     }
                     ret
@@ -633,7 +636,7 @@ abstract class AbstractSync(
             }
         val collectedMutations = mutableListOf<suspend () -> Unit>()
         for ((label, relevantTimeline) in groups) {
-            syncOutgoingSingleLabel(relevantTimeline, imsProject, issueInfo, label)
+            syncOutgoingSingleLabel(relevantTimeline, imsProject, issueInfo, label, virtualIDs)
         }
     }
 
@@ -648,13 +651,14 @@ abstract class AbstractSync(
         relevantTimeline: List<TimelineItem>,
         imsProject: IMSProject,
         issueInfo: IssueConversionInformation,
-        label: Label?
+        label: Label?,
+        virtualIDs: Map<TimelineItem, String>
     ) {
         var labelIsSynced = false
         val finalBlock = findFinalTypeBlock(relevantTimeline)
         for (item in finalBlock) {
             val relevantEvent = collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
-                imsProject.rawId!!, item.rawId!!
+                imsProject.rawId!!, item.rawId ?: virtualIDs[item]!!
             )
             if (relevantEvent?.githubId != null) {
                 labelIsSynced = true
@@ -670,7 +674,7 @@ abstract class AbstractSync(
                     label!!,
                     finalBlock.map { it.lastModifiedBy().value })
                 if (conversionInformation != null) {
-                    conversionInformation.gropiusId = finalBlock.map { it.rawId!! }.first()
+                    conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
                     collectedSyncInfo.timelineItemConversionInformationService.save(
                         conversionInformation
                     ).awaitSingle()
@@ -685,7 +689,7 @@ abstract class AbstractSync(
                     label!!,
                     finalBlock.map { it.lastModifiedBy().value })
                 if (conversionInformation != null) {
-                    conversionInformation.gropiusId = finalBlock.map { it.rawId!! }.first()
+                    conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
                     collectedSyncInfo.timelineItemConversionInformationService.save(
                         conversionInformation
                     ).awaitSingle()
