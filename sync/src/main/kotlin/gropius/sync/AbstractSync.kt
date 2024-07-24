@@ -492,7 +492,8 @@ abstract class AbstractSync(
         imsProject: IMSProject,
         finalBlock: List<TimelineItem>,
         relevantTimeline: List<TimelineItem>,
-        restoresDefaultState: Boolean
+        restoresDefaultState: Boolean,
+        virtualIDs: Map<TimelineItem, String>
     ): Boolean {
         return shouldSyncType(
             imsProject,
@@ -500,7 +501,8 @@ abstract class AbstractSync(
             { it is RemovingItem },
             finalBlock,
             relevantTimeline,
-            restoresDefaultState
+            restoresDefaultState,
+            virtualIDs
         )
     }
 
@@ -519,12 +521,13 @@ abstract class AbstractSync(
         isRemovingItem: suspend (TimelineItem) -> Boolean,
         finalBlock: List<TimelineItem>,
         relevantTimeline: List<TimelineItem>,
-        restoresDefaultState: Boolean
+        restoresDefaultState: Boolean,
+        virtualIDs: Map<TimelineItem, String> = mapOf()
     ): Boolean {
         if (isAddingItem(finalBlock.last())) {
             val lastNegativeEvent = relevantTimeline.filter { isRemovingItem(it) }.lastOrNull {
                 collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
-                    imsProject.rawId!!, it.rawId!!
+                    imsProject.rawId!!, it.rawId ?: virtualIDs[it]!!
                 )?.githubId != null
             }
             logger.trace("LastNegativeEvent $lastNegativeEvent")
@@ -534,7 +537,7 @@ abstract class AbstractSync(
                 if (relevantTimeline.filter { isAddingItem(it) }.filter { it.createdAt > lastNegativeEvent.createdAt }
                         .firstOrNull {
                             collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
-                                imsProject.rawId!!, it.rawId!!
+                                imsProject.rawId!!, it.rawId ?: virtualIDs[it]!!
                             )?.githubId != null
                         } == null) {
                     return true
@@ -666,7 +669,7 @@ abstract class AbstractSync(
         }
         if (!labelIsSynced) {
             if (shouldSyncType<RemovedLabelEvent, AddedLabelEvent>(
-                    imsProject, finalBlock, relevantTimeline, true
+                    imsProject, finalBlock, relevantTimeline, true, virtualIDs
                 )
             ) {
                 val conversionInformation = syncRemovedLabel(imsProject,
@@ -681,7 +684,7 @@ abstract class AbstractSync(
                 }
             }
             if (shouldSyncType<AddedLabelEvent, RemovedLabelEvent>(
-                    imsProject, finalBlock, relevantTimeline, false
+                    imsProject, finalBlock, relevantTimeline, false, virtualIDs
                 )
             ) {
                 val conversionInformation = syncAddedLabel(imsProject,
