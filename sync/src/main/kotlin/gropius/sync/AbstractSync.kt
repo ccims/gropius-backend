@@ -351,21 +351,20 @@ abstract class AbstractSync(
         rawTimelineItems.toList().forEach { timelineItem ->
             var lastState: IssueState = issue.state().value
             val activeLabels = mutableSetOf<Label>()
-            issue.timelineItems().filter { it.createdAt < timelineItem.createdAt }
-                .sortedBy { it.createdAt }.forEach {
-                    val addingItem = it as? AddedLabelEvent
-                    if (addingItem != null) {
-                        activeLabels.add(addingItem.addedLabel().value!!)
-                    }
-                    val removingItem = it as? RemovedLabelEvent
-                    if (removingItem != null) {
-                        activeLabels.add(removingItem.removedLabel().value!!)
-                    }
-                    val stateChangedEvent = it as? StateChangedEvent
-                    if (stateChangedEvent != null) {
-                        lastState = stateChangedEvent.newState().value
-                    }
+            issue.timelineItems().filter { it.createdAt < timelineItem.createdAt }.sortedBy { it.createdAt }.forEach {
+                val addingItem = it as? AddedLabelEvent
+                if (addingItem != null) {
+                    activeLabels.add(addingItem.addedLabel().value!!)
                 }
+                val removingItem = it as? RemovedLabelEvent
+                if (removingItem != null) {
+                    activeLabels.add(removingItem.removedLabel().value!!)
+                }
+                val stateChangedEvent = it as? StateChangedEvent
+                if (stateChangedEvent != null) {
+                    lastState = stateChangedEvent.newState().value
+                }
+            }
             val labelStateMap = this.labelStateMap(imsProject)
             val mappedStates = activeLabels.mapNotNull { lookupState(labelStateMap[it.name]) }
             if (timelineItem is StateChangedEvent) {
@@ -594,13 +593,44 @@ abstract class AbstractSync(
     private suspend fun syncOutgoingLabels(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
-        val groups = timeline.filter { (it is AddedLabelEvent) || (it is RemovedLabelEvent) }.groupBy {
-            when (it) {
-                is AddedLabelEvent -> it.addedLabel().value
-                is RemovedLabelEvent -> it.removedLabel().value
-                else -> throw IllegalStateException()
+        val stateLabelMap = this.labelStateMap(imsProject).map { it.value to it.key }.toMap()
+
+        val groups =
+            (timeline.filter { (it is AddedLabelEvent) || (it is RemovedLabelEvent) } + timeline.filterIsInstance<StateChangedEvent>()
+                .flatMap {
+                    val ret = mutableListOf<TimelineItem>()
+                    if (stateLabelMap.containsKey(it.oldState().value.rawId!!)) {
+                        val name = stateLabelMap[it.oldState().value.rawId!!]
+                        val label = imsProject.trackable().value.labels().firstOrNull { it.name == name }
+                        if (label != null) {
+                            val elem = RemovedLabelEvent(it.createdAt, it.lastModifiedAt)
+                            elem.createdBy().value = it.createdBy().value
+                            elem.issue().value = it.issue().value
+                            elem.lastModifiedBy().value = it.lastModifiedBy().value
+                            elem.removedLabel().value = label
+                            ret.add(elem)
+                        }
+                    }
+                    if (stateLabelMap.containsKey(it.newState().value.rawId!!)) {
+                        val name = stateLabelMap[it.oldState().value.rawId!!]
+                        val label = imsProject.trackable().value.labels().firstOrNull { it.name == name }
+                        if (label != null) {
+                            val elem = AddedLabelEvent(it.createdAt, it.lastModifiedAt)
+                            elem.createdBy().value = it.createdBy().value
+                            elem.issue().value = it.issue().value
+                            elem.lastModifiedBy().value = it.lastModifiedBy().value
+                            elem.addedLabel().value = label
+                            ret.add(elem)
+                        }
+                    }
+                    ret
+                }).groupBy {
+                when (it) {
+                    is AddedLabelEvent -> it.addedLabel().value
+                    is RemovedLabelEvent -> it.removedLabel().value
+                    else -> throw IllegalStateException()
+                }
             }
-        }
         val collectedMutations = mutableListOf<suspend () -> Unit>()
         for ((label, relevantTimeline) in groups) {
             syncOutgoingSingleLabel(relevantTimeline, imsProject, issueInfo, label)
