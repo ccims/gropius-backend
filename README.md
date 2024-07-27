@@ -1,6 +1,6 @@
 # Gropius Backend
 
-For more documentation, have a look at our documentation website: https://ccims.github.io/gropius-backend-docs
+For more documentation, have a look at our documentation website: https://ccims.github.io/gropius-docs
 
 ## About
 
