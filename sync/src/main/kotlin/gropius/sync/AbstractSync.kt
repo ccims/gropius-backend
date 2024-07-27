@@ -335,19 +335,20 @@ abstract class AbstractSync(
      */
     private suspend fun syncIncomingTimelineItem(
         imsProject: IMSProject,
-        timelineItem: IncomingTimelineItem,
+        timelineItems: IncomingTimelineItem,
         issue: Issue,
         dereplicatorRequest: SimpleIssueDereplicatorRequest,
         nodesToSave: MutableList<Node>,
         savedNodeHandlers: MutableList<suspend (node: Node) -> Unit>
     ) {
-        logger.info("Syncing incoming for issue ${issue.rawId} $timelineItem ${timelineItem.identification()}")
+        logger.info("Syncing incoming for issue ${issue.rawId} $timelineItems ${timelineItems.identification()}")
         val oldInfo = collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGithubId(
-            imsProject.rawId!!, timelineItem.identification()
+            imsProject.rawId!!, timelineItems.identification()
         )
-        var (timelineItem, newInfo) = timelineItem.gropiusTimelineItem(
+        var (timelineItem, newInfo) = timelineItems.gropiusTimelineItem(
             imsProject, syncDataService(), oldInfo, issue
         )
+        println("Mapping $timelineItems to $timelineItem")
         if (issue.rawId != null) {
             val dereplicationResult = issueDereplicator.validateTimelineItem(issue, timelineItem, dereplicatorRequest)
             timelineItem = dereplicationResult.resultingTimelineItems
