@@ -19,6 +19,11 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.server.ResponseStatusException
+import java.security.KeyFactory
+import java.security.PublicKey
+import java.security.spec.X509EncodedKeySpec
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
  * String that the audience claim of a JWT must contain for it to be accepted
@@ -41,8 +46,21 @@ class GropiusGraphQLContextFactory(
      * Jwt parser based on the secret defined by [gropiusPublicApiConfigurationProperties]
      */
     private val jwtParser = Jwts.parser()
-        .verifyWith(Keys.hmacShaKeyFor(Decoders.BASE64.decode(gropiusPublicApiConfigurationProperties.jwtSecret)))
+        .verifyWith(publicKey)
         .build()
+
+    /**
+     * Public key used to verify JWTs
+     */
+    @OptIn(ExperimentalEncodingApi::class)
+    private val publicKey: PublicKey get() {
+        val publicKeyPem = String(Base64.decode(gropiusPublicApiConfigurationProperties.jwtPublicKey))
+            .replace("-----BEGIN PUBLIC KEY-----", "")
+            .replace("\n", "")
+            .replace("-----END PUBLIC KEY-----", "")
+        val encoded = Base64.decode(publicKeyPem)
+        return KeyFactory.getInstance("RSA").generatePublic(X509EncodedKeySpec(encoded))
+    }
 
     override suspend fun generateContext(request: ServerRequest): GraphQLContext {
         val token = request.headers().firstHeader("Authorization")
