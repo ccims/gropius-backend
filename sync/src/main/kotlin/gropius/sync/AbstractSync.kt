@@ -424,7 +424,7 @@ abstract class AbstractSync(
         logger.info("Syncing incoming for issue ${issue.rawId} $timelineItem ${timelineItem.identification()}")
         val oldInfo = collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGithubId(
             imsProject.rawId!!, timelineItem.identification()
-        )
+        ).firstOrNull()
         var (rawTimelineItems, newInfo) = timelineItem.gropiusTimelineItem(
             imsProject, syncDataService(), oldInfo, issue
         )
@@ -596,30 +596,23 @@ abstract class AbstractSync(
     private suspend fun syncOutgoingLabels(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
-        val stateLabelMap = this.labelStateMap(imsProject).map { it.value to it.key }.toMap()
+        val labelStateMap = this.labelStateMap(imsProject)
+        val stateLabelMap = labelStateMap.map { it.value to it.key }.toMap()
         val virtualIDs = mutableMapOf<TimelineItem, String>()
 
         val groups =
             (timeline.filter { (it is AddedLabelEvent) || (it is RemovedLabelEvent) } + timeline.filterIsInstance<StateChangedEvent>()
                 .flatMap {
                     val ret = mutableListOf<TimelineItem>()
-                    if (stateLabelMap.containsKey(it.oldState().value.rawId!!)) {
-                        val name = stateLabelMap[it.oldState().value.rawId!!]
-                        val label = imsProject.trackable().value.labels().firstOrNull { it.name == name }
-                        if (label != null) {
-                            val elem = RemovedLabelEvent(it.createdAt, it.lastModifiedAt)
-                            elem.createdBy().value = it.createdBy().value
-                            elem.issue().value = it.issue().value
-                            elem.lastModifiedBy().value = it.lastModifiedBy().value
-                            elem.removedLabel().value = label
-                            ret.add(elem)
-                            virtualIDs[elem] = it.rawId!! + "-removed"
-                        }
-                    }
+                    val labels = labelStateMap.mapNotNull {
+                        val labelName = it.key
+                        imsProject.trackable().value.labels().firstOrNull { it.name == labelName }
+                    }.toMutableSet()
                     if (stateLabelMap.containsKey(it.newState().value.rawId!!)) {
-                        val name = stateLabelMap[it.oldState().value.rawId!!]
+                        val name = stateLabelMap[it.newState().value.rawId!!]
                         val label = imsProject.trackable().value.labels().firstOrNull { it.name == name }
                         if (label != null) {
+                            labels -= label
                             val elem = AddedLabelEvent(it.createdAt, it.lastModifiedAt)
                             elem.createdBy().value = it.createdBy().value
                             elem.issue().value = it.issue().value
@@ -629,17 +622,28 @@ abstract class AbstractSync(
                             virtualIDs[elem] = it.rawId!! + "-added"
                         }
                     }
+                    for (label in labels) {
+                        val elem = RemovedLabelEvent(it.createdAt, it.lastModifiedAt)
+                        elem.createdBy().value = it.createdBy().value
+                        elem.issue().value = it.issue().value
+                        elem.lastModifiedBy().value = it.lastModifiedBy().value
+                        elem.removedLabel().value = label
+                        ret.add(elem)
+                        virtualIDs[elem] = it.rawId!! + "-" + label.rawId!! + "-removed"
+                    }
                     ret
                 }).groupBy {
                 when (it) {
-                    is AddedLabelEvent -> it.addedLabel().value
-                    is RemovedLabelEvent -> it.removedLabel().value
+                    is AddedLabelEvent -> it.addedLabel().value!!
+                    is RemovedLabelEvent -> it.removedLabel().value!!
                     else -> throw IllegalStateException()
                 }
             }
-        val collectedMutations = mutableListOf<suspend () -> Unit>()
         for ((label, relevantTimeline) in groups) {
-            syncOutgoingSingleLabel(relevantTimeline, imsProject, issueInfo, label, virtualIDs)
+            //println("syncOutgoingSingleLabel for ${label?.name}")
+            syncOutgoingSingleLabel(
+                relevantTimeline.sortedBy { it.createdAt }, imsProject, issueInfo, label, virtualIDs
+            )
         }
     }
 
@@ -650,7 +654,9 @@ abstract class AbstractSync(
      * @param issueInfo Issue to sync
      * @param label Label to sync
      */
-    private suspend fun syncOutgoingSingleLabel(
+    private suspend
+
+    fun syncOutgoingSingleLabel(
         relevantTimeline: List<TimelineItem>,
         imsProject: IMSProject,
         issueInfo: IssueConversionInformation,
@@ -663,10 +669,12 @@ abstract class AbstractSync(
             val relevantEvent = collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
                 imsProject.rawId!!, item.rawId ?: virtualIDs[item]!!
             )
+            println("LIS $item ${relevantEvent?.githubId}")
             if (relevantEvent?.githubId != null) {
                 labelIsSynced = true
             }
         }
+        println("LABEL END ${label?.name} $labelIsSynced $finalBlock ${finalBlock.map { virtualIDs[it] }} $relevantTimeline")
         if (!labelIsSynced) {
             if (shouldSyncType<RemovedLabelEvent, AddedLabelEvent>(
                     imsProject, finalBlock, relevantTimeline, true, virtualIDs

@@ -42,7 +42,7 @@ interface TimelineItemConversionInformationRepository :
      */
     suspend fun findByImsProjectAndGithubId(
         imsProject: String, githubId: String
-    ): TimelineItemConversionInformation?
+    ): List<TimelineItemConversionInformation>
 
     /**
      * Find using the Gropius side ID
