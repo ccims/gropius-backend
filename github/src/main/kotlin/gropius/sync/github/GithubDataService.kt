@@ -130,6 +130,7 @@ class GithubDataService(
         imsUser.ims().value = imsProject.ims().value
         imsUser.template().value = imsUser.ims().value.template().value.imsUserTemplate().value
         val newUser = neoOperations.save(imsUser).awaitSingle()
+        tokenManager.advertiseIMSUser(newUser)
         imsProject.ims().value.users() += newUser
         return newUser
     }

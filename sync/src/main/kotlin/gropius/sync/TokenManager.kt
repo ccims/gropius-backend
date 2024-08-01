@@ -33,6 +33,8 @@ interface BaseResponseType {
     val isImsUserKnown: Boolean
 }
 
+data class LinkImsUserQuery(val imsUserIds: List<String>)
+
 /**
  * Manager for token from login service
  * @param neoOperations Reference for the spring instance of ReactiveNeo4jOperations
@@ -188,11 +190,12 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
      * @param user The user AFTER BEING SAVED TO DB (valid, non-null rawId)
      */
     suspend fun advertiseIMSUser(user: IMSUser) {
-        client.put(syncConfigurationProperties.loginServiceBase.toString()) {
+        client.post(syncConfigurationProperties.loginServiceBase.toString()) {
             url {
-                appendPathSegments("syncApi", "linkIMSUser")
-                parameters.append("imsUser", user.rawId!!)
+                appendPathSegments("auth", "api", "sync", "link-ims-users")
             }
+            contentType(ContentType.Application.Json)
+            setBody(LinkImsUserQuery(listOf(user.rawId!!)))
             headers {
                 append(HttpHeaders.Authorization, "Bearer " + syncConfigurationProperties.apiSecret)
             }
