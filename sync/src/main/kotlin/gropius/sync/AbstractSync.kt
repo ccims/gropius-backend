@@ -640,7 +640,6 @@ abstract class AbstractSync(
                 }
             }
         for ((label, relevantTimeline) in groups) {
-            //println("syncOutgoingSingleLabel for ${label?.name}")
             syncOutgoingSingleLabel(
                 relevantTimeline.sortedBy { it.createdAt }, imsProject, issueInfo, label, virtualIDs
             )
@@ -669,12 +668,10 @@ abstract class AbstractSync(
             val relevantEvent = collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
                 imsProject.rawId!!, item.rawId ?: virtualIDs[item]!!
             )
-            println("LIS $item ${relevantEvent?.githubId}")
             if (relevantEvent?.githubId != null) {
                 labelIsSynced = true
             }
         }
-        println("LABEL END ${label?.name} $labelIsSynced $finalBlock ${finalBlock.map { virtualIDs[it] }} $relevantTimeline")
         if (!labelIsSynced) {
             if (shouldSyncType<RemovedLabelEvent, AddedLabelEvent>(
                     imsProject, finalBlock, relevantTimeline, true, virtualIDs
