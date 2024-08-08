@@ -495,7 +495,8 @@ abstract class AbstractSync(
         restoresDefaultState: Boolean,
         virtualIDs: Map<TimelineItem, String>
     ): Boolean {
-        return shouldSyncType(imsProject,
+        return shouldSyncType(
+            imsProject,
             { it is AddingItem },
             { it is RemovingItem },
             finalBlock,
@@ -599,8 +600,8 @@ abstract class AbstractSync(
         val stateLabelMap = labelStateMap.map { it.value to it.key }.toMap()
         val virtualIDs = mutableMapOf<TimelineItem, String>()
 
-        val groups =
-            (timeline.filter { (it is AddedLabelEvent) || (it is RemovedLabelEvent) } + timeline.filterIsInstance<StateChangedEvent>()
+        val modifiedTimeline =
+            timeline.filterIsInstance<AddedLabelEvent>() + timeline.filterIsInstance<RemovedLabelEvent>() + timeline.filterIsInstance<StateChangedEvent>()
                 .flatMap {
                     val ret = mutableListOf<TimelineItem>()
                     val labels = labelStateMap.mapNotNull {
@@ -631,13 +632,14 @@ abstract class AbstractSync(
                         virtualIDs[elem] = it.rawId!! + "-" + label.rawId!! + "-removed"
                     }
                     ret
-                }).groupBy {
-                when (it) {
-                    is AddedLabelEvent -> it.addedLabel().value!!
-                    is RemovedLabelEvent -> it.removedLabel().value!!
-                    else -> throw IllegalStateException()
                 }
+        val groups = modifiedTimeline.groupBy {
+            when (it) {
+                is AddedLabelEvent -> it.addedLabel().value!!
+                is RemovedLabelEvent -> it.removedLabel().value!!
+                else -> throw IllegalStateException()
             }
+        }
         for ((label, relevantTimeline) in groups) {
             syncOutgoingSingleLabel(
                 relevantTimeline.sortedBy { it.createdAt }, imsProject, issueInfo, label, virtualIDs
@@ -674,7 +676,8 @@ abstract class AbstractSync(
                     imsProject, finalBlock, relevantTimeline, true, virtualIDs
                 )
             ) {
-                val conversionInformation = syncRemovedLabel(imsProject,
+                val conversionInformation = syncRemovedLabel(
+                    imsProject,
                     issueInfo.githubId,
                     label!!,
                     finalBlock.map { it.lastModifiedBy().value })
@@ -689,7 +692,8 @@ abstract class AbstractSync(
                     imsProject, finalBlock, relevantTimeline, false, virtualIDs
                 )
             ) {
-                val conversionInformation = syncAddedLabel(imsProject,
+                val conversionInformation = syncAddedLabel(
+                    imsProject,
                     issueInfo.githubId,
                     label!!,
                     finalBlock.map { it.lastModifiedBy().value })
@@ -747,7 +751,8 @@ abstract class AbstractSync(
                     imsProject.rawId!!, it.rawId!!
                 ) != null
             }) {
-            syncTitleChange(imsProject,
+            syncTitleChange(
+                imsProject,
                 issueInfo.githubId,
                 finalBlock.first().newTitle,
                 finalBlock.map { it.createdBy().value })
