@@ -342,6 +342,13 @@ abstract class AbstractSync(
         return null
     }
 
+    /**
+     * Find the state before the relevant titmeline item
+     * @param issue The Issue to work on
+     * @param timelineItem The TimelineItem to find the state before
+     * @return List of currently applied labels
+     * @return The state before the timeline item
+     */
     private suspend fun integrateLabelToStateFindCurrentState(
         issue: Issue, timelineItem: TimelineItem
     ): Pair<Set<Label>, IssueState> {
@@ -364,6 +371,15 @@ abstract class AbstractSync(
         return activeLabels to lastState
     }
 
+    /**
+     * Process an added label
+     * @param timelineItems List of timeline items
+     * @param issue Issue the timeline is on
+     * @param imsProject IMS project to sync
+     * @param timelineItem Timeline item to process
+     * @param lastState State before the timeline item
+     * @param mappedStates List of states mapped to labels
+     */
     private suspend fun integrateLabelToStateAddedLabel(
         timelineItems: MutableList<TimelineItem>,
         issue: Issue,
@@ -388,6 +404,15 @@ abstract class AbstractSync(
         }
     }
 
+    /**
+     * Process an removed label
+     * @param timelineItems List of timeline items
+     * @param issue Issue the timeline is on
+     * @param imsProject IMS project to sync
+     * @param timelineItem Timeline item to process
+     * @param lastState State before the timeline item
+     * @param mappedStates List of states mapped to labels
+     */
     private suspend fun integrateLabelToStateRemovedLabel(
         timelineItems: MutableList<TimelineItem>,
         issue: Issue,
@@ -409,6 +434,13 @@ abstract class AbstractSync(
         issue.timelineItems().add(newStateChange)
     }
 
+    /**
+     * Process an added label
+     * @param timelineItems List of timeline items
+     * @param issue Issue the timeline is on
+     * @param imsProject IMS project to sync
+     * @param rawTimelineItems Timeline before transformation
+     */
     private suspend fun integrateLabelToState(
         timelineItems: MutableList<TimelineItem>,
         rawTimelineItems: List<TimelineItem>,
@@ -522,6 +554,7 @@ abstract class AbstractSync(
      * @param finalBlock the last block of similar items that should be checked for syncing
      * @param relevantTimeline Sorted part of the timeline containing only TimelineItems interacting with finalBlock
      * @param restoresDefaultState if the timeline item converges the state of the issue towards the state of an empty issue
+     * @param virtualIDs mapping for timeline items that are geerated with generated ids and do not exist in the database
      * @return true if and only if there are unsynced changes that should be synced to GitHub
      */
     private suspend inline fun <reified AddingItem : TimelineItem, reified RemovingItem : TimelineItem> shouldSyncType(
@@ -544,11 +577,13 @@ abstract class AbstractSync(
 
     /**
      * Check if TimelineItem should be synced or ignored
+     * @param imsProject IMS project to sync
      * @param isAddingItem filter for items with the same semantic as the item to add
      * @param isRemovingItem filter for items invalidating the items matching [isAddingItem]
      * @param finalBlock the last block of similar items that should be checked for syncing
      * @param relevantTimeline Sorted part of the timeline containing only TimelineItems interacting with finalBlock
      * @param restoresDefaultState if the timeline item converges the state of the issue towards the state of an empty issue
+     * @param virtualIDs mapping for timeline items that are geerated with generated ids and do not exist in the database
      * @return true if and only if there are unsynced changes that should be synced to GitHub
      */
     private suspend fun shouldSyncType(
@@ -689,6 +724,7 @@ abstract class AbstractSync(
      * @param imsProject IMS project to sync
      * @param issueInfo Issue to sync
      * @param label Label to sync
+     * @param virtualIDs mapping for timeline items that are geerated with generated ids and do not exist in the database
      */
     private suspend fun syncOutgoingSingleLabel(
         relevantTimeline: List<TimelineItem>,
