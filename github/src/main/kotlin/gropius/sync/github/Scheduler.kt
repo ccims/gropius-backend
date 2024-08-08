@@ -20,17 +20,16 @@ class Scheduler(
     override fun configureTasks(taskRegistrar: ScheduledTaskRegistrar) {
         var timeToNextExecution = 0L
         taskRegistrar.addTriggerTask({
+            timeToNextExecution = syncConfigurationProperties.schedulerFallbackTime
             try {
                 runBlocking {
                     githubSync.sync()
-                    timeToNextExecution = syncConfigurationProperties.schedulerFallbackTime
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 e.printStackTrace()
                 if (githubConfigurationProperties.dieOnError) {
                     exitProcess(1)//Debug
                 }
-                timeToNextExecution = syncConfigurationProperties.schedulerFallbackTime
             }
         }, {
             val lastCompletionTime = it.lastCompletion() ?: Instant.now()

@@ -159,10 +159,13 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
         for (user in users) {
             val token = getUserToken(user)
             if (token?.token != null) {
+                logger.trace("Trying token of user ${user.rawId}")
                 val ret = executor(token)
                 if (ret.isPresent) {
                     return user to ret.get()
                 }
+            } else {
+                logger.trace("User ${user.rawId} had no token")
             }
         }
         TODO("Error Message")
