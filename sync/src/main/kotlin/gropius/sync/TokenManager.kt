@@ -162,8 +162,9 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
                 if (ret.isPresent) {
                     return user to ret.get()
                 }
-            } else
+            } else {
                 logger.trace("User ${user.rawId} had no token")
+            }
         }
         TODO("Error Message")
     }
