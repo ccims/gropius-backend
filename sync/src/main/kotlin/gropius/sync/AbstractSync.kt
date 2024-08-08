@@ -495,8 +495,7 @@ abstract class AbstractSync(
         restoresDefaultState: Boolean,
         virtualIDs: Map<TimelineItem, String>
     ): Boolean {
-        return shouldSyncType(
-            imsProject,
+        return shouldSyncType(imsProject,
             { it is AddingItem },
             { it is RemovingItem },
             finalBlock,
@@ -653,9 +652,7 @@ abstract class AbstractSync(
      * @param issueInfo Issue to sync
      * @param label Label to sync
      */
-    private suspend
-
-    fun syncOutgoingSingleLabel(
+    private suspend fun syncOutgoingSingleLabel(
         relevantTimeline: List<TimelineItem>,
         imsProject: IMSProject,
         issueInfo: IssueConversionInformation,
