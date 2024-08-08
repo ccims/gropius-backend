@@ -342,6 +342,73 @@ abstract class AbstractSync(
         return null
     }
 
+    private suspend fun integrateLabelToStateFindCurrentState(
+        issue: Issue, timelineItem: TimelineItem
+    ): Pair<Set<Label>, IssueState> {
+        var lastState: IssueState = issue.state().value
+        val activeLabels = mutableSetOf<Label>()
+        issue.timelineItems().filter { it.createdAt < timelineItem.createdAt }.sortedBy { it.createdAt }.forEach {
+            val addingItem = it as? AddedLabelEvent
+            if (addingItem != null) {
+                activeLabels.add(addingItem.addedLabel().value!!)
+            }
+            val removingItem = it as? RemovedLabelEvent
+            if (removingItem != null) {
+                activeLabels.add(removingItem.removedLabel().value!!)
+            }
+            val stateChangedEvent = it as? StateChangedEvent
+            if (stateChangedEvent != null) {
+                lastState = stateChangedEvent.newState().value
+            }
+        }
+        return activeLabels to lastState
+    }
+
+    private suspend fun integrateLabelToStateAddedLabel(
+        timelineItems: MutableList<TimelineItem>,
+        issue: Issue,
+        imsProject: IMSProject,
+        timelineItem: AddedLabelEvent,
+        lastState: IssueState,
+        mappedStates: List<IssueState>
+    ) {
+        val labelStateMap = this.labelStateMap(imsProject)
+        val mappedState = lookupState(labelStateMap[timelineItem.addedLabel().value?.name])
+        if ((mappedState != null) && !mappedStates.contains(mappedState)) {
+            timelineItems.remove(timelineItem)
+            val newStateChange = StateChangedEvent(
+                timelineItem.createdAt, timelineItem.lastModifiedAt
+            )
+            newStateChange.oldState().value = lastState
+            newStateChange.newState().value = mappedState
+            newStateChange.createdBy().value = timelineItem.createdBy().value
+            newStateChange.lastModifiedBy().value = timelineItem.lastModifiedBy().value
+            timelineItems.add(newStateChange)
+            issue.timelineItems().add(newStateChange)
+        }
+    }
+
+    private suspend fun integrateLabelToStateRemovedLabel(
+        timelineItems: MutableList<TimelineItem>,
+        issue: Issue,
+        imsProject: IMSProject,
+        timelineItem: RemovedLabelEvent,
+        lastState: IssueState,
+        mappedStates: List<IssueState>
+    ) {
+        val labelStateMap = this.labelStateMap(imsProject)
+        timelineItems.remove(timelineItem)
+        val newStateChange = StateChangedEvent(
+            timelineItem.createdAt, timelineItem.lastModifiedAt
+        )
+        newStateChange.oldState().value = lastState
+        newStateChange.newState().value = mappedStates.firstOrNull() ?: lastState//TODO("Restore State out of nothing")
+        newStateChange.createdBy().value = timelineItem.createdBy().value
+        newStateChange.lastModifiedBy().value = timelineItem.lastModifiedBy().value
+        timelineItems.add(newStateChange)
+        issue.timelineItems().add(newStateChange)
+    }
+
     private suspend fun integrateLabelToState(
         timelineItems: MutableList<TimelineItem>,
         rawTimelineItems: List<TimelineItem>,
@@ -349,22 +416,9 @@ abstract class AbstractSync(
         imsProject: IMSProject
     ) {
         rawTimelineItems.toList().forEach { timelineItem ->
-            var lastState: IssueState = issue.state().value
-            val activeLabels = mutableSetOf<Label>()
-            issue.timelineItems().filter { it.createdAt < timelineItem.createdAt }.sortedBy { it.createdAt }.forEach {
-                val addingItem = it as? AddedLabelEvent
-                if (addingItem != null) {
-                    activeLabels.add(addingItem.addedLabel().value!!)
-                }
-                val removingItem = it as? RemovedLabelEvent
-                if (removingItem != null) {
-                    activeLabels.add(removingItem.removedLabel().value!!)
-                }
-                val stateChangedEvent = it as? StateChangedEvent
-                if (stateChangedEvent != null) {
-                    lastState = stateChangedEvent.newState().value
-                }
-            }
+            val (activeLabels, lastState) = integrateLabelToStateFindCurrentState(
+                issue, timelineItem
+            )
             val labelStateMap = this.labelStateMap(imsProject)
             val mappedStates = activeLabels.mapNotNull { lookupState(labelStateMap[it.name]) }
             if (timelineItem is StateChangedEvent) {
@@ -373,32 +427,14 @@ abstract class AbstractSync(
                 }
             }
             if (timelineItem is AddedLabelEvent) {
-                val mappedState = lookupState(labelStateMap[timelineItem.addedLabel().value?.name])
-                if ((mappedState != null) && !mappedStates.contains(mappedState)) {
-                    timelineItems.remove(timelineItem)
-                    val newStateChange = StateChangedEvent(
-                        timelineItem.createdAt, timelineItem.lastModifiedAt
-                    )
-                    newStateChange.oldState().value = lastState
-                    newStateChange.newState().value = mappedState
-                    newStateChange.createdBy().value = timelineItem.createdBy().value
-                    newStateChange.lastModifiedBy().value = timelineItem.lastModifiedBy().value
-                    timelineItems.add(newStateChange)
-                    issue.timelineItems().add(newStateChange)
-                }
+                integrateLabelToStateAddedLabel(
+                    timelineItems, issue, imsProject, timelineItem, lastState, mappedStates
+                )
             }
             if (timelineItem is RemovedLabelEvent) {
-                timelineItems.remove(timelineItem)
-                val newStateChange = StateChangedEvent(
-                    timelineItem.createdAt, timelineItem.lastModifiedAt
+                integrateLabelToStateRemovedLabel(
+                    timelineItems, issue, imsProject, timelineItem, lastState, mappedStates
                 )
-                newStateChange.oldState().value = lastState
-                newStateChange.newState().value =
-                    mappedStates.firstOrNull() ?: lastState//TODO("Restore State out of nothing")
-                newStateChange.createdBy().value = timelineItem.createdBy().value
-                newStateChange.lastModifiedBy().value = timelineItem.lastModifiedBy().value
-                timelineItems.add(newStateChange)
-                issue.timelineItems().add(newStateChange)
             }
         }
     }
@@ -676,8 +712,7 @@ abstract class AbstractSync(
                     imsProject, finalBlock, relevantTimeline, true, virtualIDs
                 )
             ) {
-                val conversionInformation = syncRemovedLabel(
-                    imsProject,
+                val conversionInformation = syncRemovedLabel(imsProject,
                     issueInfo.githubId,
                     label!!,
                     finalBlock.map { it.lastModifiedBy().value })
@@ -692,8 +727,7 @@ abstract class AbstractSync(
                     imsProject, finalBlock, relevantTimeline, false, virtualIDs
                 )
             ) {
-                val conversionInformation = syncAddedLabel(
-                    imsProject,
+                val conversionInformation = syncAddedLabel(imsProject,
                     issueInfo.githubId,
                     label!!,
                     finalBlock.map { it.lastModifiedBy().value })
@@ -751,8 +785,7 @@ abstract class AbstractSync(
                     imsProject.rawId!!, it.rawId!!
                 ) != null
             }) {
-            syncTitleChange(
-                imsProject,
+            syncTitleChange(imsProject,
                 issueInfo.githubId,
                 finalBlock.first().newTitle,
                 finalBlock.map { it.createdBy().value })
