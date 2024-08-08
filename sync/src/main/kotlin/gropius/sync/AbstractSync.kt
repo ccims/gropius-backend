@@ -637,7 +637,7 @@ abstract class AbstractSync(
             when (it) {
                 is AddedLabelEvent -> it.addedLabel().value!!
                 is RemovedLabelEvent -> it.removedLabel().value!!
-                else -> throw IllegalStateException()
+                else -> throw IllegalStateException("Virtual Label Generator Defective")
             }
         }
         for ((label, relevantTimeline) in groups) {
