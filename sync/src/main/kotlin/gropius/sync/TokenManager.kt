@@ -1,6 +1,7 @@
 package gropius.sync
 
 import gropius.model.architecture.IMS
+import gropius.model.architecture.IMSProject
 import gropius.model.user.GropiusUser
 import gropius.model.user.IMSUser
 import gropius.model.user.User
@@ -146,26 +147,62 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
     }
 
     /**
+     * Check if a user is allowed to be used for syncing
+     *
+     * @param imsProject The IMS to work with
+     * @param user The user to check
+     * @param owner The user that created the data
+     * @return true if the user is allowed
+     */
+    private suspend fun isAllowed(imsProject: IMSProject, user: IMSUser, owner: List<GropiusUser>): Boolean {
+        return true // TODO: ignoring until @nk-coding does UI
+        val ownerSet = owner.toSet()
+        if ((owner.isEmpty() || ownerSet.contains(user.gropiusUser().value)) && imsProject.ims().value.syncSelfAllowedBy()
+                .contains(user.gropiusUser().value)
+        ) {
+            return true
+        }
+        if ((owner.isEmpty() || ownerSet.contains(user.gropiusUser().value)) && imsProject.syncSelfAllowedBy()
+                .contains(user.gropiusUser().value)
+        ) {
+            return true
+        }
+        if (imsProject.ims().value.syncOthersAllowedBy().contains(user.gropiusUser().value)) {
+            return true
+        }
+        if (imsProject.syncOthersAllowedBy().contains(user.gropiusUser().value)) {
+            return true
+        }
+        return false
+    }
+
+    /**
      * Attempt a query for a list of users until it works
      *
      * @param users The list of users, sorted with best first
      * @param executor The function to execute
+     * @param owner The user that created the data
      *
      * @return The user it worked with and the result of the executor
      */
     private suspend fun <T> executeUntilWorking(
-        users: List<IMSUser>, executor: suspend (token: ResponseType) -> Optional<T>
+        imsProject: IMSProject,
+        users: List<IMSUser>,
+        executor: suspend (token: ResponseType) -> Optional<T>,
+        owner: List<GropiusUser>
     ): Pair<IMSUser, T> {
         for (user in users) {
-            val token = getUserToken(user)
-            if (token?.token != null) {
-                logger.trace("Trying token of user ${user.rawId}")
-                val ret = executor(token)
-                if (ret.isPresent) {
-                    return user to ret.get()
+            if (isAllowed(imsProject, user, owner)) {
+                val token = getUserToken(user)
+                if (token?.token != null) {
+                    logger.trace("Trying token of user ${user.rawId}")
+                    val ret = executor(token)
+                    if (ret.isPresent) {
+                        return user to ret.get()
+                    }
+                } else {
+                    logger.trace("User ${user.rawId} had no token")
                 }
-            } else {
-                logger.trace("User ${user.rawId} had no token")
             }
         }
         TODO("Error Message")
@@ -177,15 +214,19 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
      * @param ims The IMS to work with
      * @param user The list of users, sorted with best first
      * @param executor The function to execute
+     * @param owner The user that created the data
      *
      * @return The user it worked with and the result of the executor
      */
     suspend fun <T> executeUntilWorking(
-        ims: IMS, user: List<User>, executor: suspend (token: ResponseType) -> Optional<T>
+        imsProject: IMSProject,
+        user: List<User>,
+        owner: List<GropiusUser>,
+        executor: suspend (token: ResponseType) -> Optional<T>
     ): Pair<IMSUser, T> {
-        val users = user.map { getPossibleUsersForUser(ims, it) }.flatten().distinct()
+        val users = user.map { getPossibleUsersForUser(imsProject.ims().value, it) }.flatten().distinct()
         logger.info("Expanding ${user.map { "${it::class.simpleName}:${it.rawId}(${it.username})" }} to ${users.map { "${it::class.simpleName}:${it.rawId}(${it.username})" }}")
-        return executeUntilWorking(users, executor)
+        return executeUntilWorking(imsProject, users, executor, owner)
     }
 
     /**

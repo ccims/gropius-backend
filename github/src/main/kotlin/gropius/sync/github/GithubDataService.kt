@@ -216,7 +216,7 @@ class GithubDataService(
      * @return The selected user and the response for the mutation
      */
     final suspend inline fun <reified D : Mutation.Data> mutation(
-        imsProject: IMSProject, users: List<User>, body: Mutation<D>
+        imsProject: IMSProject, users: List<User>, body: Mutation<D>, owner: List<GropiusUser>
     ): Pair<IMSUser, ApolloResponse<D>> {
         val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
         val userList = users.toMutableList()
@@ -228,7 +228,7 @@ class GithubDataService(
             userList.add(imsUser)
         }
         logger.info("Requesting with users: $userList")
-        return tokenManager.executeUntilWorking(imsProject.ims().value, userList) { token ->
+        return tokenManager.executeUntilWorking(imsProject, userList, owner) { token ->
             val apolloClient = ApolloClient.Builder().serverUrl(imsConfig.graphQLUrl.toString())
                 .addHttpHeader("Authorization", "Bearer ${token.token}").build()
             val res = apolloClient.mutation(body).execute()
@@ -267,7 +267,7 @@ class GithubDataService(
             userList.add(imsUser)
         }
         logger.info("Requesting with users: $userList ")
-        return tokenManager.executeUntilWorking(imsProject.ims().value, userList) { token ->
+        return tokenManager.executeUntilWorking(imsProject, userList, listOf()) { token ->
             val apolloClient = ApolloClient.Builder().serverUrl(imsConfig.graphQLUrl.toString())
                 .addHttpHeader("Authorization", "Bearer ${token.token}").build()
             val res = apolloClient.query(body).execute()

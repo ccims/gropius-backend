@@ -6,6 +6,8 @@ import gropius.model.issue.Label
 import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
+import gropius.model.user.GropiusUser
+import gropius.model.user.IMSUser
 import gropius.model.user.User
 import gropius.sync.*
 import gropius.sync.jira.config.IMSConfigManager
@@ -105,7 +107,7 @@ final class JiraSync(
         for (issueId in issueList) {
             var startAt = 0
             while (true) {
-                val issueCommentList = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get) {
+                val issueCommentList = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get, listOf()) {
                     appendPathSegments("issue")
                     appendPathSegments(issueId)
                     appendPathSegments("changelog")
@@ -129,7 +131,7 @@ final class JiraSync(
         for (issueId in issueList) {
             var startAt = 0
             while (true) {
-                val issueCommentList = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get) {
+                val issueCommentList = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get, listOf()) {
                     appendPathSegments("issue")
                     appendPathSegments(issueId)
                     appendPathSegments("comment")
@@ -163,7 +165,7 @@ final class JiraSync(
         var startAt = 0
         while (true) {
             val imsProjectConfig = IMSProjectConfig(helper, imsProject)
-            val issueResponse = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get) {
+            val issueResponse = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get, listOf()) {
                 appendPathSegments("search")
                 parameters.append("jql", "project=${imsProjectConfig.repo}")
                 parameters.append("expand", "names,schema,editmeta,changelog")
@@ -182,6 +184,25 @@ final class JiraSync(
         return issueDataService.findByImsProject(imsProject.rawId!!)
     }
 
+    /**
+     * Map list of User to GropiusUser
+     * @param users The list of users mixed of IMSUser and GropiusUser
+     * @return The list of GropiusUser
+     */
+    private suspend fun gropiusUserList(users: List<User>): List<GropiusUser> {
+        val outputUsers = users.mapNotNull {
+            when (it) {
+                is GropiusUser -> it
+                is IMSUser -> it.gropiusUser().value
+                else -> null
+            }
+        }
+        if (outputUsers.isEmpty() && users.isNotEmpty()) {
+            throw IllegalStateException("No Gropius User left as owner")
+        }
+        return outputUsers
+    }
+
     override suspend fun syncComment(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment, users: List<User>
     ): TimelineItemConversionInformation? {
@@ -189,7 +210,11 @@ final class JiraSync(
             return null
         }
         val response = jiraDataService.request(
-            imsProject, users, HttpMethod.Post, JsonObject(mapOf("body" to JsonPrimitive(issueComment.body)))
+            imsProject,
+            users,
+            HttpMethod.Post,
+            gropiusUserList(users),
+            JsonObject(mapOf("body" to JsonPrimitive(issueComment.body)))
         ) {
             appendPathSegments("issue")
             appendPathSegments(issueId)
@@ -203,7 +228,7 @@ final class JiraSync(
         imsProject: IMSProject, issueId: String, newTitle: String, users: List<User>
     ): TimelineItemConversionInformation? {
         val response = jiraDataService.request(
-            imsProject, users, HttpMethod.Put, JsonObject(
+            imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
                 mapOf(
                     "fields" to JsonObject(
                         mapOf(
@@ -233,7 +258,7 @@ final class JiraSync(
             return null;
         }
         jiraDataService.request(
-            imsProject, users, HttpMethod.Put, JsonObject(
+            imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
                 mapOf(
                     "fields" to JsonObject(
                         mapOf(
@@ -256,7 +281,7 @@ final class JiraSync(
         imsProject: IMSProject, issueId: String, label: Label, users: List<User>
     ): TimelineItemConversionInformation? {
         val response = jiraDataService.request(
-            imsProject, users, HttpMethod.Put, JsonObject(
+            imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
                 mapOf(
                     "update" to JsonObject(
                         mapOf(
@@ -301,7 +326,7 @@ final class JiraSync(
         imsProject: IMSProject, issueId: String, label: Label, users: List<User>
     ): TimelineItemConversionInformation? {
         val response = jiraDataService.request(
-            imsProject, users, HttpMethod.Put, JsonObject(
+            imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
                 mapOf(
                     "update" to JsonObject(
                         mapOf(
@@ -340,6 +365,8 @@ final class JiraSync(
                 listOf(issue.createdBy().value, issue.lastModifiedBy().value) + issue.timelineItems()
                     .map { it.createdBy().value },
                 HttpMethod.Post,
+                gropiusUserList(listOf(issue.createdBy().value, issue.lastModifiedBy().value) + issue.timelineItems()
+                    .map { it.createdBy().value }),
                 IssueQueryRequest(
                     IssueQueryRequestFields(
                         issue.title,
