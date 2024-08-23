@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import graphql.Scalars
 import graphql.scalars.regex.RegexScalar
 import graphql.schema.*
+import gropius.authorization.GropiusAuthorizationContext
 import gropius.authorization.checkPermission
 import gropius.authorization.gropiusAuthorizationContext
 import gropius.graphql.filter.*
@@ -33,6 +34,7 @@ import io.github.graphglue.connection.filter.definition.scalars.StringFilterDefi
 import io.github.graphglue.definition.ExtensionFieldDefinition
 import io.github.graphglue.definition.NodeDefinition
 import io.github.graphglue.definition.NodeDefinitionCollection
+import io.github.graphglue.graphql.extensions.authorizationContext
 import org.neo4j.cypherdsl.core.Cypher
 import org.neo4j.cypherdsl.core.Expression
 import org.neo4j.driver.Driver
@@ -304,6 +306,56 @@ class GraphQLConfiguration {
 
             override fun transformResult(result: Value): Any {
                 return result.asString()
+            }
+
+        }
+    }
+
+    /**
+     * Provides the [ExtensionFieldDefinition] for checking if the current user allows to sync their data to a target
+     */
+    @Bean(SYNC_SELF_ALLOWED_FIELD_BEAN)
+    fun syncSelfAllowedField(): ExtensionFieldDefinition = syncAllowedField(true)
+
+    /**
+     * Provides the [ExtensionFieldDefinition] for checking if the current user allows to sync other users' data to a target
+     */
+    @Bean(SYNC_OTHERS_ALLOWED_FIELD_BEAN)
+    fun syncOthersAllowedField(): ExtensionFieldDefinition = syncAllowedField(false)
+
+    /**
+     * Provides the [ExtensionFieldDefinition] for checking if the current user allows to sync data to a target
+     *
+     * @param self if the field is the self or other variant
+     * @return the generated field definition
+     */
+    private fun syncAllowedField(self: Boolean): ExtensionFieldDefinition {
+        val field = GraphQLFieldDefinition.newFieldDefinition().name("isSync${if (self) "Self" else "Others"}Allowed")
+            .description("Checks if the current user allows to sync ${if (self) "their" else "other users'"} data to this target")
+            .type(GraphQLNonNull(Scalars.GraphQLBoolean)).build()
+
+        return object : ExtensionFieldDefinition(field) {
+            override fun generateFetcher(
+                dfe: DataFetchingEnvironment,
+                arguments: Map<String, Any?>,
+                node: org.neo4j.cypherdsl.core.Node,
+                nodeDefinition: NodeDefinition
+            ): Expression {
+                val authorizationContext = dfe.authorizationContext as? GropiusAuthorizationContext
+                return if (authorizationContext != null) {
+                    Cypher.exists(
+                        node.relationshipFrom(
+                            authorizationContext.userNode,
+                            if (self) GropiusUser.CAN_SYNC_SELF else GropiusUser.CAN_SYNC_OTHERS
+                        )
+                    )
+                } else {
+                    Cypher.literalFalse()
+                }
+            }
+
+            override fun transformResult(result: Value): Any {
+                return result.asBoolean()
             }
 
         }
