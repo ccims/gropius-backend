@@ -13,7 +13,7 @@ import gropius.model.user.permission.NodeWithPermissions
 import io.github.graphglue.model.*
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 
-@DomainNode("imss")
+@DomainNode("imss", searchQueryName = "searchIMSs")
 @GraphQLDescription(
     """Entity which represents an issue management system (like GitHub, Jira, Redmine, ...).
     Trackables can be added to this via an IMSProject, so that their issues are synced to this IMS.

@@ -11,7 +11,7 @@ import gropius.model.user.permission.TrackablePermission
 import io.github.graphglue.model.*
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 
-@DomainNode
+@DomainNode(searchQueryName = "searchIMSProjects")
 @GraphQLDescription(
     """Project on an IMS, represents a Trackable synced to an IMS.
     The representation on the IMS depends on the type of IMS, e.g. for GitHub, a project is a repository.
