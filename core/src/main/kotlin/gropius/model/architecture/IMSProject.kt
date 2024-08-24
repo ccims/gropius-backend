@@ -48,6 +48,7 @@ class IMSProject(
     @GraphQLDescription("The IMS this project is a part of.")
     @GraphQLNullable
     @FilterProperty
+    @OrderProperty
     val ims by NodeProperty<IMS>()
 
     @NodeRelationship(IMSIssue.PROJECT, Direction.INCOMING)
