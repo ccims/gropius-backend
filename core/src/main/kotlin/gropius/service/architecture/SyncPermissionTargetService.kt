@@ -35,15 +35,19 @@ class SyncPermissionTargetService(
         val target = repository.findById(input.id)
         checkPermission(target, Permission(NodePermission.READ, authorizationContext), "use the SyncPermissionTarget")
         val user = getUser(authorizationContext)
-        if (input.canSyncSelf) {
-            target.syncSelfAllowedBy() += user
-        } else {
-            target.syncSelfAllowedBy() -= user
+        if (input.canSyncSelf != null) {
+            if (input.canSyncSelf) {
+                target.syncSelfAllowedBy() += user
+            } else {
+                target.syncSelfAllowedBy() -= user
+            }
         }
-        if (input.canSyncOthers) {
-            target.syncOthersAllowedBy() += user
-        } else {
-            target.syncOthersAllowedBy() -= user
+        if (input.canSyncOthers != null) {
+            if (input.canSyncOthers) {
+                target.syncOthersAllowedBy() += user
+            } else {
+                target.syncOthersAllowedBy() -= user
+            }
         }
         return repository.save(target).awaitSingle()
     }
