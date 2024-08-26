@@ -17,6 +17,9 @@ import io.ktor.http.*
 import kotlinx.serialization.json.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
@@ -39,6 +42,10 @@ final class JiraSync(
     val loadBalancedDataFetcher: LoadBalancedDataFetcher = LoadBalancedDataFetcher(),
     val issueDataService: IssueDataService
 ) : AbstractSync(collectedSyncInfo) {
+
+    companion object {
+        val jqlFormatter = DateTimeFormatter.ofPattern("\"yyyy-MM-dd HH:mm\"")
+    }
 
     /**
      * Logger used to print notifications
@@ -92,15 +99,14 @@ final class JiraSync(
         }
 
         for (imsProject in imsProjects) {
-            val issueList = mutableListOf<String>()
-            fetchIssueList(imsProject, issueList)
+            val issueList = fetchIssueList(imsProject)
             fetchIssueContent(issueList, imsProject)
         }
     }
 
     @OptIn(ExperimentalEncodingApi::class)
     private suspend fun fetchIssueContentChangelog(
-        issueList: MutableList<String>, imsProject: IMSProject
+        issueList: List<String>, imsProject: IMSProject
     ) {
         for (issueId in issueList) {
             var startAt = 0
@@ -124,7 +130,7 @@ final class JiraSync(
 
     @OptIn(ExperimentalEncodingApi::class)
     private suspend fun fetchIssueContentComments(
-        issueList: MutableList<String>, imsProject: IMSProject
+        issueList: List<String>, imsProject: IMSProject
     ) {
         for (issueId in issueList) {
             var startAt = 0
@@ -149,7 +155,7 @@ final class JiraSync(
 
     @OptIn(ExperimentalEncodingApi::class)
     private suspend fun fetchIssueContent(
-        issueList: MutableList<String>, imsProject: IMSProject
+        issueList: List<String>, imsProject: IMSProject
     ) {
         logger.info("ISSUE LIST $issueList")
         fetchIssueContentChangelog(issueList, imsProject)
@@ -158,16 +164,36 @@ final class JiraSync(
 
     @OptIn(ExperimentalEncodingApi::class)
     private suspend fun fetchIssueList(
-        imsProject: IMSProject, issueList: MutableList<String>
-    ) {
+        imsProject: IMSProject
+    ): List<String> {
+        val issueList = mutableListOf<String>()
         var startAt = 0
+        val lastSuccessfulSync: OffsetDateTime? = null
         while (true) {
             val imsProjectConfig = IMSProjectConfig(helper, imsProject)
-            val issueResponse = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get) {
-                appendPathSegments("search")
-                parameters.append("jql", "project=${imsProjectConfig.repo}")
-                parameters.append("expand", "names,schema,editmeta,changelog")
-                parameters.append("startAt", "$startAt")
+            val userList = jiraDataService.collectRequestUsers(imsProject, listOf())
+            val issueResponse = jiraDataService.tokenManager.executeUntilWorking(imsProject.ims().value, userList) {
+                val userTimeZone = ZoneId.of(
+                    jiraDataService.sendRequest<Unit>(
+                        imsProject, HttpMethod.Get, null, {
+                            appendPathSegments("user")
+                        }, it
+                    ).get().body<UserQuery>().timeZone
+                )
+                var query = "project=${imsProjectConfig.repo}"
+                if (lastSuccessfulSync != null) {
+                    query = "project=${imsProjectConfig.repo} AND updated > ${
+                        lastSuccessfulSync.atZoneSameInstant(userTimeZone).format(jqlFormatter)
+                    }"
+                }
+                jiraDataService.sendRequest<Unit>(
+                    imsProject, HttpMethod.Get, null, {
+                        appendPathSegments("search")
+                        parameters.append("jql", query)
+                        parameters.append("expand", "names,schema,editmeta,changelog")
+                        parameters.append("startAt", "$startAt")
+                    }, it
+                )
             }.second.body<ProjectQuery>()
             issueResponse.issues(imsProject).forEach {
                 issueList.add(it.jiraId)
@@ -176,6 +202,7 @@ final class JiraSync(
             startAt = issueResponse.startAt + issueResponse.issues.size
             if (startAt >= issueResponse.total) break
         }
+        return issueList
     }
 
     override suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue> {
