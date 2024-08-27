@@ -256,6 +256,13 @@ class JiraDataService(
         }
     }
 
+    /**
+     * Collect list of users to request with using
+     *
+     * @param imsProject the project to work on
+     * @param users the list of users specific to this TimelineItem
+     * @return all users sorted by most fitting first
+     */
     suspend fun collectRequestUsers(
         imsProject: IMSProject, users: List<User>
     ): List<User> {
