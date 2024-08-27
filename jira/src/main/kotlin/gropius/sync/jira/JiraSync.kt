@@ -50,7 +50,7 @@ final class JiraSync(
         /**
          * Formatter for JQL dates
          */
-        val jqlFormatter = DateTimeFormatter.ofPattern("\"yyyy-MM-dd HH:mm\"")
+        val JQL_FORMATTER = DateTimeFormatter.ofPattern("\"yyyy-MM-dd HH:mm\"")
     }
 
     /**
@@ -217,7 +217,7 @@ final class JiraSync(
                 var query = "project=${imsProjectConfig.repo}"
                 if (lastSuccessfulSync != null) {
                     query = "project=${imsProjectConfig.repo} AND updated > ${
-                        lastSuccessfulSync.atZoneSameInstant(userTimeZone).format(jqlFormatter)
+                        lastSuccessfulSync.atZoneSameInstant(userTimeZone).format(JQL_FORMATTER)
                     }"
                 }
                 logger.info("With $lastSuccessfulSync, ${imsProjectConfig.repo} and $userTimeZone, the query is '$query'")
