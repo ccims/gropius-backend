@@ -15,6 +15,7 @@ import java.net.URI
  * @param imsTemplate the template of the current IMS
  * @param defaultType the type of newly created issues
  * @param defaultTemplate the template of newly created issues
+ * @param isCloud true if cloud, false if data center
  */
 data class IMSConfig(
     val botUser: String,
@@ -22,7 +23,8 @@ data class IMSConfig(
     val rootUrl: URI,
     val imsTemplate: IMSTemplate,
     val defaultType: String?,
-    val defaultTemplate: String?
+    val defaultTemplate: String?,
+    val isCloud: Boolean
 ) {
     /**
      * @param ims the Gropius ims to use as input
@@ -37,7 +39,8 @@ data class IMSConfig(
         rootUrl = URI(helper.parseString(ims.templatedFields["root-url"])!!),
         imsTemplate = imsTemplate,
         defaultType = helper.parseString(ims.templatedFields["default-type"]),
-        defaultTemplate = helper.parseString(ims.templatedFields["default-template"])
+        defaultTemplate = helper.parseString(ims.templatedFields["default-template"]),
+        isCloud = helper.parseString(ims.templatedFields["jira-edition"])?.let { it == "CLOUD" } ?: true,
     )
 
     companion object {

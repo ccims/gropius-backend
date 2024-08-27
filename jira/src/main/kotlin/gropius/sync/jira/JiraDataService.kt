@@ -257,6 +257,31 @@ class JiraDataService(
     }
 
     /**
+     * Collect list of users to request with using
+     *
+     * @param imsProject the project to work on
+     * @param users the list of users specific to this TimelineItem
+     * @return all users sorted by most fitting first
+     */
+    suspend fun collectRequestUsers(
+        imsProject: IMSProject, users: List<User>
+    ): List<User> {
+        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
+        val rawUserList = users.toMutableList()
+        if (imsConfig.readUser != null) {
+            val imsUser = neoOperations.findById(imsConfig.readUser, IMSUser::class.java).awaitSingleOrNull()
+                ?: throw IllegalArgumentException("Read user not found")
+            if (imsUser.ims().value != imsProject.ims().value) {
+                TODO("Error handling")
+            }
+            rawUserList.add(imsUser)
+        }
+        val userList = rawUserList.distinct()
+        logger.info("Requesting with users: $userList")
+        return userList
+    }
+
+    /**
      * Process a request for a given set of users
      *
      * @param imsProject the project to work on
@@ -275,18 +300,7 @@ class JiraDataService(
         body: T? = null,
         crossinline urlBuilder: URLBuilder .(URLBuilder) -> Unit
     ): Pair<IMSUser, HttpResponse> {
-        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
-        val rawUserList = users.toMutableList()
-        if (imsConfig.readUser != null) {
-            val imsUser = neoOperations.findById(imsConfig.readUser, IMSUser::class.java).awaitSingleOrNull()
-                ?: throw IllegalArgumentException("Read user not found")
-            if (imsUser.ims().value != imsProject.ims().value) {
-                TODO("Error handling")
-            }
-            rawUserList.add(imsUser)
-        }
-        val userList = rawUserList.distinct()
-        logger.info("Requesting with users: $userList")
+        val userList = collectRequestUsers(imsProject, users)
         return tokenManager.executeUntilWorking(imsProject, userList, owner) {
             sendRequest<T>(
                 imsProject, requestMethod, body, urlBuilder, it

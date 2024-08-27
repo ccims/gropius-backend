@@ -166,3 +166,12 @@ data class ProjectQuery(
     fun issues(imsProject: IMSProject): List<IssueData> =
         issues.map { it.data(imsProject, names ?: JsonObject(mapOf()), schema ?: JsonObject(mapOf())) }
 }
+
+/**
+ * Kotlin representation of the UserQuery JSON
+ * @param timeZone The timeZone of the user
+ */
+@Serializable
+data class UserQuery(
+    val timeZone: String
+) {}
