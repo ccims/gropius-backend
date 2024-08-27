@@ -62,13 +62,15 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val jiraService = (service as JiraDataService)
-        if (data.fieldId == "summary") {
+        println("SYNC FIELD ${data.fieldId} ${data.field}")
+        val fieldId = data.fieldId ?: data.field
+        if (fieldId == "summary") {
             return gropiusSummary(timelineItemConversionInformation, imsProject, service, jiraService)
-        } else if (data.fieldId == "resolution") {
+        } else if (fieldId == "resolution") {
             return gropiusState(
                 timelineItemConversionInformation, imsProject, service, jiraService
             )
-        } else if (data.fieldId == "labels") {
+        } else if (fieldId == "labels") {
             return gropiusLabels(
                 timelineItemConversionInformation, imsProject, service, jiraService
             )
@@ -216,6 +218,7 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         titleChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
         titleChangedEvent.oldState().value = jiraService.issueState(imsProject, data.fromString == null)
         titleChangedEvent.newState().value = jiraService.issueState(imsProject, data.toString == null)
+        println("MAPPING STATE ${data.fromString} to ${data.toString} ==> ${titleChangedEvent.oldState().value} to ${titleChangedEvent.newState().value}")
         return listOf<TimelineItem>(
             titleChangedEvent
         ) to convInfo;
@@ -360,8 +363,7 @@ data class IssueData(
     }
 
     override suspend fun fillImsIssueTemplatedFields(
-        templatedFields: MutableMap<String, String>,
-        service: SyncDataService
+        templatedFields: MutableMap<String, String>, service: SyncDataService
     ) {
     }
 

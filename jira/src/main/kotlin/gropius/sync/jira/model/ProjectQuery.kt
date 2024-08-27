@@ -133,7 +133,7 @@ data class JiraComment(
     val updateAuthor: JsonObject,
     val created: String,
     val updated: String,
-    val jsdPublic: Boolean
+    val jsdPublic: Boolean? = null
 ) {}
 
 /**

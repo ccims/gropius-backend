@@ -21,7 +21,10 @@ data class JiraCloudId(val id: String, val url: String, val name: String, val sc
  */
 @Serializable
 data class JiraTokenResponse(
-    override val token: String?, override val isImsUserKnown: Boolean, val cloudIds: List<JiraCloudId>? = null
+    override val token: String?,
+    override val isImsUserKnown: Boolean,
+    val cloudIds: List<JiraCloudId>? = null,
+    val type: String? = null
 ) : BaseResponseType
 
 @Component
@@ -30,6 +33,8 @@ class JiraTokenManager(
     neoOperations: ReactiveNeo4jOperations, syncConfigurationProperties: SyncConfigurationProperties
 ) : TokenManager<JiraTokenResponse>(neoOperations, syncConfigurationProperties) {
     override suspend fun parseHttpBody(response: HttpResponse): JiraTokenResponse? {
-        return response.body()
+        val v = response.body<JiraTokenResponse>()
+        println("Response ${response.bodyAsText()} leading to $v had no token")
+        return v
     }
 }
