@@ -262,7 +262,9 @@ final class JiraSync(
                 }
             }
             startAt = issueResponse.startAt + issueResponse.issues.size
-            if (startAt >= issueResponse.total) break
+            if (startAt >= issueResponse.total) {
+                break
+            }
         }
         return issueList to times.maxOrNull()
     }
