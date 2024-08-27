@@ -31,6 +31,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * @param collectedSyncInfo the collected sync info
  * @param loadBalancedDataFetcher the load balanced data fetcher
  * @param issueDataService the data service for issues
+ * @param syncStatusService the sync status service
  */
 @Component
 final class JiraSync(
@@ -40,7 +41,8 @@ final class JiraSync(
     val imsConfigManager: IMSConfigManager,
     collectedSyncInfo: CollectedSyncInfo,
     val loadBalancedDataFetcher: LoadBalancedDataFetcher = LoadBalancedDataFetcher(),
-    val issueDataService: IssueDataService
+    val issueDataService: IssueDataService,
+    val syncStatusService: SyncStatusService
 ) : AbstractSync(collectedSyncInfo) {
 
     companion object {
@@ -99,8 +101,11 @@ final class JiraSync(
         }
 
         for (imsProject in imsProjects) {
-            val issueList = fetchIssueList(imsProject)
+            val (issueList, lastSeenTime) = fetchIssueList(imsProject)
             fetchIssueContent(issueList, imsProject)
+            if (lastSeenTime != null) {
+                syncStatusService.updateTime(imsProject.rawId!!, lastSeenTime)
+            }
         }
     }
 
@@ -165,10 +170,12 @@ final class JiraSync(
     @OptIn(ExperimentalEncodingApi::class)
     private suspend fun fetchIssueList(
         imsProject: IMSProject
-    ): List<String> {
+    ): Pair<List<String>, OffsetDateTime?> {
         val issueList = mutableListOf<String>()
         var startAt = 0
-        val lastSuccessfulSync: OffsetDateTime? = null
+        val lastSuccessfulSync: OffsetDateTime? =
+            syncStatusService.findByImsProject(imsProject.rawId!!)?.lastSuccessfulSync
+        val times = mutableListOf<OffsetDateTime>()
         while (true) {
             val imsProjectConfig = IMSProjectConfig(helper, imsProject)
             val userList = jiraDataService.collectRequestUsers(imsProject, listOf())
@@ -198,11 +205,30 @@ final class JiraSync(
             issueResponse.issues(imsProject).forEach {
                 issueList.add(it.jiraId)
                 issueDataService.insertIssue(imsProject, it)
+                for (comment in it.comments.values) {
+                    times.add(
+                        OffsetDateTime.parse(
+                            comment.created, IssueData.formatter
+                        )
+                    )
+                    times.add(
+                        OffsetDateTime.parse(
+                            comment.updated, IssueData.formatter
+                        )
+                    )
+                }
+                for (history in it.changelog.histories) {
+                    times.add(
+                        OffsetDateTime.parse(
+                            history.created, IssueData.formatter
+                        )
+                    )
+                }
             }
             startAt = issueResponse.startAt + issueResponse.issues.size
             if (startAt >= issueResponse.total) break
         }
-        return issueList
+        return issueList to times.maxOrNull()
     }
 
     override suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue> {
