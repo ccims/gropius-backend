@@ -47,6 +47,9 @@ final class JiraSync(
 ) : AbstractSync(collectedSyncInfo) {
 
     companion object {
+        /**
+         * Formatter for JQL dates
+         */
         val jqlFormatter = DateTimeFormatter.ofPattern("\"yyyy-MM-dd HH:mm\"")
     }
 
@@ -110,6 +113,11 @@ final class JiraSync(
         }
     }
 
+    /**
+     * Fetch the changelog of the issues
+     * @param issueList the list of issues
+     * @param imsProject the IMS project
+     */
     @OptIn(ExperimentalEncodingApi::class)
     private suspend fun fetchIssueContentChangelog(
         issueList: List<String>, imsProject: IMSProject
@@ -134,6 +142,11 @@ final class JiraSync(
         }
     }
 
+    /**
+     * Fetch the comments of the issues
+     * @param issueList the list of issues
+     * @param imsProject the IMS project
+     */
     @OptIn(ExperimentalEncodingApi::class)
     private suspend fun fetchIssueContentComments(
         issueList: List<String>, imsProject: IMSProject
@@ -159,6 +172,11 @@ final class JiraSync(
         }
     }
 
+    /**
+     * Fetch the content of the issues
+     * @param issueList the list of issues
+     * @param imsProject the IMS project
+     */
     @OptIn(ExperimentalEncodingApi::class)
     private suspend fun fetchIssueContent(
         issueList: List<String>, imsProject: IMSProject
@@ -171,6 +189,11 @@ final class JiraSync(
         }
     }
 
+    /**
+     * Fetch the list of changed issues
+     * @param imsProject the IMS project
+     * @return issueList the list of issues
+     */
     @OptIn(ExperimentalEncodingApi::class)
     private suspend fun fetchIssueList(
         imsProject: IMSProject
