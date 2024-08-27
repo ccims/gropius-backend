@@ -18,10 +18,15 @@ data class JiraCloudId(val id: String, val url: String, val name: String, val sc
  * Response of the getIMSToken login endpoint
  * @param token Token if available
  * @param isImsUserKnown True if the user exists and just has no token
+ * @param cloudIds List of cloud ids
+ * @param type Type of the token
  */
 @Serializable
 data class JiraTokenResponse(
-    override val token: String?, override val isImsUserKnown: Boolean, val cloudIds: List<JiraCloudId>? = null
+    override val token: String?,
+    override val isImsUserKnown: Boolean,
+    val cloudIds: List<JiraCloudId>? = null,
+    val type: String? = null
 ) : BaseResponseType
 
 @Component
@@ -30,6 +35,6 @@ class JiraTokenManager(
     neoOperations: ReactiveNeo4jOperations, syncConfigurationProperties: SyncConfigurationProperties
 ) : TokenManager<JiraTokenResponse>(neoOperations, syncConfigurationProperties) {
     override suspend fun parseHttpBody(response: HttpResponse): JiraTokenResponse? {
-        return response.body()
+        return response.body<JiraTokenResponse>()
     }
 }

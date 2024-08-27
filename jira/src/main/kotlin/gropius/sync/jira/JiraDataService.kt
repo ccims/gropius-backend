@@ -152,8 +152,10 @@ class JiraDataService(
      * @return the IMSUser for the Jira user
      */
     suspend fun mapUser(imsProject: IMSProject, user: JsonElement): User {
-        val encodedAccountId =
-            jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(user.jsonObject["accountId"]!!.jsonPrimitive.content))
+        val encodedAccountId = if (user.jsonObject["accountId"] != null) jsonNodeMapper.jsonNodeToDeterministicString(
+            objectMapper.valueToTree<JsonNode>(user.jsonObject["accountId"]!!.jsonPrimitive.content)
+        )
+        else jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(user.jsonObject["key"]!!.jsonPrimitive.content))
         val foundImsUser =
             imsProject.ims().value.users().firstOrNull { it.templatedFields["jira_id"] == encodedAccountId }
         if (foundImsUser != null) {
@@ -221,7 +223,36 @@ class JiraDataService(
         val cloudId =
             token.cloudIds?.filter { URI(it.url + "/rest/api/2") == URI(imsConfig.rootUrl.toString()) }?.map { it.id }
                 ?.firstOrNull()
-        if (cloudId != null) {
+        if (token.type == "PAT") {
+            try {
+                val res = client.request(imsConfig.rootUrl.toString()) {
+                    method = requestMethod
+                    url {
+                        appendPathSegments("/rest/api/2/")
+                        urlBuilder(this)
+                    }
+                    headers {
+                        append(
+                            HttpHeaders.Authorization, "Bearer ${token.token}"
+                        )
+                    }
+                    if (body != null) {
+                        contentType(ContentType.parse(JSON_CHARSET_MIME_TYPE))
+                        setBody(body)
+                    }
+                }
+                logger.info("Response Code for request with token token is ${res.status}(${res.status.isSuccess()}): $body is ${res.bodyAsText()}")
+                return if (res.status.isSuccess()) {
+                    logger.trace("Response for {} {}", res.request.url, res.bodyAsText())
+                    Optional.of(res)
+                } else {
+                    Optional.empty()
+                }
+            } catch (e: ClientRequestException) {
+                e.printStackTrace()
+                return Optional.empty()
+            }
+        } else if (cloudId != null) {
             try {
                 val res = client.request("https://api.atlassian.com/ex/jira/") {
                     method = requestMethod

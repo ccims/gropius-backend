@@ -12,6 +12,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
@@ -34,6 +35,7 @@ interface BaseResponseType {
     val isImsUserKnown: Boolean
 }
 
+@Serializable
 data class LinkImsUserQuery(val imsUserIds: List<String>)
 
 /**
@@ -203,6 +205,8 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
                 } else {
                     logger.trace("User ${user.rawId} had no token")
                 }
+            } else {
+                logger.trace("User $user does not allow sync from $owner")
             }
         }
         TODO("Error Message for no working users")
@@ -234,7 +238,7 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
      * @param user The user AFTER BEING SAVED TO DB (valid, non-null rawId)
      */
     suspend fun advertiseIMSUser(user: IMSUser) {
-        client.post(syncConfigurationProperties.loginServiceBase.toString()) {
+        client.put(syncConfigurationProperties.loginServiceBase.toString()) {
             url {
                 appendPathSegments("auth", "api", "sync", "link-ims-users")
             }

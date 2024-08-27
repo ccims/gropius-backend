@@ -62,13 +62,14 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val jiraService = (service as JiraDataService)
-        if (data.fieldId == "summary") {
+        val fieldId = data.fieldId ?: data.field
+        if (fieldId == "summary") {
             return gropiusSummary(timelineItemConversionInformation, imsProject, service, jiraService)
-        } else if (data.fieldId == "resolution") {
+        } else if (fieldId == "resolution") {
             return gropiusState(
                 timelineItemConversionInformation, imsProject, service, jiraService
             )
-        } else if (data.fieldId == "labels") {
+        } else if (fieldId == "labels") {
             return gropiusLabels(
                 timelineItemConversionInformation, imsProject, service, jiraService
             )
@@ -360,8 +361,7 @@ data class IssueData(
     }
 
     override suspend fun fillImsIssueTemplatedFields(
-        templatedFields: MutableMap<String, String>,
-        service: SyncDataService
+        templatedFields: MutableMap<String, String>, service: SyncDataService
     ) {
     }
 
