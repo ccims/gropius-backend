@@ -6,8 +6,6 @@ import gropius.model.issue.Label
 import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
-import gropius.model.user.GropiusUser
-import gropius.model.user.IMSUser
 import gropius.model.user.User
 import gropius.sync.*
 import gropius.sync.jira.config.IMSConfigManager
@@ -182,25 +180,6 @@ final class JiraSync(
 
     override suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue> {
         return issueDataService.findByImsProject(imsProject.rawId!!)
-    }
-
-    /**
-     * Map list of User to GropiusUser
-     * @param users The list of users mixed of IMSUser and GropiusUser
-     * @return The list of GropiusUser
-     */
-    private suspend fun gropiusUserList(users: List<User>): List<GropiusUser> {
-        val outputUsers = users.mapNotNull {
-            when (it) {
-                is GropiusUser -> it
-                is IMSUser -> it.gropiusUser().value
-                else -> null
-            }
-        }
-        if (outputUsers.isEmpty() && users.isNotEmpty()) {
-            throw IllegalStateException("No Gropius User left as owner")
-        }
-        return outputUsers
     }
 
     override suspend fun syncComment(

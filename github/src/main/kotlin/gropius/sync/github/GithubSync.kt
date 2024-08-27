@@ -156,26 +156,7 @@ final class GithubSync(
     override suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue> {
         return issuePileService.findByImsProjectAndHasUnsyncedData(imsProject.rawId!!, true)
     }
-
-    /**
-     * Map list of User to GropiusUser
-     * @param users The list of users mixed of IMSUser and GropiusUser
-     * @return The list of GropiusUser
-     */
-    private suspend fun gropiusUserList(users: List<User>): List<GropiusUser> {
-        val outputUsers = users.mapNotNull {
-            when (it) {
-                is GropiusUser -> it
-                is IMSUser -> it.gropiusUser().value
-                else -> null
-            }
-        }
-        if (outputUsers.isEmpty() && users.isNotEmpty()) {
-            throw IllegalStateException("No Gropius User left as owner")
-        }
-        return outputUsers
-    }
-
+    
     override suspend fun syncComment(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment, users: List<User>
     ): TimelineItemConversionInformation? {

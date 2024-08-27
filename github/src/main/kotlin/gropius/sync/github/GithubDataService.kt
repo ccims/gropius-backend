@@ -213,6 +213,7 @@ class GithubDataService(
      * @param imsProject The IMSProject to work on
      * @param users The users sorted with best first
      * @param body The content of the mutation
+     * @param owner The user that created the data
      * @return The selected user and the response for the mutation
      */
     final suspend inline fun <reified D : Mutation.Data> mutation(
@@ -248,6 +249,7 @@ class GithubDataService(
      * @param imsProject The IMSProject to work on
      * @param users The users sorted with best first
      * @param body The content of the query
+     * @param owner The user that created the data
      * @return The selected user and the response for the query
      */
     final suspend inline fun <reified D : Query.Data> query(
