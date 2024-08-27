@@ -15,6 +15,7 @@ import java.net.URI
  * @param imsTemplate the template of the current IMS
  * @param defaultType the type of newly created issues
  * @param defaultTemplate the template of newly created issues
+ * @param isCloud true if cloud, false if data center, null if not specified
  */
 data class IMSConfig(
     val botUser: String,
