@@ -125,7 +125,7 @@ final class JiraSync(
         for (issueId in issueList) {
             var startAt = 0
             while (true) {
-                val issueCommentList = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get) {
+                val issueCommentList = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get, listOf()) {
                     appendPathSegments("issue")
                     appendPathSegments(issueId)
                     appendPathSegments("changelog")
@@ -154,7 +154,7 @@ final class JiraSync(
         for (issueId in issueList) {
             var startAt = 0
             while (true) {
-                val issueCommentList = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get) {
+                val issueCommentList = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get, listOf()) {
                     appendPathSegments("issue")
                     appendPathSegments(issueId)
                     appendPathSegments("comment")
@@ -206,7 +206,7 @@ final class JiraSync(
         while (true) {
             val imsProjectConfig = IMSProjectConfig(helper, imsProject)
             val userList = jiraDataService.collectRequestUsers(imsProject, listOf())
-            val issueResponse = jiraDataService.tokenManager.executeUntilWorking(imsProject.ims().value, userList) {
+            val issueResponse = jiraDataService.tokenManager.executeUntilWorking(imsProject, userList, listOf()) {
                 val userTimeZone = ZoneId.of(
                     jiraDataService.sendRequest<Unit>(
                         imsProject, HttpMethod.Get, null, {
@@ -280,7 +280,11 @@ final class JiraSync(
             return null
         }
         val response = jiraDataService.request(
-            imsProject, users, HttpMethod.Post, JsonObject(mapOf("body" to JsonPrimitive(issueComment.body)))
+            imsProject,
+            users,
+            HttpMethod.Post,
+            gropiusUserList(users),
+            JsonObject(mapOf("body" to JsonPrimitive(issueComment.body)))
         ) {
             appendPathSegments("issue")
             appendPathSegments(issueId)
@@ -294,7 +298,7 @@ final class JiraSync(
         imsProject: IMSProject, issueId: String, newTitle: String, users: List<User>
     ): TimelineItemConversionInformation? {
         val response = jiraDataService.request(
-            imsProject, users, HttpMethod.Put, JsonObject(
+            imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
                 mapOf(
                     "fields" to JsonObject(
                         mapOf(
@@ -324,7 +328,7 @@ final class JiraSync(
             return null;
         }
         jiraDataService.request(
-            imsProject, users, HttpMethod.Put, JsonObject(
+            imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
                 mapOf(
                     "fields" to JsonObject(
                         mapOf(
@@ -347,7 +351,7 @@ final class JiraSync(
         imsProject: IMSProject, issueId: String, label: Label, users: List<User>
     ): TimelineItemConversionInformation? {
         val response = jiraDataService.request(
-            imsProject, users, HttpMethod.Put, JsonObject(
+            imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
                 mapOf(
                     "update" to JsonObject(
                         mapOf(
@@ -392,7 +396,7 @@ final class JiraSync(
         imsProject: IMSProject, issueId: String, label: Label, users: List<User>
     ): TimelineItemConversionInformation? {
         val response = jiraDataService.request(
-            imsProject, users, HttpMethod.Put, JsonObject(
+            imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
                 mapOf(
                     "update" to JsonObject(
                         mapOf(
@@ -431,6 +435,8 @@ final class JiraSync(
                 listOf(issue.createdBy().value, issue.lastModifiedBy().value) + issue.timelineItems()
                     .map { it.createdBy().value },
                 HttpMethod.Post,
+                gropiusUserList(listOf(issue.createdBy().value, issue.lastModifiedBy().value) + issue.timelineItems()
+                    .map { it.createdBy().value }),
                 IssueQueryRequest(
                     IssueQueryRequestFields(
                         issue.title,

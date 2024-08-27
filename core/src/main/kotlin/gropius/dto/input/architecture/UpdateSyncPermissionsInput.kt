@@ -9,7 +9,7 @@ class UpdateSyncPermissionsInput(
     @GraphQLDescription("The SyncPermissionTarget to update the sync permissions for the current user")
     val id: ID,
     @GraphQLDescription("Whether the sync service is allowed to sync content of the user")
-    val canSyncSelf: Boolean,
+    val canSyncSelf: Boolean?,
     @GraphQLDescription("Whether the sync service is allowed to sync content of other users")
-    val canSyncOthers: Boolean
+    val canSyncOthers: Boolean?
 ) : Input()

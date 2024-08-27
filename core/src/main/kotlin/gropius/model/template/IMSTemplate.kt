@@ -6,7 +6,7 @@ import io.github.graphglue.model.Direction
 import io.github.graphglue.model.DomainNode
 import io.github.graphglue.model.NodeRelationship
 
-@DomainNode("imsTemplates")
+@DomainNode("imsTemplates", searchQueryName = "searchIMSTemplates")
 @GraphQLDescription(
     """Template for imss
     Defines templated fields with specific types (defined using JSON schema).

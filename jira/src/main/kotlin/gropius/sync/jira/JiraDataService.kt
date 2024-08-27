@@ -296,11 +296,12 @@ class JiraDataService(
         imsProject: IMSProject,
         users: List<User>,
         requestMethod: HttpMethod,
+        owner: List<GropiusUser>,
         body: T? = null,
         crossinline urlBuilder: URLBuilder .(URLBuilder) -> Unit
     ): Pair<IMSUser, HttpResponse> {
         val userList = collectRequestUsers(imsProject, users)
-        return tokenManager.executeUntilWorking(imsProject.ims().value, userList) {
+        return tokenManager.executeUntilWorking(imsProject, userList, owner) {
             sendRequest<T>(
                 imsProject, requestMethod, body, urlBuilder, it
             )
