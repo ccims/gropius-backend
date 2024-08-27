@@ -155,7 +155,6 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
      * @return true if the user is allowed
      */
     private suspend fun isAllowed(imsProject: IMSProject, user: IMSUser, owner: List<GropiusUser>): Boolean {
-        return true // TODO: ignoring until @nk-coding does UI
         val ownerSet = owner.toSet()
         if ((owner.isEmpty() || ownerSet.contains(user.gropiusUser().value)) && imsProject.ims().value.syncSelfAllowedBy()
                 .contains(user.gropiusUser().value)
