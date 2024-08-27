@@ -37,6 +37,7 @@ data class SyncStatus(
 interface SyncStatusRepository : ReactiveMongoRepository<SyncStatus, ObjectId> {
     /**
      * Find using the IMSProject ID
+     * @param imsProject IMS project ID
      */
     suspend fun findByImsProject(
         imsProject: String
