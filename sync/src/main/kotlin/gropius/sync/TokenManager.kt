@@ -205,8 +205,9 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
                 } else {
                     logger.trace("User ${user.rawId} had no token")
                 }
-            } else
+            } else {
                 logger.trace("User $user does not allow sync from $owner")
+            }
         }
         TODO("Error Message for no working users")
     }
