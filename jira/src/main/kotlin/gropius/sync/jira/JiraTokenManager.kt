@@ -18,6 +18,8 @@ data class JiraCloudId(val id: String, val url: String, val name: String, val sc
  * Response of the getIMSToken login endpoint
  * @param token Token if available
  * @param isImsUserKnown True if the user exists and just has no token
+ * @param cloudIds List of cloud ids
+ * @param type Type of the token
  */
 @Serializable
 data class JiraTokenResponse(
