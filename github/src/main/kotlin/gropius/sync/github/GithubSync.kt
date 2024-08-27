@@ -6,6 +6,8 @@ import gropius.model.issue.Label
 import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
+import gropius.model.user.GropiusUser
+import gropius.model.user.IMSUser
 import gropius.model.user.User
 import gropius.sync.*
 import gropius.sync.github.config.IMSConfigManager
@@ -154,13 +156,15 @@ final class GithubSync(
     override suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue> {
         return issuePileService.findByImsProjectAndHasUnsyncedData(imsProject.rawId!!, true)
     }
-
+    
     override suspend fun syncComment(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment, users: List<User>
     ): TimelineItemConversionInformation? {
         val body = issueComment.body
         if (body.isNullOrEmpty()) return null;
-        val response = githubDataService.mutation(imsProject, users, MutateCreateCommentMutation(issueId, body)).second
+        val response = githubDataService.mutation(
+            imsProject, users, MutateCreateCommentMutation(issueId, body), gropiusUserList(users)
+        ).second
         val item = response.data?.addComment?.commentEdge?.node?.asIssueTimelineItems()
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)
@@ -180,8 +184,9 @@ final class GithubSync(
             //TODO("Create label on remote")
             return null
         }
-        val response =
-            githubDataService.mutation(imsProject, users, MutateAddLabelMutation(issueId, labelInfo.githubId)).second
+        val response = githubDataService.mutation(
+            imsProject, users, MutateAddLabelMutation(issueId, labelInfo.githubId), gropiusUserList(users)
+        ).second
         val item = response.data?.addLabelsToLabelable?.labelable?.asIssue()?.timelineItems?.nodes?.lastOrNull()
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
@@ -194,8 +199,9 @@ final class GithubSync(
     override suspend fun syncTitleChange(
         imsProject: IMSProject, issueId: String, newTitle: String, users: List<User>
     ): TimelineItemConversionInformation? {
-        val response =
-            githubDataService.mutation(imsProject, users, MutateChangeTitleMutation(issueId, newTitle)).second
+        val response = githubDataService.mutation(
+            imsProject, users, MutateChangeTitleMutation(issueId, newTitle), gropiusUserList(users)
+        ).second
         val item = response.data?.updateIssue?.issue?.timelineItems?.nodes?.lastOrNull()
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
@@ -209,7 +215,9 @@ final class GithubSync(
         imsProject: IMSProject, issueId: String, newState: IssueState, users: List<User>
     ): TimelineItemConversionInformation? {
         if (newState.isOpen) {
-            val response = githubDataService.mutation(imsProject, users, MutateReopenIssueMutation(issueId)).second
+            val response = githubDataService.mutation(
+                imsProject, users, MutateReopenIssueMutation(issueId), gropiusUserList(users)
+            ).second
             val item = response.data?.reopenIssue?.issue?.timelineItems?.nodes?.lastOrNull()
             if (item != null) {
                 return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
@@ -218,7 +226,9 @@ final class GithubSync(
             //TODO("ERROR HANDLING")
             return null
         } else {
-            val response = githubDataService.mutation(imsProject, users, MutateCloseIssueMutation(issueId)).second
+            val response = githubDataService.mutation(
+                imsProject, users, MutateCloseIssueMutation(issueId), gropiusUserList(users)
+            ).second
             val item = response.data?.closeIssue?.issue?.timelineItems?.nodes?.lastOrNull()
             if (item != null) {
                 return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
@@ -234,8 +244,9 @@ final class GithubSync(
     ): TimelineItemConversionInformation? {
         val labelInfo =
             githubDataService.labelInfoRepository.findByImsProjectAndNeo4jId(imsProject.rawId!!, label.rawId!!)!!
-        val response =
-            githubDataService.mutation(imsProject, users, MutateRemoveLabelMutation(issueId, labelInfo.githubId)).second
+        val response = githubDataService.mutation(
+            imsProject, users, MutateRemoveLabelMutation(issueId, labelInfo.githubId), gropiusUserList(users)
+        ).second
         val item = response.data?.removeLabelsFromLabelable?.labelable?.asIssue()?.timelineItems?.nodes?.lastOrNull()
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.asNode()!!.id)
@@ -258,7 +269,9 @@ final class GithubSync(
             imsProject,
             listOf(issue.createdBy().value, issue.lastModifiedBy().value) + issue.timelineItems()
                 .map { it.createdBy().value },
-            MutateCreateIssueMutation(repoId, issue.title, issue.bodyBody)
+            MutateCreateIssueMutation(repoId, issue.title, issue.bodyBody),
+            gropiusUserList(listOf(issue.createdBy().value, issue.lastModifiedBy().value) + issue.timelineItems()
+                .map { it.createdBy().value })
         ).second
         val item = response.data?.createIssue?.issue
         if (item != null) {
