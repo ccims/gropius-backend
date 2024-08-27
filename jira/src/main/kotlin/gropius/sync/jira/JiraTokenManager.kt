@@ -33,8 +33,6 @@ class JiraTokenManager(
     neoOperations: ReactiveNeo4jOperations, syncConfigurationProperties: SyncConfigurationProperties
 ) : TokenManager<JiraTokenResponse>(neoOperations, syncConfigurationProperties) {
     override suspend fun parseHttpBody(response: HttpResponse): JiraTokenResponse? {
-        val v = response.body<JiraTokenResponse>()
-        println("Response ${response.bodyAsText()} leading to $v had no token")
-        return v
+        return response.body<JiraTokenResponse>()
     }
 }

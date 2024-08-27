@@ -62,7 +62,6 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         issue: Issue
     ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
         val jiraService = (service as JiraDataService)
-        println("SYNC FIELD ${data.fieldId} ${data.field}")
         val fieldId = data.fieldId ?: data.field
         if (fieldId == "summary") {
             return gropiusSummary(timelineItemConversionInformation, imsProject, service, jiraService)
@@ -218,7 +217,6 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         titleChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
         titleChangedEvent.oldState().value = jiraService.issueState(imsProject, data.fromString == null)
         titleChangedEvent.newState().value = jiraService.issueState(imsProject, data.toString == null)
-        println("MAPPING STATE ${data.fromString} to ${data.toString} ==> ${titleChangedEvent.oldState().value} to ${titleChangedEvent.newState().value}")
         return listOf<TimelineItem>(
             titleChangedEvent
         ) to convInfo;

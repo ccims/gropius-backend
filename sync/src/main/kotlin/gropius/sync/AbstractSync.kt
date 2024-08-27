@@ -503,7 +503,7 @@ abstract class AbstractSync(
             rawTimelineItems = dereplicationResult.resultingTimelineItems
         }
         val timelineItems = rawTimelineItems.toMutableList()
-        //integrateLabelToState(timelineItems, rawTimelineItems, issue, imsProject)
+        integrateLabelToState(timelineItems, rawTimelineItems, issue, imsProject)
         if (timelineItems.isNotEmpty()) {//TODO: Handle multiple
             timelineItems.forEach { it.issue().value = issue }
             issue.timelineItems() += timelineItems
