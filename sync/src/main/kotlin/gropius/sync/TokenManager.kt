@@ -178,6 +178,7 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
     /**
      * Attempt a query for a list of users until it works
      *
+     * @param imsProject The IMS to work with
      * @param users The list of users, sorted with best first
      * @param executor The function to execute
      * @param owner The user that created the data
@@ -210,7 +211,7 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
     /**
      * Attempt a query for a list of users until it works
      *
-     * @param ims The IMS to work with
+     * @param imsProject The IMS to work with
      * @param user The list of users, sorted with best first
      * @param executor The function to execute
      * @param owner The user that created the data
