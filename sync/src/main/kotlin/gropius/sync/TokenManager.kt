@@ -151,7 +151,7 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
      *
      * @param imsProject The IMS to work with
      * @param user The user to check
-     * @param owner The user that created the data
+     * @param owner The user that created the data, empty if fetching/other non-owned operations
      * @return true if the user is allowed
      */
     private suspend fun isAllowed(imsProject: IMSProject, user: IMSUser, owner: List<GropiusUser>): Boolean {
@@ -181,7 +181,7 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
      * @param imsProject The IMS to work with
      * @param users The list of users, sorted with best first
      * @param executor The function to execute
-     * @param owner The user that created the data
+     * @param owner The user that created the data, empty if fetching/other non-owned operations
      *
      * @return The user it worked with and the result of the executor
      */
@@ -214,7 +214,7 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
      * @param imsProject The IMS to work with
      * @param user The list of users, sorted with best first
      * @param executor The function to execute
-     * @param owner The user that created the data
+     * @param owner The user that created the data, empty if fetching/other non-owned operations
      *
      * @return The user it worked with and the result of the executor
      */
