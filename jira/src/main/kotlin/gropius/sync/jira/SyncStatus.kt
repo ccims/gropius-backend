@@ -49,6 +49,11 @@ interface SyncStatusRepository : ReactiveMongoRepository<SyncStatus, ObjectId> {
 @Service
 class SyncStatusService(val syncStatusRepository: SyncStatusRepository) : SyncStatusRepository by syncStatusRepository {
 
+    /**
+     * Update the Time saved in the SyncStatusService
+     * @param imsProject IMS project ID of the SyncStatusService
+     * @param lastSuccessfulSync New Timestamp of the last successful sync
+     */
     @Transactional
     suspend fun updateTime(imsProject: String, lastSuccessfulSync: OffsetDateTime) {
         val status = syncStatusRepository.findByImsProject(imsProject) ?: SyncStatus(imsProject, null)
