@@ -8,6 +8,7 @@ import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
 import gropius.model.user.User
 import gropius.sync.*
+import gropius.sync.jira.config.IMSConfig
 import gropius.sync.jira.config.IMSConfigManager
 import gropius.sync.jira.config.IMSProjectConfig
 import gropius.sync.jira.model.*
@@ -163,8 +164,11 @@ final class JiraSync(
         issueList: List<String>, imsProject: IMSProject
     ) {
         logger.info("ISSUE LIST $issueList")
-        fetchIssueContentChangelog(issueList, imsProject)
+        val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
         fetchIssueContentComments(issueList, imsProject)
+        if (imsConfig.isCloud != false) {
+            fetchIssueContentChangelog(issueList, imsProject)
+        }
     }
 
     @OptIn(ExperimentalEncodingApi::class)
@@ -183,7 +187,7 @@ final class JiraSync(
                 val userTimeZone = ZoneId.of(
                     jiraDataService.sendRequest<Unit>(
                         imsProject, HttpMethod.Get, null, {
-                            appendPathSegments("user")
+                            appendPathSegments("myself")
                         }, it
                     ).get().body<UserQuery>().timeZone
                 )
@@ -193,6 +197,7 @@ final class JiraSync(
                         lastSuccessfulSync.atZoneSameInstant(userTimeZone).format(jqlFormatter)
                     }"
                 }
+                logger.info("With $lastSuccessfulSync, ${imsProjectConfig.repo} and $userTimeZone, the query is '$query'")
                 jiraDataService.sendRequest<Unit>(
                     imsProject, HttpMethod.Get, null, {
                         appendPathSegments("search")
@@ -221,6 +226,14 @@ final class JiraSync(
                     times.add(
                         OffsetDateTime.parse(
                             history.created, IssueData.formatter
+                        )
+                    )
+                }
+                val updated = it.fields["updated"]
+                if (updated != null) {
+                    times.add(
+                        OffsetDateTime.parse(
+                            updated.jsonPrimitive.content, IssueData.formatter
                         )
                     )
                 }
