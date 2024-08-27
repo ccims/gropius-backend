@@ -184,7 +184,7 @@ final class JiraSync(
         logger.info("ISSUE LIST $issueList")
         val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
         fetchIssueContentComments(issueList, imsProject)
-        if (imsConfig.isCloud != false) {
+        if (imsConfig.isCloud) {
             fetchIssueContentChangelog(issueList, imsProject)
         }
     }

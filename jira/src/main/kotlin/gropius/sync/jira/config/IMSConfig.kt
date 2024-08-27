@@ -24,7 +24,7 @@ data class IMSConfig(
     val imsTemplate: IMSTemplate,
     val defaultType: String?,
     val defaultTemplate: String?,
-    val isCloud: Boolean?
+    val isCloud: Boolean
 ) {
     /**
      * @param ims the Gropius ims to use as input
@@ -40,7 +40,7 @@ data class IMSConfig(
         imsTemplate = imsTemplate,
         defaultType = helper.parseString(ims.templatedFields["default-type"]),
         defaultTemplate = helper.parseString(ims.templatedFields["default-template"]),
-        isCloud = helper.parseString(ims.templatedFields["jira-edition"])?.let { it == "CLOUD" },
+        isCloud = helper.parseString(ims.templatedFields["jira-edition"])?.let { it == "CLOUD" } ?: true,
     )
 
     companion object {
