@@ -10,7 +10,7 @@ import gropius.model.user.permission.TrackablePermission
 import io.github.graphglue.model.*
 import java.net.URI
 
-@DomainNode(searchQueryName = "searchTrackables")
+@DomainNode("trackables", searchQueryName = "searchTrackables")
 @GraphQLDescription(
     """An entity which can have Issues, Labels and Artefacts.
     Has pinned issues.
