@@ -2,6 +2,7 @@ package gropius.model.architecture
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
+import gropius.model.architecture.layout.RelationLayout
 import gropius.model.common.BaseNode
 import gropius.model.template.BaseTemplate
 import gropius.model.template.MutableTemplatedNode
@@ -32,6 +33,7 @@ class Relation(
     companion object {
         const val START_PART = "START_PART"
         const val END_PART = "END_PART"
+        const val LAYOUT = "LAYOUT"
     }
 
     @NodeRelationship(BaseTemplate.USED_IN, Direction.INCOMING)
@@ -73,4 +75,8 @@ class Relation(
     @GraphQLDescription("InterfaceDefinition this Relation derives invisible")
     @FilterProperty
     val derivesInvisible by NodeSetProperty<InterfaceDefinition>()
+
+    @NodeRelationship(LAYOUT, Direction.OUTGOING)
+    @GraphQLIgnore
+    val layouts by NodeSetProperty<RelationLayout>()
 }

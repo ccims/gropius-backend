@@ -2,6 +2,7 @@ package gropius.model.architecture
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
+import gropius.model.architecture.layout.RelationPartnerLayout
 import gropius.model.issue.AggregatedIssue
 import gropius.model.template.RelationPartnerTemplate
 import gropius.model.template.TemplatedNode
@@ -21,6 +22,7 @@ abstract class RelationPartner(name: String, description: String) : AffectedByIs
         const val INCOMING_RELATION = "INCOMING_RELATION"
         const val OUTGOING_RELATION = "OUTGOING_RELATION"
         const val AGGREGATED_ISSUE = "AGGREGATED_ISSUE"
+        const val LAYOUT = "LAYOUT"
     }
 
     @NodeRelationship(INCOMING_RELATION, Direction.OUTGOING)
@@ -37,6 +39,10 @@ abstract class RelationPartner(name: String, description: String) : AffectedByIs
     @GraphQLDescription("AggregatedIssues on this RelationPartner.")
     @FilterProperty
     val aggregatedIssues by NodeSetProperty<AggregatedIssue>()
+
+    @NodeRelationship(LAYOUT, Direction.OUTGOING)
+    @GraphQLIgnore
+    val layouts by NodeSetProperty<RelationPartnerLayout>()
 
     /**
      * Helper function to get the associated [RelationPartnerTemplate]
