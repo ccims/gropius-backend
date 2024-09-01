@@ -6,6 +6,10 @@ spring:
     mongodb:
       "authentication-database": admin
       "auto-index-creation": true
+management:
+  endpoints:
+    web:
+      base-path: /
 logging:
   level:
     org.springframework.data.neo4j: ERROR

@@ -3,6 +3,10 @@ graphql:
     - "gropius"
 graphglue:
   includeSkipField: true
+management:
+  endpoints:
+    web:
+      base-path: /
 logging:
   level:
     org:
