@@ -59,6 +59,9 @@ class ComponentGraphUpdater(updateContext: NodeBatchUpdater = NodeBatchUpdateCon
         cache.add(componentVersion)
         lockIncomingAndOutgoingRelationPartners(componentVersion)
         deletedNodes += componentVersion
+        componentVersion.intraComponentDependencySpecifications(cache).forEach { deleteIntraComponentDependencySpecification(it) }
+        componentVersion.interfaceDefinitions(cache).toSet().forEach { deleteInterfaceDefinition(it) }
+        deletedNodes += componentVersion.layouts(cache)
         val relations = componentVersion.outgoingRelations(cache) + componentVersion.incomingRelations(cache)
         relations.forEach {
             deleteRelation(it)
@@ -614,6 +617,7 @@ class ComponentGraphUpdater(updateContext: NodeBatchUpdater = NodeBatchUpdateCon
         deletedNodes += node
         deletedNodes += node.incomingRelations(cache)
         deletedNodes += node.outgoingRelations(cache)
+        deletedNodes += node.layouts(cache)
         val intraComponentDependencyParticipants = node.intraComponentDependencyParticipants(cache)
         deletedNodes += intraComponentDependencyParticipants
         for (participant in intraComponentDependencyParticipants) {

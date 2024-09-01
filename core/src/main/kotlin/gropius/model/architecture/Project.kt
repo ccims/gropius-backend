@@ -2,7 +2,7 @@ package gropius.model.architecture
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import gropius.authorization.RELATED_TO_NODE_PERMISSION_RULE
-import gropius.model.architecture.layout.Layoutable
+import gropius.model.architecture.layout.Layout
 import gropius.model.architecture.layout.RelationLayout
 import gropius.model.architecture.layout.RelationPartnerLayout
 import gropius.model.architecture.layout.View
@@ -25,9 +25,13 @@ import java.net.URI
     ProjectPermission.MANAGE_COMPONENTS,
     allow = [Rule(RELATED_TO_NODE_PERMISSION_RULE, options = [NodePermission.ADMIN])]
 )
+@Authorization(
+    ProjectPermission.MANAGE_VIEWS,
+    allow = [Rule(RELATED_TO_NODE_PERMISSION_RULE, options = [NodePermission.ADMIN])]
+)
 class Project(
     name: String, description: String, repositoryURL: URI?
-) : Trackable(name, description, repositoryURL), NodeWithPermissions<ProjectPermission>, Layoutable {
+) : Trackable(name, description, repositoryURL), NodeWithPermissions<ProjectPermission>, Layout {
 
     companion object {
         const val COMPONENT = "COMPONENT"

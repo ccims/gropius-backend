@@ -13,7 +13,7 @@ import io.github.graphglue.model.NodeRelationship
 @GraphQLDescription("A view on the architecture graph of a project")
 class View(
     name: String, description: String
-) : NamedNode(name, description), Layoutable {
+) : NamedNode(name, description), Layout {
 
     companion object {
         const val RELATION_PARTNER = "RELATION_PARTNER"

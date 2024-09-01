@@ -20,14 +20,26 @@ interface UpdateLayoutInput {
 
     /**
      * Validates the [relationPartnerLayouts] and [relationLayouts]
+     * Ensures that there is only one layout per RelationPartner and Relation
      */
     fun validateLayout() {
-        relationPartnerLayouts.ifPresent {
-            it.forEach(UpdateRelationPartnerLayoutInput::validate)
+        relationPartnerLayouts.ifPresent { layouts ->
+            layouts.forEach(UpdateRelationPartnerLayoutInput::validate)
+            layouts.groupBy { it.relationPartner }.forEach { (id, group) ->
+                if (group.size > 1) {
+                    throw IllegalArgumentException("Multiple layouts for the same RelationPartner: $id")
+                }
+            }
         }
-        relationLayouts.ifPresent {
-            it.forEach(UpdateRelationLayoutInput::validate)
+        relationLayouts.ifPresent { layouts ->
+            layouts.forEach(UpdateRelationLayoutInput::validate)
+            layouts.groupBy { it.relation }.forEach { (id, group) ->
+                if (group.size > 1) {
+                    throw IllegalArgumentException("Multiple layouts for the same Relation: $id")
+                }
+            }
         }
+
     }
 
 }

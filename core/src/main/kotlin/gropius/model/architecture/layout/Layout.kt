@@ -9,7 +9,7 @@ import io.github.graphglue.model.property.NodeSetPropertyDelegate
  * Interface for common layout information of [Project]s and [View]s
  */
 @GraphQLIgnore
-interface Layoutable {
+interface Layout {
 
     /**
      * Layouts for relation partners

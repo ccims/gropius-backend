@@ -29,6 +29,6 @@ class RelationLayout(
     val points get() = xCoordinates.zip(yCoordinates).map { Point(it.first, it.second) }
 
     @GraphQLDescription("The layout of the segments of the Relation, always contains one more element than points.")
-    val segments get() = segmentLayouts.map { if (it) SegmentLayout.HORIZONTAL_VERTICAL else SegmentLayout.VERTICAL_HORIZONTAL }
+    val segments get() = segmentLayouts.map { SegmentLayout.from(it) }
 
 }
