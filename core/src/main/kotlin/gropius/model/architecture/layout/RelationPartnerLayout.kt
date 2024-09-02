@@ -23,7 +23,7 @@ class RelationPartnerLayout(
     @FilterProperty
     val relationPartner by NodeProperty<RelationPartner>()
 
-    @GraphQLDescription("The position of the RelationPartner in the layout, for an Interface, this is relative to the owning ComponentVersion.")
+    @GraphQLDescription("The position of the RelationPartner in the layout.")
     val pos get() = Point(x, y)
 
 }
