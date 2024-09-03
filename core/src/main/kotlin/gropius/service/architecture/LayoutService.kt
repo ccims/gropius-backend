@@ -85,15 +85,13 @@ class LayoutService(
                 val existingLayout = relationLayouts[it.relation.value]
                 val xCoordinates = it.layout.points.map { point -> point.x }.toIntArray()
                 val yCoordinates = it.layout.points.map { point -> point.y }.toIntArray()
-                val segmentLayouts = it.layout.segments.map { segment -> segment.value }.toBooleanArray()
                 if (existingLayout == null) {
-                    val newLayout = RelationLayout(xCoordinates, yCoordinates, segmentLayouts)
+                    val newLayout = RelationLayout(xCoordinates, yCoordinates)
                     newLayout.relation(cache).value = relationRepository.findById(it.relation)
                     batchUpdater.internalUpdatedNodes += newLayout
                 } else {
                     existingLayout.xCoordinates = xCoordinates
                     existingLayout.yCoordinates = yCoordinates
-                    existingLayout.segmentLayouts = segmentLayouts
                     batchUpdater.internalUpdatedNodes += existingLayout
                 }
             } else {
