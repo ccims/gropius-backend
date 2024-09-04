@@ -100,8 +100,8 @@ final class JiraSync(
         for (imsProject in imsProjects) {
             jiraDataService.issueTemplate(imsProject)
             jiraDataService.issueType(imsProject)
-            jiraDataService.issueState(imsProject, true)
-            jiraDataService.issueState(imsProject, false)
+            jiraDataService.issueState(imsProject, null, true)
+            jiraDataService.issueState(imsProject, null, false)
         }
 
         for (imsProject in imsProjects) {

@@ -3,6 +3,7 @@ package gropius.sync.jira
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import gropius.model.architecture.IMSProject
+import gropius.model.issue.Issue
 import gropius.model.issue.Label
 import gropius.model.template.*
 import gropius.model.user.GropiusUser
@@ -138,11 +139,21 @@ class JiraDataService(
      * @param isOpen whether the issue state is open or closed
      * @return the default issue state
      */
-    suspend fun issueState(imsProject: IMSProject, isOpen: Boolean): IssueState {
+    suspend fun issueState(imsProject: IMSProject, issue: Issue?, isOpen: Boolean): IssueState {
         val newIssueState = IssueState(if (isOpen) "open" else "closed", "", isOpen)
         newIssueState.partOf() += issueTemplate(imsProject)
-        return neoOperations.findAll(IssueState::class.java).filter { it.isOpen == isOpen }.awaitFirstOrNull()
-            ?: neoOperations.save(newIssueState).awaitSingle()
+        return (issue?.template?.invoke()?.value ?: issueTemplate(imsProject)).issueStates()
+            .firstOrNull { it.isOpen == isOpen } ?: neoOperations.save(newIssueState).awaitSingle()
+    }
+
+    /**
+     * Get the named issue state
+     * @param isOpen whether the issue state is open or closed
+     * @return the default issue state
+     */
+    suspend fun issueState(imsProject: IMSProject, issue: Issue?, name: String): IssueState? {
+        return (issue?.template?.invoke()?.value ?: issueTemplate(imsProject)).issueStates()
+            .firstOrNull { it.name == name }
     }
 
     /**
