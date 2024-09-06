@@ -127,6 +127,7 @@ class ArchitectureMutations(
     }
 
     @GraphQLDescription("Creates a new View, requires MANAGE_VIEWS on the project owning the view.")
+    @AutoPayloadType("The created View")
     suspend fun createView(
         @GraphQLDescription("Defines the created View")
         input: CreateViewInput, dfe: DataFetchingEnvironment
@@ -135,6 +136,7 @@ class ArchitectureMutations(
     }
 
     @GraphQLDescription("Updates the specified View, requires MANAGE_VIEWS on the project owning the view.")
+    @AutoPayloadType("The updated View")
     suspend fun updateView(
         @GraphQLDescription("Defines which View to update and how to update it")
         input: UpdateViewInput, dfe: DataFetchingEnvironment

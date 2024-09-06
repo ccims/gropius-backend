@@ -9,7 +9,7 @@ import io.github.graphglue.model.DomainNode
 import io.github.graphglue.model.FilterProperty
 import io.github.graphglue.model.NodeRelationship
 
-@DomainNode
+@DomainNode(searchQueryName = "searchViews")
 @GraphQLDescription("A view on the architecture graph of a project")
 class View(
     name: String, description: String

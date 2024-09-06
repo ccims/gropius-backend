@@ -4,13 +4,17 @@ import gropius.authorization.GropiusAuthorizationContext
 import gropius.dto.input.architecture.layout.CreateViewInput
 import gropius.dto.input.architecture.layout.UpdateViewInput
 import gropius.dto.input.common.DeleteNodeInput
+import gropius.dto.input.ifPresent
 import gropius.model.architecture.Project
 import gropius.model.architecture.layout.View
+import gropius.model.template.ComponentTemplate
 import gropius.model.user.permission.ProjectPermission
 import gropius.repository.architecture.ProjectRepository
 import gropius.repository.architecture.ViewRepository
 import gropius.repository.common.NodeRepository
+import gropius.repository.findAllById
 import gropius.repository.findById
+import gropius.repository.template.ComponentTemplateRepository
 import gropius.service.NodeBatchUpdateContext
 import gropius.service.common.NamedNodeService
 import io.github.graphglue.authorization.Permission
@@ -24,13 +28,15 @@ import org.springframework.stereotype.Service
  * @param projectRepository used to get [Project]s by id
  * @param layoutService used to update the layout of a [View]
  * @param nodeRepository used to save the [View]
+ * @param componentTemplateRepository used to get [ComponentTemplate]s by id
  */
 @Service
 class ViewService(
     repository: ViewRepository,
     private val projectRepository: ProjectRepository,
     private val layoutService: LayoutService,
-    private val nodeRepository: NodeRepository
+    private val nodeRepository: NodeRepository,
+    private val componentTemplateRepository: ComponentTemplateRepository
 ) : NamedNodeService<View, ViewRepository>(repository) {
 
     /**
@@ -48,6 +54,8 @@ class ViewService(
         val project = projectRepository.findById(input.project)
         checkManageViewsPermission(project, authorizationContext)
         val view = View(input.name, input.description)
+        view.project().value = project
+        view.filterByTemplate() += componentTemplateRepository.findAllById(input.filterByTemplate)
         val batchUpdater = NodeBatchUpdateContext()
         layoutService.updateLayout(view, input, batchUpdater)
         return batchUpdater.save(view, nodeRepository)
@@ -68,6 +76,10 @@ class ViewService(
         val view = repository.findById(input.id)
         checkManageViewsPermission(view.project().value, authorizationContext)
         updateNamedNode(view, input)
+        input.filterByTemplate.ifPresent {
+            view.filterByTemplate().clear()
+            view.filterByTemplate() += componentTemplateRepository.findAllById(it)
+        }
         val batchUpdater = NodeBatchUpdateContext()
         layoutService.updateLayout(view, input, batchUpdater)
         return batchUpdater.save(view, nodeRepository)
