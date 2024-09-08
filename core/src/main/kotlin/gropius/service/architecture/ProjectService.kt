@@ -6,6 +6,7 @@ import gropius.dto.input.architecture.CreateProjectInput
 import gropius.dto.input.architecture.RemoveComponentVersionFromProjectInput
 import gropius.dto.input.architecture.UpdateProjectInput
 import gropius.dto.input.common.DeleteNodeInput
+import gropius.dto.input.ifPresent
 import gropius.model.architecture.ComponentVersion
 import gropius.model.architecture.Project
 import gropius.model.user.permission.ComponentPermission
@@ -14,7 +15,9 @@ import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.ProjectPermission
 import gropius.repository.architecture.ComponentVersionRepository
 import gropius.repository.architecture.ProjectRepository
+import gropius.repository.architecture.ViewRepository
 import gropius.repository.findById
+import gropius.service.NodeBatchUpdateContext
 import gropius.service.user.permission.ProjectPermissionService
 import io.github.graphglue.authorization.Permission
 import kotlinx.coroutines.reactor.awaitSingle
@@ -27,12 +30,16 @@ import org.springframework.stereotype.Service
  * @param repository the associated repository used for CRUD functionality
  * @param projectPermissionService used to create the initial permission for a created [Project]
  * @param componentVersionRepository used to get [ComponentVersion]s by id
+ * @param layoutService used to update the layout of a [Project]
+ * @param viewRepository used to save the [Project]
  */
 @Service
 class ProjectService(
     repository: ProjectRepository,
     private val projectPermissionService: ProjectPermissionService,
-    private val componentVersionRepository: ComponentVersionRepository
+    private val componentVersionRepository: ComponentVersionRepository,
+    private val layoutService: LayoutService,
+    private val viewRepository: ViewRepository
 ) : TrackableService<Project, ProjectRepository>(repository) {
 
     /**
@@ -72,11 +79,16 @@ class ProjectService(
         checkPermission(
             project, Permission(NodePermission.ADMIN, authorizationContext), "update the Project"
         )
+        input.defaultView.ifPresent {
+            project.defaultView().value = if (it == null) null else viewRepository.findById(it)
+        }
         projectPermissionService.updatePermissionsOfNode(
             project, input.addedPermissions, input.removedPermissions, authorizationContext
         )
         updateTrackable(project, input)
-        return repository.save(project).awaitSingle()
+        val batchUpdater = NodeBatchUpdateContext()
+        layoutService.updateLayout(project, input, batchUpdater)
+        return batchUpdater.save(project, nodeRepository)
     }
 
     /**
@@ -95,6 +107,7 @@ class ProjectService(
             project, Permission(NodePermission.ADMIN, authorizationContext), "delete the Project"
         )
         beforeDeleteTrackable(project)
+        nodeRepository.deleteAll(project.relationLayouts() + project.relationLayouts()).awaitSingle()
         repository.delete(project).awaitSingleOrNull()
     }
 

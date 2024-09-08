@@ -6,11 +6,14 @@ import com.expediagroup.graphql.server.operations.Mutation
 import graphql.schema.DataFetchingEnvironment
 import gropius.authorization.gropiusAuthorizationContext
 import gropius.dto.input.architecture.*
+import gropius.dto.input.architecture.layout.CreateViewInput
+import gropius.dto.input.architecture.layout.UpdateViewInput
 import gropius.dto.input.common.DeleteNodeInput
 import gropius.dto.payload.AddComponentVersionToProjectPayload
 import gropius.dto.payload.DeleteNodePayload
 import gropius.graphql.AutoPayloadType
 import gropius.model.architecture.*
+import gropius.model.architecture.layout.View
 import gropius.service.architecture.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Propagation
@@ -29,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional
  * @param imsProjectService used for IMSProject-related mutations
  * @param intraComponentDependencySpecificationService used for IntraComponentDependencySpecificationService-related mutations
  * @param syncPermissionTargetService used for SyncPermissionTarget-related mutations
+ * @param viewService used for View-related mutations
  */
 @org.springframework.stereotype.Component
 @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -43,7 +47,8 @@ class ArchitectureMutations(
     private val imsService: IMSService,
     private val imsProjectService: IMSProjectService,
     private val intraComponentDependencySpecificationService: IntraComponentDependencySpecificationService,
-    private val syncPermissionTargetService: SyncPermissionTargetService
+    private val syncPermissionTargetService: SyncPermissionTargetService,
+    private val viewService: ViewService
 ) : Mutation {
 
     @GraphQLDescription(
@@ -118,6 +123,33 @@ class ArchitectureMutations(
         input: DeleteNodeInput, dfe: DataFetchingEnvironment
     ): DeleteNodePayload {
         projectService.deleteProject(dfe.gropiusAuthorizationContext, input)
+        return DeleteNodePayload(input.id)
+    }
+
+    @GraphQLDescription("Creates a new View, requires MANAGE_VIEWS on the project owning the view.")
+    @AutoPayloadType("The created View")
+    suspend fun createView(
+        @GraphQLDescription("Defines the created View")
+        input: CreateViewInput, dfe: DataFetchingEnvironment
+    ): View {
+        return viewService.createView(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates the specified View, requires MANAGE_VIEWS on the project owning the view.")
+    @AutoPayloadType("The updated View")
+    suspend fun updateView(
+        @GraphQLDescription("Defines which View to update and how to update it")
+        input: UpdateViewInput, dfe: DataFetchingEnvironment
+    ): View {
+        return viewService.updateView(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Deletes the specified View, requires MANAGE_VIEWS on the project owning the view.")
+    suspend fun deleteView(
+        @GraphQLDescription("Defines which View to delete")
+        input: DeleteNodeInput, dfe: DataFetchingEnvironment
+    ): DeleteNodePayload {
+        viewService.deleteView(dfe.gropiusAuthorizationContext, input)
         return DeleteNodePayload(input.id)
     }
 
