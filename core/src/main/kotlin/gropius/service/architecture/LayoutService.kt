@@ -55,6 +55,7 @@ class LayoutService(
                     val newLayout = RelationPartnerLayout(it.layout.pos.x, it.layout.pos.y)
                     newLayout.relationPartner(cache).value = relationPartnerRepository.findById(it.relationPartner)
                     batchUpdater.internalUpdatedNodes += newLayout
+                    layout.relationPartnerLayouts() += newLayout
                 } else {
                     existingLayout.x = it.layout.pos.x
                     existingLayout.y = it.layout.pos.y
@@ -89,6 +90,7 @@ class LayoutService(
                     val newLayout = RelationLayout(xCoordinates, yCoordinates)
                     newLayout.relation(cache).value = relationRepository.findById(it.relation)
                     batchUpdater.internalUpdatedNodes += newLayout
+                    layout.relationLayouts() += newLayout
                 } else {
                     existingLayout.xCoordinates = xCoordinates
                     existingLayout.yCoordinates = yCoordinates
