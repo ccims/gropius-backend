@@ -80,6 +80,7 @@ class ComponentGraphUpdater(updateContext: NodeBatchUpdater = NodeBatchUpdateCon
             lockIncomingAndOutgoingRelationPartners(relation.start(cache).value)
             lockIncomingAndOutgoingRelationPartners(relation.end(cache).value)
             deletedNodes += relation
+            deletedNodes += relation.layouts(cache)
             val startNode = relation.start(cache).value
             startNode.outgoingRelations(cache) -= relation
             relation.end(cache).value.incomingRelations(cache) -= relation
