@@ -4,13 +4,15 @@ import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import gropius.model.architecture.Project
 import gropius.model.common.NamedNode
 import gropius.model.template.ComponentTemplate
-import io.github.graphglue.model.Direction
-import io.github.graphglue.model.DomainNode
-import io.github.graphglue.model.FilterProperty
-import io.github.graphglue.model.NodeRelationship
+import gropius.model.user.permission.NodePermission
+import io.github.graphglue.model.*
 
 @DomainNode(searchQueryName = "searchViews")
 @GraphQLDescription("A view on the architecture graph of a project")
+@Authorization(
+    NodePermission.READ,
+    allowFromRelated = ["project"]
+)
 class View(
     name: String, description: String
 ) : NamedNode(name, description), Layout {
