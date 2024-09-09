@@ -26,12 +26,12 @@ class RelationPartnerLayout(
     @FilterProperty
     val relationPartner by NodeProperty<RelationPartner>()
 
-    @NodeRelationship(Project.RELATION_PARTNER, Direction.OUTGOING)
+    @NodeRelationship(Project.RELATION_PARTNER, Direction.INCOMING)
     @GraphQLDescription("The project this layout is for, mutually exclusive with view.")
     @FilterProperty
     val project by NodeProperty<Project?>()
 
-    @NodeRelationship(View.RELATION_PARTNER, Direction.OUTGOING)
+    @NodeRelationship(View.RELATION_PARTNER, Direction.INCOMING)
     @GraphQLDescription("The view this layout is for, mutually exclusive with project.")
     @FilterProperty
     val view by NodeProperty<View?>()
