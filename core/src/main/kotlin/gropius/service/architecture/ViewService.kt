@@ -19,6 +19,7 @@ import gropius.service.NodeBatchUpdateContext
 import gropius.service.common.NamedNodeService
 import io.github.graphglue.authorization.Permission
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
 
 /**
@@ -99,7 +100,7 @@ class ViewService(
         val view = repository.findById(input.id)
         checkManageViewsPermission(view.project().value, authorizationContext)
         nodeRepository.deleteAll(view.relationLayouts() + view.relationLayouts()).awaitSingle()
-        repository.delete(view).awaitSingle()
+        repository.delete(view).awaitSingleOrNull()
     }
 
     /**
