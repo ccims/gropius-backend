@@ -46,9 +46,13 @@ class LayoutService(
         layout: Layout, input: UpdateLayoutInput, batchUpdater: NodeBatchUpdater,
     ) {
         val cache = batchUpdater.cache
+        val newLayouts = input.relationPartnerLayouts.orElse(emptyList())
+        if (newLayouts.isEmpty()) {
+            return
+        }
         val relationPartnerLayouts =
             layout.relationPartnerLayouts(cache).associateBy { it.relationPartner(cache).value.rawId!! }
-        input.relationPartnerLayouts.orElse(emptyList()).forEach {
+        newLayouts.forEach {
             if (it.layout != null) {
                 val existingLayout = relationPartnerLayouts[it.relationPartner.value]
                 if (existingLayout == null) {
@@ -80,8 +84,12 @@ class LayoutService(
         layout: Layout, input: UpdateLayoutInput, batchUpdater: NodeBatchUpdater,
     ) {
         val cache = batchUpdater.cache
+        val newLayouts = input.relationLayouts.orElse(emptyList())
+        if (newLayouts.isEmpty()) {
+            return
+        }
         val relationLayouts = layout.relationLayouts(cache).associateBy { it.relation(cache).value.rawId!! }
-        input.relationLayouts.orElse(emptyList()).forEach {
+        newLayouts.forEach {
             if (it.layout != null) {
                 val existingLayout = relationLayouts[it.relation.value]
                 val xCoordinates = it.layout.points.map { point -> point.x }.toIntArray()
