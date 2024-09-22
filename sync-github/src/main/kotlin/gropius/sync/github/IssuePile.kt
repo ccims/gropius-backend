@@ -2,7 +2,6 @@ package gropius.sync.github
 
 import com.fasterxml.jackson.databind.JsonNode
 import gropius.model.architecture.IMSProject
-import gropius.model.architecture.Project
 import gropius.model.issue.Issue
 import gropius.model.issue.timeline.*
 import gropius.sync.*
@@ -13,7 +12,6 @@ import gropius.sync.github.generated.fragment.AssignedEventTimelineItemData.Assi
 import gropius.sync.github.generated.fragment.TimelineItemData.Companion.asNode
 import gropius.sync.github.generated.fragment.UnassignedEventTimelineItemData.Assignee.Companion.userData
 import jakarta.transaction.Transactional
-import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.awaitSingle
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
@@ -536,18 +534,19 @@ class UnassignedTimelineItem(
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
         val githubService = service as GithubDataService
-        // TODO
         if ((createdBy != null)) {
             val gropiusId = convInfo.gropiusId
             val event = if (gropiusId != null) githubService.neoOperations.findById<RemovedAssignmentEvent>(
                 gropiusId
             ) else RemovedAssignmentEvent(createdAt, createdAt)
-            if (event == null) {
+            val opposite = issue.timelineItems().filterIsInstance<Assignment>().sortedBy { it.createdAt }
+                .lastOrNull { it.user().value.username == user }
+            if ((event == null) || (opposite == null)) {
                 return listOf<TimelineItem>() to convInfo;
             }
             event.createdBy().value = githubService.mapUser(imsProject, createdBy)
             event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
-            event.removedAssignment().value = TODO()
+            event.removedAssignment().value = opposite
             return listOf<TimelineItem>(event) to convInfo;
         }
         return listOf<TimelineItem>() to convInfo;

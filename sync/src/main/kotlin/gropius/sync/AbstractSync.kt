@@ -423,16 +423,20 @@ abstract class AbstractSync(
         mappedStates: List<IssueState>
     ) {
         val labelStateMap = this.labelStateMap(imsProject)
-        timelineItems.remove(timelineItem)
-        val newStateChange = StateChangedEvent(
-            timelineItem.createdAt, timelineItem.lastModifiedAt
-        )
-        newStateChange.oldState().value = lastState
-        newStateChange.newState().value = mappedStates.firstOrNull() ?: lastState//TODO("Restore State out of nothing")
-        newStateChange.createdBy().value = timelineItem.createdBy().value
-        newStateChange.lastModifiedBy().value = timelineItem.lastModifiedBy().value
-        timelineItems.add(newStateChange)
-        issue.timelineItems().add(newStateChange)
+        val mappedState = lookupState(labelStateMap[timelineItem.removedLabel().value?.name])
+        if ((mappedState != null) && !mappedStates.contains(mappedState)) {
+            timelineItems.remove(timelineItem)
+            val newStateChange = StateChangedEvent(
+                timelineItem.createdAt, timelineItem.lastModifiedAt
+            )
+            newStateChange.oldState().value = lastState
+            newStateChange.newState().value =
+                mappedStates.firstOrNull() ?: lastState//TODO("Restore State out of nothing")
+            newStateChange.createdBy().value = timelineItem.createdBy().value
+            newStateChange.lastModifiedBy().value = timelineItem.lastModifiedBy().value
+            timelineItems.add(newStateChange)
+            issue.timelineItems().add(newStateChange)
+        }
     }
 
     /**
