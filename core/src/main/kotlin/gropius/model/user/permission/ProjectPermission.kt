@@ -25,6 +25,11 @@ class ProjectPermission(
         const val MANAGE_COMPONENTS = "MANAGE_COMPONENTS"
 
         /**
+         * Permission to manage the views of a [Project]
+         */
+        const val MANAGE_VIEWS = "MANAGE_VIEWS"
+
+        /**
          * Used to track [RelationPartner]s which are part of the graph of a [Project]
          */
         const val PART_OF_PROJECT = "PART_OF_PROJECT"

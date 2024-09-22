@@ -180,7 +180,12 @@ class PermissionConfiguration {
                 ProjectPermission.MANAGE_COMPONENTS, """
                     Allows to add / remove ComponentVersions to / from this Project.
                 """.trimIndent()
-            )
+            ),
+            PermissionEntry(
+                ProjectPermission.MANAGE_VIEWS, """
+                    Allows to manage the views of this Project.
+                """.trimIndent()
+            ),
         )
     )
 
