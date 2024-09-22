@@ -136,6 +136,8 @@ class JiraDataService(
 
     /**
      * Get the default issue state
+     * @param imsProject the ims project to work on
+     * @param issue the issue to work on (sometimes not yet saved or complete)
      * @param isOpen whether the issue state is open or closed
      * @return the default issue state
      */
@@ -148,6 +150,8 @@ class JiraDataService(
 
     /**
      * Get the named issue state
+     * @param imsProject the ims project to work on
+     * @param issue the issue to work on (sometimes not yet saved or complete)
      * @param isOpen whether the issue state is open or closed
      * @return the default issue state
      */

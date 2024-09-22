@@ -126,9 +126,7 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
             )
         templateEvent.createdBy().value = jiraService.mapUser(imsProject, author)
         templateEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
-        return listOf<TimelineItem>(
-            templateEvent
-        ) to convInfo;
+        return listOf<TimelineItem>(templateEvent) to convInfo;
     }
 
     /**
@@ -183,9 +181,7 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
             removedLabelEvent.createdBy().value = jiraService.mapUser(imsProject, author)
             removedLabelEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
             removedLabelEvent.removedLabel().value = jiraService.mapLabel(imsProject, removedLabel)
-            return listOf<TimelineItem>(
-                removedLabelEvent
-            ) to convInfo;
+            return listOf<TimelineItem>(removedLabelEvent) to convInfo;
         }
         return listOf<TimelineItem>() to convInfo;
     }
@@ -196,6 +192,7 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
      * @param imsProject the ims project
      * @param service the service
      * @param jiraService the jira service
+     * @param issue the issue to work on (sometimes not yet saved or complete)
      * @return the pair of timeline items and conversion information
      */
     private suspend fun gropiusState(
@@ -222,9 +219,7 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         titleChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
         titleChangedEvent.oldState().value = jiraService.issueState(imsProject, issue, data.fromString == null)
         titleChangedEvent.newState().value = jiraService.issueState(imsProject, issue, data.toString == null)
-        return listOf<TimelineItem>(
-            titleChangedEvent
-        ) to convInfo;
+        return listOf<TimelineItem>(titleChangedEvent) to convInfo;
     }
 
     /**
@@ -233,6 +228,7 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
      * @param imsProject the ims project
      * @param service the service
      * @param jiraService the jira service
+     * @param issue the issue to work on (sometimes not yet saved or complete)
      * @return the pair of timeline items and conversion information
      */
     private suspend fun gropiusNamedState(
@@ -262,9 +258,7 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         stateChangedEvent.oldState().value =
             jiraService.issueState(imsProject, issue, data.fromString!!) ?: issue.state().value
         stateChangedEvent.newState().value = newState
-        return listOf<TimelineItem>(
-            stateChangedEvent
-        ) to convInfo;
+        return listOf<TimelineItem>(stateChangedEvent) to convInfo;
     }
 
     /**
@@ -296,9 +290,7 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
             )
         titleChangedEvent.createdBy().value = jiraService.mapUser(imsProject, author)
         titleChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
-        return listOf<TimelineItem>(
-            titleChangedEvent
-        ) to convInfo;
+        return listOf<TimelineItem>(titleChangedEvent) to convInfo;
     }
 }
 
