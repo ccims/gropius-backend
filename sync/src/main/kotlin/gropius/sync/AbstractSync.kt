@@ -3,6 +3,7 @@ package gropius.sync
 import gropius.model.architecture.IMS
 import gropius.model.architecture.IMSIssue
 import gropius.model.architecture.IMSProject
+import gropius.model.architecture.Trackable
 import gropius.model.issue.Issue
 import gropius.model.issue.Label
 import gropius.model.issue.timeline.*
@@ -312,7 +313,10 @@ abstract class AbstractSync(
         if (issue.rawId == null) issue = savedIssue as Issue
         val updater = IssueAggregationUpdater()
         if (isNewIssue) {
-            updater.addedIssueToTrackable(issue, imsProject.trackable().value)
+            updater.addedIssueToTrackable(
+                issue,
+                collectedSyncInfo.neoOperations.findById<Trackable>(imsProject.trackable().value.rawId!!)!!
+            )
         }
         updater.changedIssueStateOrType(
             issue,
