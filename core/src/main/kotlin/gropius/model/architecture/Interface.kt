@@ -14,7 +14,7 @@ import io.github.graphglue.model.*
 import io.github.graphglue.model.property.NodeCache
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 
-@DomainNode
+@DomainNode(searchQueryName = "searchInterfaces")
 @GraphQLDescription(
     """An interface which is part of a specific ComponentVersion.
     Its semantics depend on the InterfaceSpecification it is specified by, e.g. an Interface can represent a REST API.

@@ -8,7 +8,7 @@ import io.github.graphglue.model.DomainNode
 import io.github.graphglue.model.FilterProperty
 import io.github.graphglue.model.NodeRelationship
 
-@DomainNode("interfaceSpecificationTemplates")
+@DomainNode("interfaceSpecificationTemplates", searchQueryName = "searchInterfaceSpecificationTemplates")
 @GraphQLDescription(
     """Template for InterfaceSpecifications.
     Defines templated fields with specific types (defined using JSON schema).

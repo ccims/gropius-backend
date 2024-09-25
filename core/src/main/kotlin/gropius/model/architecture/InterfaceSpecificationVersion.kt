@@ -10,7 +10,7 @@ import gropius.model.user.permission.TrackablePermission
 import io.github.graphglue.model.*
 import org.springframework.data.neo4j.core.schema.CompositeProperty
 
-@DomainNode
+@DomainNode(searchQueryName = "searchInterfaceSpecificationVersions")
 @GraphQLDescription(
     """A specific version of an InterfaceSpecification.
     Defines which InterfaceParts are active.
