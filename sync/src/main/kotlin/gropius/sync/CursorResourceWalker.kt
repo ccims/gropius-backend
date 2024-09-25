@@ -58,7 +58,10 @@ abstract class CursorResourceWalker<BudgetUsageType, EstimatedBudgetUsageType, B
             }
         } else {
             cursorResourceWalkerDataService.changePriority(
-                imsProject, resource, { it + resourceWalkerConfig.priorityIncrease }, resourceWalkerConfig.basePriority
+                imsProject,
+                resource,
+                { it + resourceWalkerConfig.priorityIncrease + resourceWalkerConfig.priorityIncrease * Math.random() },
+                resourceWalkerConfig.basePriority
             );
         }
     }
