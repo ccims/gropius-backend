@@ -7,6 +7,7 @@ import com.apollographql.apollo3.api.Query
 import com.apollographql.apollo3.network.http.HttpInfo
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import gropius.model.architecture.IMS
 import gropius.model.architecture.IMSProject
 import gropius.model.issue.Label
 import gropius.model.template.*
@@ -111,19 +112,27 @@ class GithubDataService(
      * @return The gropius user
      */
     suspend fun mapUser(imsProject: IMSProject, userData: UserData?): User {
-        val databaseId = userData?.asUser()?.databaseId ?: 0
+        val databaseId = userData?.asUser()?.databaseId
         val encodedAccountId =
-            jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(databaseId))
-        val foundImsUser =
-            imsProject.ims().value.users().firstOrNull { it.templatedFields["github_id"] == encodedAccountId }
-        if (foundImsUser != null) {
-            return foundImsUser
+            jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(databaseId ?: 0))
+        val username = userData?.login ?: FALLBACK_USER_NAME
+        val ims = neoOperations.findById<IMS>(imsProject.ims().value.rawId!!)!!
+        if (databaseId != null) {
+            val foundImsUser = ims.users().firstOrNull { it.templatedFields["github_id"] == encodedAccountId }
+            if (foundImsUser != null) {
+                return foundImsUser
+            }
+        } else {
+            val foundImsUser = ims.users().firstOrNull { it.username == username }
+            if (foundImsUser != null) {
+                return foundImsUser
+            }
         }
         val imsUser = IMSUser(
-            userData?.asUser()?.name ?: userData?.login ?: FALLBACK_USER_NAME,
+            userData?.asUser()?.name ?: username,
             userData?.asUser()?.email,
             null,
-            userData?.login ?: FALLBACK_USER_NAME,
+            username,
             mutableMapOf("github_id" to encodedAccountId)
         )
         imsUser.ims().value = imsProject.ims().value
