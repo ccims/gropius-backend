@@ -39,6 +39,11 @@ interface BaseResponseType {
 data class LinkImsUserQuery(val imsUserIds: List<String>)
 
 /**
+ * Exception thrown when no valid token is available
+ */
+class NoTokenValidException : Exception()
+
+/**
  * Manager for token from login service
  * @param neoOperations Reference for the spring instance of ReactiveNeo4jOperations
  * @param syncConfigurationProperties Reference for the spring instance of GropiusGithubConfigurationProperties
@@ -209,7 +214,7 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
                 logger.trace("User $user does not allow sync from $owner")
             }
         }
-        TODO("Error Message for no working users")
+        throw NoTokenValidException()
     }
 
     /**
