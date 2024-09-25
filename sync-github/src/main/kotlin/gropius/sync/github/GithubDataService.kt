@@ -173,7 +173,7 @@ class GithubDataService(
         val template = issueTemplate(imsProject)
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         val unknownState =
-            template.issueStates().filter { imsProjectConfig.labelStateMapper.containsValue(it.rawId!!) }
+            template.issueStates().filter { !imsProjectConfig.labelStateMapper.containsValue(it.rawId!!) }
                 .firstOrNull { it.isOpen == isOpen }
         if (unknownState != null) {
             return unknownState
