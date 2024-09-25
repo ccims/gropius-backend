@@ -4,6 +4,7 @@ import com.apollographql.apollo3.ApolloClient
 import com.apollographql.apollo3.api.ApolloResponse
 import com.apollographql.apollo3.api.Mutation
 import com.apollographql.apollo3.api.Query
+import com.apollographql.apollo3.network.http.HttpInfo
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import gropius.model.architecture.IMSProject
@@ -36,6 +37,9 @@ import org.springframework.data.neo4j.core.findById
 import org.springframework.stereotype.Component
 import java.time.OffsetDateTime
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+
+class GitHubResponseException(val errors: List<com.apollographql.apollo3.api.Error>) : Exception(errors.toString())
 
 /**
  * Service to handle data from GitHub
@@ -63,6 +67,7 @@ class GithubDataService(
 
     companion object {
         const val FALLBACK_USER_NAME = "github"
+        val TOKEN_WOUND_UP_IN_JAIL = ConcurrentHashMap<String, OffsetDateTime>()
     }
 
     /**
@@ -207,6 +212,27 @@ class GithubDataService(
     }
 
     /**
+     * Check windup timer for token
+     * @param token the token to check
+     * @return true if the token is in timeout
+     */
+    suspend fun tokenInTimeout(token: String): Boolean {
+        if (TOKEN_WOUND_UP_IN_JAIL.contains(token)) {
+            return TOKEN_WOUND_UP_IN_JAIL[token]!! > OffsetDateTime.now()
+        }
+        return false
+    }
+
+    /**
+     * Windup request blocking timer
+     * @param token the token to windup
+     * @param seconds the time to windup
+     */
+    suspend fun windToken(token: String, seconds: Int) {
+        TOKEN_WOUND_UP_IN_JAIL[token] = OffsetDateTime.now().plusSeconds(seconds.toLong())
+    }
+
+    /**
      * Send a mutation to the IMS
      *
      * @param D The type of the mutation to send
@@ -230,14 +256,24 @@ class GithubDataService(
         }
         logger.info("Requesting with users: $userList")
         return tokenManager.executeUntilWorking(imsProject, userList, owner) { token ->
+            if (tokenInTimeout(token.token!!)) {
+                return@executeUntilWorking Optional.empty()
+            }
             val apolloClient = ApolloClient.Builder().serverUrl(imsConfig.graphQLUrl.toString())
                 .addHttpHeader("Authorization", "Bearer ${token.token}").build()
             val res = apolloClient.mutation(body).execute()
             logger.info("Response Code for request with token $token is ${res.data} ${res.errors}")
+            val headers = res.executionContext[HttpInfo]?.headers
+            if ((headers?.firstOrNull { it.name == "x-ratelimit-remaining" }?.value?.toInt() ?: 0) < 100) {
+                windToken(token.token!!, 3600)
+            }
             if (res.errors?.isNotEmpty() != true) {
                 Optional.of(res)
-            } else {
+            } else if (res.errors?.all { it.nonStandardFields?.get("type") == "RATE_LIMITED" } == true) {
+                windToken(token.token!!, 10800)
                 Optional.empty()
+            } else {
+                throw GitHubResponseException(res.errors!!)
             }
         }
     }
@@ -270,14 +306,24 @@ class GithubDataService(
         }
         logger.info("Requesting with users: $userList ")
         return tokenManager.executeUntilWorking(imsProject, userList, listOf()) { token ->
+            if (tokenInTimeout(token.token!!)) {
+                return@executeUntilWorking Optional.empty()
+            }
             val apolloClient = ApolloClient.Builder().serverUrl(imsConfig.graphQLUrl.toString())
                 .addHttpHeader("Authorization", "Bearer ${token.token}").build()
             val res = apolloClient.query(body).execute()
             logger.info("Response Code for request with token $token is ${res.data} ${res.errors}")
+            val headers = res.executionContext[HttpInfo]?.headers
+            if ((headers?.firstOrNull { it.name == "x-ratelimit-remaining" }?.value?.toInt() ?: 0) < 100) {
+                windToken(token.token!!, 3600)
+            }
             if (res.errors?.isNotEmpty() != true) {
                 Optional.of(res)
-            } else {
+            } else if (res.errors?.all { it.nonStandardFields?.get("type") == "RATE_LIMITED" } == true) {
+                windToken(token.token!!, 10800)
                 Optional.empty()
+            } else {
+                throw GitHubResponseException(res.errors!!)
             }
         }
     }

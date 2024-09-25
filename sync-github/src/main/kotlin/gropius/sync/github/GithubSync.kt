@@ -6,8 +6,6 @@ import gropius.model.issue.Label
 import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
-import gropius.model.user.GropiusUser
-import gropius.model.user.IMSUser
 import gropius.model.user.User
 import gropius.sync.*
 import gropius.sync.github.config.IMSConfigManager
@@ -127,7 +125,7 @@ final class GithubSync(
                 imsProject, it.id!!, GitHubResourceWalkerConfig(
                     CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
                         1.0,
-                        0.1,
+                        0.001,
                         GithubGithubResourceWalkerEstimatedBudgetUsageType(),
                         GithubGithubResourceWalkerBudgetUsageType()
                     ), imsProjectConfig.repo.owner, imsProjectConfig.repo.repo, 100
@@ -142,7 +140,7 @@ final class GithubSync(
                     imsProject, dirtyIssue.id!!, comment.githubId, GitHubResourceWalkerConfig(
                         CursorResourceWalkerConfig<GithubGithubResourceWalkerBudgetUsageType, GithubGithubResourceWalkerEstimatedBudgetUsageType>(
                             1.0,
-                            0.1,
+                            0.001,
                             GithubGithubResourceWalkerEstimatedBudgetUsageType(),
                             GithubGithubResourceWalkerBudgetUsageType()
                         ), imsProjectConfig.repo.owner, imsProjectConfig.repo.repo, 100
@@ -156,7 +154,7 @@ final class GithubSync(
     override suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue> {
         return issuePileService.findByImsProjectAndHasUnsyncedData(imsProject.rawId!!, true)
     }
-    
+
     override suspend fun syncComment(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment, users: List<User>
     ): TimelineItemConversionInformation? {
