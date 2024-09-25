@@ -107,7 +107,7 @@ class ProjectService(
             project, Permission(NodePermission.ADMIN, authorizationContext), "delete the Project"
         )
         beforeDeleteTrackable(project)
-        nodeRepository.deleteAll(project.relationLayouts() + project.relationLayouts()).awaitSingle()
+        nodeRepository.deleteAll(project.relationLayouts() + project.relationLayouts()).awaitSingleOrNull()
         repository.delete(project).awaitSingleOrNull()
     }
 

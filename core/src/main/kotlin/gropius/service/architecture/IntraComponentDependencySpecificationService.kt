@@ -143,7 +143,7 @@ class IntraComponentDependencySpecificationService(
                 )
             }
         }
-        intraComponentDependencyParticipantRepository.deleteAll(participantsToRemove)
+        intraComponentDependencyParticipantRepository.deleteAll(participantsToRemove).awaitSingleOrNull()
         if (participants.isEmpty()) {
             throw IllegalArgumentException("$propertyName must not be empty")
         }
@@ -194,7 +194,7 @@ class IntraComponentDependencySpecificationService(
         val allParticipants = intraComponentDependencySpecification.let {
             it.outgoingParticipants() + it.incomingParticipants()
         }
-        intraComponentDependencyParticipantRepository.deleteAll(allParticipants)
+        intraComponentDependencyParticipantRepository.deleteAll(allParticipants).awaitSingleOrNull()
         repository.delete(intraComponentDependencySpecification).awaitSingleOrNull()
     }
 

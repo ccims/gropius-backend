@@ -83,7 +83,7 @@ abstract class TrackableService<T : Trackable, R : GropiusRepository<T, String>>
         node.syncsTo().forEach {
             imsProjectService.deleteIMSProject(it)
         }
-        nodeRepository.deleteAll(labelsToDelete + imsProjectsToDelete + issuesToDelete + node.artefacts() + node)
+        nodeRepository.deleteAll(labelsToDelete + imsProjectsToDelete + issuesToDelete + node.artefacts())
             .awaitSingleOrNull()
     }
 
