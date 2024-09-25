@@ -39,6 +39,10 @@ import java.time.OffsetDateTime
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * Exception for GitHub response errors
+ * @param errors the errors GitHub sent us
+ */
 class GitHubResponseException(val errors: List<com.apollographql.apollo3.api.Error>) : Exception(errors.toString())
 
 /**
