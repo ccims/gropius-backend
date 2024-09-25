@@ -7,6 +7,7 @@ import com.apollographql.apollo3.api.Query
 import com.apollographql.apollo3.network.http.HttpInfo
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import gropius.model.architecture.IMS
 import gropius.model.architecture.IMSProject
 import gropius.model.issue.Label
 import gropius.model.template.*
@@ -112,28 +113,26 @@ class GithubDataService(
      */
     suspend fun mapUser(imsProject: IMSProject, userData: UserData?): User {
         val databaseId = userData?.asUser()?.databaseId
+        val encodedAccountId =
+            jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(databaseId ?: 0))
+        val username = userData?.login ?: FALLBACK_USER_NAME
+        val ims = neoOperations.findById<IMS>(imsProject.ims().value.rawId!!)!!
         if (databaseId != null) {
-            val encodedAccountId =
-                jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(databaseId))
-            val foundImsUser =
-                imsProject.ims().value.users().firstOrNull { it.templatedFields["github_id"] == encodedAccountId }
+            val foundImsUser = ims.users().firstOrNull { it.templatedFields["github_id"] == encodedAccountId }
             if (foundImsUser != null) {
                 return foundImsUser
             }
         } else {
-            val foundImsUser =
-                imsProject.ims().value.users().firstOrNull { it.username == (userData?.login ?: FALLBACK_USER_NAME) }
+            val foundImsUser = ims.users().firstOrNull { it.username == username }
             if (foundImsUser != null) {
                 return foundImsUser
             }
         }
-        val encodedAccountId =
-            jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(userData?.asUser()?.databaseId))
         val imsUser = IMSUser(
-            userData?.asUser()?.name ?: userData?.login ?: FALLBACK_USER_NAME,
+            userData?.asUser()?.name ?: username,
             userData?.asUser()?.email,
             null,
-            userData?.login ?: FALLBACK_USER_NAME,
+            username,
             mutableMapOf("github_id" to encodedAccountId)
         )
         imsUser.ims().value = imsProject.ims().value
@@ -181,10 +180,20 @@ class GithubDataService(
      */
     suspend fun issueState(imsProject: IMSProject, isOpen: Boolean): IssueState {
         val template = issueTemplate(imsProject)
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        val unknownState =
+            template.issueStates().filter { !imsProjectConfig.labelStateMapper.containsValue(it.rawId!!) }
+                .firstOrNull { it.isOpen == isOpen }
+        if (unknownState != null) {
+            return unknownState
+        }
+        val firstState = template.issueStates().firstOrNull { it.isOpen == isOpen }
+        if (firstState != null) {
+            return firstState
+        }
         val newIssueState = IssueState(if (isOpen) "open" else "closed", "", isOpen)
         newIssueState.partOf() += template
-        return template.issueStates().firstOrNull { it.isOpen == isOpen } ?: neoOperations.save(newIssueState)
-            .awaitSingle()
+        return neoOperations.save(newIssueState).awaitSingle()
     }
 
     /**
