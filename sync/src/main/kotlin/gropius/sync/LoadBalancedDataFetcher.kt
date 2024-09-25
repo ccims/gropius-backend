@@ -69,8 +69,12 @@ class LoadBalancedDataFetcher() : DataFetcher {
         val walkers = walkerPairs.sortedBy { it.first }.map { it.second }
         for ((walker, imsProject) in walkers) {
             logger.info("Executing walker for ${imsProject.rawId!!}")
-            walker.process()
-            logger.info("Executed walker for ${imsProject.rawId!!}")
+            try {
+                walker.process()
+                logger.info("Executed walker for ${imsProject.rawId!!}")
+            } catch (e: Exception) {
+                logger.warn("Exception in walker for ${imsProject.rawId!!}", e)
+            }
         }
     }
 }

@@ -228,7 +228,7 @@ abstract class AbstractSync(
      * Sync Incoming Part
      * @param imsProject IMS project to sync
      */
-    suspend fun doIncoming(imsProject: IMSProject) {
+    private suspend fun doIncoming(imsProject: IMSProject) {
         val dereplicatorRequest = SimpleIssueDereplicatorRequest(
             collectedSyncInfo.neoOperations.findAll<GropiusUser>().filter { it.username == "gropius" }.firstOrNull()
                 ?: collectedSyncInfo.neoOperations.save(
@@ -239,14 +239,15 @@ abstract class AbstractSync(
         )
         try {
             findUnsyncedIssues(imsProject).forEach {
-                syncIncomingIssue(imsProject, it, dereplicatorRequest)
-                //} catch (e: SyncNotificator.NotificatedError) {
-                //    syncNotificator.sendNotification(
-                //        imsIssue, SyncNotificator.NotificationDummy(e)
-                //    )
-                //} catch (e: Exception) {
-                //    logger.warn("Error in issue sync", e)
-                //}
+                try {
+                    syncIncomingIssue(imsProject, it, dereplicatorRequest)/*
+                    } catch (e: SyncNotificator.NotificatedError) {
+                        syncNotificator.sendNotification(
+                            imsIssue, SyncNotificator.NotificationDummy(e)
+                        )*/
+                } catch (e: Exception) {
+                    logger.warn("Exception in issue sync", e)
+                }
             }
         } catch (e: SyncNotificator.NotificatedError) {
             logger.warn("Error in IMSProject sync", e)
