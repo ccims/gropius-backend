@@ -315,8 +315,7 @@ abstract class AbstractSync(
         val updater = IssueAggregationUpdater()
         if (isNewIssue) {
             updater.addedIssueToTrackable(
-                issue,
-                collectedSyncInfo.neoOperations.findById<Trackable>(imsProject.trackable().value.rawId!!)!!
+                issue, collectedSyncInfo.neoOperations.findById<Trackable>(imsProject.trackable().value.rawId!!)!!
             )
         }
         updater.changedIssueStateOrType(
@@ -823,6 +822,7 @@ abstract class AbstractSync(
     private suspend fun syncOutgoingTitleChanges(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
+        val virtualIDs = mapOf<TimelineItem, String>()//For future features
         val relevantTimeline = timeline.mapNotNull { it as? TitleChangedEvent }
         if (relevantTimeline.isEmpty()) return
         val finalBlock = findFinalBlock(relevantTimeline) { it.newTitle }
@@ -831,10 +831,16 @@ abstract class AbstractSync(
                     imsProject.rawId!!, it.rawId!!
                 ) != null
             }) {
-            syncTitleChange(imsProject,
+            val conversionInformation = syncTitleChange(imsProject,
                 issueInfo.githubId,
                 finalBlock.first().newTitle,
                 finalBlock.map { it.createdBy().value })
+            if (conversionInformation != null) {
+                conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
+                collectedSyncInfo.timelineItemConversionInformationService.save(
+                    conversionInformation
+                ).awaitSingle()
+            }
         }
     }
 
@@ -847,20 +853,27 @@ abstract class AbstractSync(
     private suspend fun syncOutgoingStateChanges(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
+        val virtualIDs = mapOf<TimelineItem, String>()//For future features
         val relevantTimeline = timeline.mapNotNull { it as? StateChangedEvent }
         if (relevantTimeline.isEmpty()) return
         val finalBlock = findFinalBlock(relevantTimeline) { it.newState().value }
-        logger.trace("finalBlock: $finalBlock")
+        logger.trace("finalBlock: $finalBlock in $relevantTimeline being ${relevantTimeline.map { it.newState().value.name }}")
         if (finalBlock.none {
                 collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
                     imsProject.rawId!!, it.rawId!!
                 ) != null
             }) {
             logger.trace("syncOutgoingStateChanges: $finalBlock")
-            syncStateChange(imsProject,
+            val conversionInformation = syncStateChange(imsProject,
                 issueInfo.githubId,
                 finalBlock.first().newState().value,
                 finalBlock.map { it.lastModifiedBy().value })
+            if (conversionInformation != null) {
+                conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
+                collectedSyncInfo.timelineItemConversionInformationService.save(
+                    conversionInformation
+                ).awaitSingle()
+            }
         }
     }
 

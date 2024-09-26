@@ -16,6 +16,7 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -26,6 +27,31 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.io.encoding.ExperimentalEncodingApi
+
+/**
+ * Details of the issue status after the transition.
+ *
+ * @param id the id of the status
+ * @param name the name of the status
+ */
+@Serializable
+data class StatusDetails(val id: String, val name: String) {}
+
+/**
+ * A transition that can be performed by the user on an issue
+ * @param id the id of the transition
+ * @param name the name of the transition
+ * @param to the status details of the transition
+ */
+@Serializable
+data class Transition(val id: String, val name: String, val to: StatusDetails) {}
+
+/**
+ * all transitions or a transition that can be performed by the user on an issue, based on the issue's status.
+ * @param transitions a list of transitions
+ */
+@Serializable
+data class TransitionList(val transitions: List<Transition>) {}
 
 /**
  * Jira main sync class
@@ -327,12 +353,23 @@ final class JiraSync(
     override suspend fun syncStateChange(
         imsProject: IMSProject, issueId: String, newState: IssueState, users: List<User>
     ): TimelineItemConversionInformation? {
+        val transitions = jiraDataService.request<Unit>(imsProject, users, HttpMethod.Get, gropiusUserList(users)) {
+            appendPathSegments("issue")
+            appendPathSegments(issueId)
+            appendPathSegments("transitions")
+        }
+        logger.info("syncStateChange transitions ${transitions.second.bodyAsText()} ${transitions.second.body<TransitionList>()} ${newState.name} ${transitions.second.body<TransitionList>().transitions.firstOrNull { it.to.name == newState.name }}")
+        val transition =
+            transitions.second.body<TransitionList>().transitions.firstOrNull { it.to.name == newState.name }
+                ?: return JiraTimelineItemConversionInformation(
+                    imsProject.rawId!!, "no transition possible"
+                )
         val response = jiraDataService.request(
-            imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
+            imsProject, users, HttpMethod.Post, gropiusUserList(users), JsonObject(
                 mapOf(
-                    "fields" to JsonObject(
+                    "transition" to JsonObject(
                         mapOf(
-                            "status" to JsonPrimitive(newState.name)
+                            "id" to JsonPrimitive(transition.id)
                         )
                     )
                 )
@@ -340,11 +377,11 @@ final class JiraSync(
         ) {
             appendPathSegments("issue")
             appendPathSegments(issueId)
+            appendPathSegments("transitions")
         }
         logger.info("syncStateChange response ${response.second.bodyAsText()}")
-        val changelogEntry = response.second.body<IssueBean>().changelog.histories.lastOrNull()
         return JiraTimelineItemConversionInformation(
-            imsProject.rawId!!, if (changelogEntry?.items?.singleOrNull()?.field == "status") changelogEntry.id else ""
+            imsProject.rawId!!, "it is safer to duplicate this timeline item"
         )
     }
 
