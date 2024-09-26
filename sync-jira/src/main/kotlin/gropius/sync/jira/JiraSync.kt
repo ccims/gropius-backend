@@ -14,8 +14,12 @@ import gropius.sync.jira.config.IMSProjectConfig
 import gropius.sync.jira.model.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.OffsetDateTime
@@ -323,17 +327,12 @@ final class JiraSync(
     override suspend fun syncStateChange(
         imsProject: IMSProject, issueId: String, newState: IssueState, users: List<User>
     ): TimelineItemConversionInformation? {
-        if (true) {
-            //TODO: Jira State Transitions
-            return null;
-        }
-        jiraDataService.request(
+        val response = jiraDataService.request(
             imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
                 mapOf(
                     "fields" to JsonObject(
                         mapOf(
-                            "resolution" to if (newState.isOpen) JsonNull else JsonPrimitive("Done"),
-                            "status" to if (newState.isOpen) JsonPrimitive("To Do") else JsonPrimitive("Done")
+                            "status" to JsonPrimitive(newState.name)
                         )
                     )
                 )
@@ -342,8 +341,10 @@ final class JiraSync(
             appendPathSegments("issue")
             appendPathSegments(issueId)
         }
+        logger.info("syncStateChange response ${response.second.bodyAsText()}")
+        val changelogEntry = response.second.body<IssueBean>().changelog.histories.lastOrNull()
         return JiraTimelineItemConversionInformation(
-            imsProject.rawId!!, TODO("Program State Changes")
+            imsProject.rawId!!, if (changelogEntry?.items?.singleOrNull()?.field == "status") changelogEntry.id else ""
         )
     }
 
