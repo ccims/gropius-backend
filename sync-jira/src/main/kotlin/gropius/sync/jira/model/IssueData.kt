@@ -428,7 +428,8 @@ data class IssueData(
         issue.state().value = jiraService.issueState(imsProject, null, true)
         issue.template().value = jiraService.issueTemplate(imsProject)
         issue.trackables() += jiraService.neoOperations.findAll(Project::class.java).awaitFirst()
-        issue.type().value = jiraService.issueType(imsProject)
+        issue.type().value =
+            jiraService.issueType(imsProject, fields["issuetype"]?.jsonObject?.get("name")?.jsonPrimitive?.content!!)
         return issue
     }
 }
