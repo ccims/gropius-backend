@@ -212,7 +212,7 @@ class GithubDataService(
             labelData.createdAt ?: OffsetDateTime.MIN,
             labelData.name,
             "GitHub Label",
-            labelData.color
+            if (labelData.color.startsWith("#")) labelData.color else "#${labelData.color}"
         )
         label.createdBy().value = gropiusUserRepository.findByUsername(FALLBACK_USER_NAME) ?: GropiusUser(
             "GitHub", null, null, FALLBACK_USER_NAME, true
