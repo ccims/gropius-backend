@@ -525,16 +525,10 @@ class ComponentGraphUpdater(updateContext: NodeBatchUpdater = NodeBatchUpdateCon
         return componentVersion.interfaceDefinitions(cache).firstOrNull {
             it.interfaceSpecificationVersion(cache).value == interfaceSpecificationVersion
         } ?: run {
-            val template =
-                interfaceSpecificationVersion.interfaceSpecification(cache).value.template(cache).value.interfaceDefinitionTemplate(
-                    cache
-                ).value
             val newDefinition = InterfaceDefinition(
                 visibleSelfDefined = false,
                 invisibleSelfDefined = false,
-                templatedFields = template.templateFieldSpecifications.mapValues { "null" }.toMutableMap()
             )
-            newDefinition.template(cache).value = template
             newDefinition.interfaceSpecificationVersion(cache).value = interfaceSpecificationVersion
             newDefinition.componentVersion(cache).value = componentVersion
             componentVersion.interfaceDefinitions(cache) += newDefinition
@@ -594,13 +588,7 @@ class ComponentGraphUpdater(updateContext: NodeBatchUpdater = NodeBatchUpdateCon
     private suspend fun createInterface(definition: InterfaceDefinition) {
         val specificationVersion = definition.interfaceSpecificationVersion(cache).value
         val template = specificationVersion.interfaceSpecification(cache).value.template(cache).value
-        val interfaceTemplate = template.interfaceTemplate(cache).value
-        val newInterface = Interface(
-            specificationVersion.name,
-            specificationVersion.description,
-            interfaceTemplate.templateFieldSpecifications.mapValues { "null" }.toMutableMap()
-        )
-        newInterface.template(cache).value = interfaceTemplate
+        val newInterface = Interface()
         internalUpdatedNodes += definition
         definition.visibleInterface(cache).value = newInterface
         newInterface.interfaceDefinition(cache).value = definition

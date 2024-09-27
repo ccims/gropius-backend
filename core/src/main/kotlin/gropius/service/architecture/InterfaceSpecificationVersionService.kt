@@ -16,6 +16,7 @@ import gropius.repository.architecture.InterfaceSpecificationRepository
 import gropius.repository.architecture.InterfaceSpecificationVersionRepository
 import gropius.repository.common.NodeRepository
 import gropius.repository.findById
+import gropius.service.common.NodeService
 import gropius.service.template.TemplatedNodeService
 import io.github.graphglue.authorization.Permission
 import kotlinx.coroutines.reactor.awaitSingle
@@ -39,7 +40,7 @@ class InterfaceSpecificationVersionService(
     private val templatedNodeService: TemplatedNodeService,
     private val nodeRepository: NodeRepository,
     private val interfaceSpecificationRepository: InterfaceSpecificationRepository
-) : AffectedByIssueService<InterfaceSpecificationVersion, InterfaceSpecificationVersionRepository>(
+) : NodeService<InterfaceSpecificationVersion, InterfaceSpecificationVersionRepository>(
     repository
 ) {
 
@@ -82,7 +83,7 @@ class InterfaceSpecificationVersionService(
         val template = interfaceSpecification.template().value.interfaceSpecificationVersionTemplate().value
         val templatedFields = templatedNodeService.validateInitialTemplatedFields(template, input)
         val interfaceSpecificationVersion =
-            InterfaceSpecificationVersion(input.name, input.description, input.version, templatedFields)
+            InterfaceSpecificationVersion(input.version, input.tags, templatedFields)
         interfaceSpecificationVersion.template().value = template
 
         input.parts.ifPresent { inputs ->
@@ -114,8 +115,8 @@ class InterfaceSpecificationVersionService(
             "update the InterfaceSpecificationVersion"
         )
         input.version.ifPresent { interfaceSpecificationVersion.version = it }
+        input.tags.ifPresent { interfaceSpecificationVersion.tags = it }
         templatedNodeService.updateTemplatedFields(interfaceSpecificationVersion, input, false)
-        updateNamedNode(interfaceSpecificationVersion, input)
         return repository.save(interfaceSpecificationVersion).awaitSingle()
     }
 

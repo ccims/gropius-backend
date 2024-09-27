@@ -65,14 +65,6 @@ class InterfaceSpecificationTemplateService(
         template.interfacePartTemplate().value = subTemplateService.createSubTemplate(::InterfacePartTemplate,
             input.interfacePartTemplate,
             extendedTemplates.map { it.interfacePartTemplate().value })
-        template.interfaceTemplate().value = subTemplateService.createSubTemplate(
-            ::InterfaceTemplate,
-            input.interfaceTemplate,
-            extendedTemplates.map { it.interfaceTemplate().value })
-        template.interfaceDefinitionTemplate().value =
-            subTemplateService.createSubTemplate(::InterfaceDefinitionTemplate,
-                input.interfaceDefinitionTemplate,
-                extendedTemplates.map { it.interfaceDefinitionTemplate().value })
     }
 
 }

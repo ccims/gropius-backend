@@ -1,7 +1,7 @@
 package gropius.model.architecture
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
-import gropius.model.common.NamedNode
+import gropius.model.common.BaseNode
 import gropius.model.issue.Issue
 import io.github.graphglue.model.*
 
@@ -17,7 +17,7 @@ const val RELATED_TO_FILTER_BEAN = "relatedToFilter"
     """
 )
 @AdditionalFilter(RELATED_TO_FILTER_BEAN)
-abstract class AffectedByIssue(name: String, description: String) : NamedNode(name, description) {
+abstract class AffectedByIssue : BaseNode() {
 
     @NodeRelationship(Issue.AFFECTS, Direction.INCOMING)
     @GraphQLDescription("The issues which affect this entity")

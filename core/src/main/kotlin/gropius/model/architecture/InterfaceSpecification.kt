@@ -22,14 +22,14 @@ import org.springframework.data.neo4j.core.schema.CompositeProperty
 @Authorization(NodePermission.READ, allowFromRelated = ["component", "versions"])
 @Authorization(NodePermission.ADMIN, allowFromRelated = ["component"])
 @Authorization(TrackablePermission.AFFECT_ENTITIES_WITH_ISSUES, allowFromRelated = ["component"])
-@Authorization(TrackablePermission.RELATED_ISSUE_AFFECTED_ENTITY, allowFromRelated = ["versions"])
+@Authorization(TrackablePermission.RELATED_ISSUE_AFFECTED_ENTITY, allowFromRelated = ["versions", "component"])
 class InterfaceSpecification(
     name: String,
     description: String,
     @property:GraphQLIgnore
     @CompositeProperty
     override val templatedFields: MutableMap<String, String>
-) : AffectedByIssue(
+) : NamedAffectedByIssue(
     name, description
 ), MutableTemplatedNode {
 

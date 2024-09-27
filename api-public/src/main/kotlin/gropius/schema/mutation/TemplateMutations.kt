@@ -61,7 +61,7 @@ class TemplateMutations : Mutation {
     }
 
     @GraphQLDescription("Creates a new InterfaceSpecificationTemplate, requires CAN_CREATE_TEMPLATES")
-    @AutoPayloadType("The created InterfaceTemplate")
+    @AutoPayloadType("The created InterfaceSpecificationTemplate")
     suspend fun createInterfaceSpecificationTemplate(
         @GraphQLDescription("Defines the created InterfaceSpecificationTemplate")
         input: CreateInterfaceSpecificationTemplateInput,

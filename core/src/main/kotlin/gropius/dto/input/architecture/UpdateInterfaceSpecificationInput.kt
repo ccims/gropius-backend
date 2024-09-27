@@ -34,20 +34,6 @@ class UpdateInterfaceSpecificationInput(
         """
     )
     val interfacePartTemplatedFields: OptionalInput<List<JSONFieldInput>>,
-    @GraphQLDescription(
-        """Values for templatedFields of InterfaceDefinitions to update.
-        Only evaluated if `template` is provided!
-        Affect all InterfaceDefinitions of the updated InterfaceSpecification
-        """
-    )
-    val interfaceDefinitionTemplatedFields: OptionalInput<List<JSONFieldInput>>,
-    @GraphQLDescription(
-        """Values for templatedFields of Interfaces to update.
-        Only evaluated if `template` is provided!
-        Affect all Interfaces of the updated InterfaceSpecification
-        """
-    )
-    val interfaceTemplatedFields: OptionalInput<List<JSONFieldInput>>
 ) : UpdateNamedNodeInput(), UpdateTemplatedNodeInput {
 
     override fun validate() {
@@ -59,12 +45,6 @@ class UpdateInterfaceSpecificationInput(
             it.validateAndEnsureNoDuplicates()
         }
         interfacePartTemplatedFields.ifPresent {
-            it.validateAndEnsureNoDuplicates()
-        }
-        interfaceDefinitionTemplatedFields.ifPresent {
-            it.validateAndEnsureNoDuplicates()
-        }
-        interfaceTemplatedFields.ifPresent {
             it.validateAndEnsureNoDuplicates()
         }
     }

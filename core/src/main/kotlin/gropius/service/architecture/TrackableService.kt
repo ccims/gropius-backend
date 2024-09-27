@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired
  */
 abstract class TrackableService<T : Trackable, R : GropiusRepository<T, String>>(
     repository: R
-) : AffectedByIssueService<T, R>(repository) {
+) : NamedAffectedByIssueService<T, R>(repository) {
 
     /**
      * Injected [IssueService]
@@ -52,14 +52,14 @@ abstract class TrackableService<T : Trackable, R : GropiusRepository<T, String>>
 
     /**
      * Updates [node] based on [input]
-     * Calls [updateNamedNode]
+     * Calls [updateNamedAffectedByIssue]
      * Updates repositoryURL
      *
      * @param node the node to update
      * @param input defines how to update the provided [node]
      */
     fun updateTrackable(node: Trackable, input: UpdateTrackableInput) {
-        updateNamedNode(node, input)
+        updateNamedAffectedByIssue(node, input)
         input.repositoryURL.ifPresent {
             node.repositoryURL = it
         }

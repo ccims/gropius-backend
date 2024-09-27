@@ -45,7 +45,7 @@ class InterfaceSpecificationService(
     private val templatedNodeService: TemplatedNodeService,
     private val interfaceSpecificationTemplateRepository: InterfaceSpecificationTemplateRepository,
     private val nodeRepository: NodeRepository,
-) : AffectedByIssueService<InterfaceSpecification, InterfaceSpecificationRepository>(repository) {
+) : NamedAffectedByIssueService<InterfaceSpecification, InterfaceSpecificationRepository>(repository) {
 
     /**
      * Creates a new [InterfaceSpecification] based on the provided [input]
@@ -118,7 +118,7 @@ class InterfaceSpecificationService(
         val updateContext = NodeBatchUpdateContext()
         updateInterfaceSpecificationTemplate(input, interfaceSpecification, updateContext)
         templatedNodeService.updateTemplatedFields(interfaceSpecification, input, input.template.isPresent)
-        updateNamedNode(interfaceSpecification, input)
+        updateNamedAffectedByIssue(interfaceSpecification, input)
         return updateContext.save(interfaceSpecification, nodeRepository)
     }
 
@@ -159,24 +159,11 @@ class InterfaceSpecificationService(
         template: InterfaceSpecificationTemplate
     ) {
         val interfaceSpecificationVersionTemplate = template.interfaceSpecificationVersionTemplate().value
-        val interfaceDefinitionTemplate = template.interfaceDefinitionTemplate().value
-        val interfaceTemplate = template.interfaceTemplate().value
         interfaceSpecification.versions().forEach { interfaceSpecificationVersion ->
             interfaceSpecificationVersion.template().value = interfaceSpecificationVersionTemplate
             templatedNodeService.updateTemplatedFields(
                 interfaceSpecificationVersion, input.interfaceSpecificationVersionTemplatedFields, true
             )
-            interfaceSpecificationVersion.interfaceDefinitions().forEach {
-                it.template().value = interfaceDefinitionTemplate
-                templatedNodeService.updateTemplatedFields(it, input.interfaceDefinitionTemplatedFields, true)
-                val visibleInterface = it.visibleInterface().value
-                if (visibleInterface != null) {
-                    visibleInterface.template().value = interfaceTemplate
-                    templatedNodeService.updateTemplatedFields(
-                        visibleInterface, input.interfaceTemplatedFields, true
-                    )
-                }
-            }
         }
     }
 
