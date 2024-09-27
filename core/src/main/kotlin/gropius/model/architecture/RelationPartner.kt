@@ -17,7 +17,7 @@ const val PART_OF_PROJECT_FILTER = "partOfProject"
 @DomainNode
 @GraphQLDescription("Entity which can be used as start / end of Relations. Can be affected by Issues.")
 @AdditionalFilter(PART_OF_PROJECT_FILTER)
-abstract class RelationPartner(name: String, description: String) : AffectedByIssue(name, description), TemplatedNode {
+abstract class RelationPartner : AffectedByIssue() {
     companion object {
         const val INCOMING_RELATION = "INCOMING_RELATION"
         const val OUTGOING_RELATION = "OUTGOING_RELATION"

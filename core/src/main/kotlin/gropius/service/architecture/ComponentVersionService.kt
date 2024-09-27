@@ -175,8 +175,7 @@ class ComponentVersionService(
         input.validate()
         val template = component.template().value.componentVersionTemplate().value
         val templatedFields = templatedNodeService.validateInitialTemplatedFields(template, input)
-        val componentVersion =
-            ComponentVersion(input.name, input.description, input.version, templatedFields)
+        val componentVersion = ComponentVersion(input.version, input.tags, templatedFields)
         componentVersion.template().value = template
         componentVersion.component().value = component
         val aggregationUpdater = IssueAggregationUpdater(updateContext)
@@ -203,9 +202,11 @@ class ComponentVersionService(
             "update the ComponentVersion"
         )
         templatedNodeService.updateTemplatedFields(componentVersion, input, false)
-        updateNamedNode(componentVersion, input)
         input.version.ifPresent {
             componentVersion.version = it
+        }
+        input.tags.ifPresent {
+            componentVersion.tags = it
         }
         return repository.save(componentVersion).awaitSingle()
     }

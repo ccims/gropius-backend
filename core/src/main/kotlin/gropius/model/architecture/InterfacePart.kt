@@ -30,7 +30,7 @@ class InterfacePart(
     @property:GraphQLIgnore
     @CompositeProperty
     override val templatedFields: MutableMap<String, String>
-) : AffectedByIssue(name, description), MutableTemplatedNode {
+) : NamedAffectedByIssue(name, description), MutableTemplatedNode {
 
     @NodeRelationship(BaseTemplate.USED_IN, Direction.INCOMING)
     @GraphQLDescription("The Template of this InterfacePart")

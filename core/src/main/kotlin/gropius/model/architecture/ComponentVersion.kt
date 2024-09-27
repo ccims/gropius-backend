@@ -30,16 +30,18 @@ import org.springframework.data.neo4j.core.schema.CompositeProperty
 @Authorization(TrackablePermission.RELATED_ISSUE_AFFECTED_ENTITY, allowFromRelated = ["component"])
 @Authorization(ProjectPermission.PART_OF_PROJECT, allowFromRelated = ["includingProjects"])
 class ComponentVersion(
-    name: String,
-    description: String,
     @property:GraphQLDescription("The version of this ComponentVersion")
     @FilterProperty
+    @SearchProperty
     @OrderProperty
     override var version: String,
+    @property:GraphQLDescription("The tags of this ComponentVersion")
+    @SearchProperty
+    override var tags: List<String>,
     @property:GraphQLIgnore
     @CompositeProperty
     override val templatedFields: MutableMap<String, String>
-) : RelationPartner(name, description), Versioned, MutableTemplatedNode {
+) : RelationPartner(), Versioned, MutableTemplatedNode {
 
     companion object {
         const val INTRA_COMPONENT_DEPENDENCY_SPECIFICATION = "INTRA_COMPONENT_DEPENDENCY_SPECIFICATION"

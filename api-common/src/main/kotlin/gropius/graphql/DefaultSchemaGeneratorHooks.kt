@@ -58,7 +58,7 @@ object DefaultSchemaGeneratorHooks : SchemaGeneratorHooks {
                     }.build()
             codeRegistry.dataFetcher(
                 FieldCoordinates.coordinates(payloadType, fieldName),
-                DataFetcher { it.getSource<PayloadWrapper>().payload })
+                DataFetcher { it.getSource<PayloadWrapper>()!!.payload })
             fieldDefinition.transform { it.type(GraphQLNonNull(payloadType)) }
         } else {
             super.didGenerateMutationField(kClass, function, fieldDefinition)

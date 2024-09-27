@@ -22,23 +22,27 @@ import org.springframework.data.neo4j.core.schema.CompositeProperty
     """
 )
 @Authorization(
-    NodePermission.READ,
-    allowFromRelated = ["interfaceSpecification", "interfaceDefinitions"]
+    NodePermission.READ, allowFromRelated = ["interfaceSpecification", "interfaceDefinitions"]
 )
 @Authorization(NodePermission.ADMIN, allowFromRelated = ["interfaceSpecification"])
 @Authorization(TrackablePermission.AFFECT_ENTITIES_WITH_ISSUES, allowFromRelated = ["interfaceSpecification"])
-@Authorization(TrackablePermission.RELATED_ISSUE_AFFECTED_ENTITY, allowFromRelated = ["interfaceDefinitions"])
+@Authorization(
+    TrackablePermission.RELATED_ISSUE_AFFECTED_ENTITY,
+    allowFromRelated = ["interfaceDefinitions", "interfaceSpecification"]
+)
 class InterfaceSpecificationVersion(
-    name: String,
-    description: String,
     @property:GraphQLDescription("The version of this InterfaceSpecificationVersion.")
     @FilterProperty
+    @SearchProperty
     @OrderProperty
     override var version: String,
+    @property:GraphQLDescription("The tags of this InterfaceSpecificationVersion")
+    @SearchProperty
+    override var tags: List<String>,
     @property:GraphQLIgnore
     @CompositeProperty
     override val templatedFields: MutableMap<String, String>
-) : AffectedByIssue(name, description), Versioned, MutableTemplatedNode {
+) : AffectedByIssue(), Versioned, MutableTemplatedNode {
 
     companion object {
         const val PART = "PART"
@@ -64,8 +68,7 @@ class InterfaceSpecificationVersion(
     val interfaceSpecification by NodeProperty<InterfaceSpecification>()
 
     @NodeRelationship(
-        InterfaceDefinition.INTERFACE_SPECIFICATION_VERSION,
-        Direction.INCOMING
+        InterfaceDefinition.INTERFACE_SPECIFICATION_VERSION, Direction.INCOMING
     )
     @GraphQLDescription("Defines on which ComponentVersions this InterfaceSpecificationVersion is used")
     @FilterProperty

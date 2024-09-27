@@ -2,6 +2,7 @@ package gropius.service.architecture
 
 import gropius.model.architecture.RelationPartner
 import gropius.repository.GropiusRepository
+import gropius.service.common.NodeService
 
 /**
  * Base class for services for subclasses of [RelationPartner]
@@ -12,4 +13,4 @@ import gropius.repository.GropiusRepository
  */
 abstract class RelationPartnerService<T : RelationPartner, R : GropiusRepository<T, String>>(
     repository: R
-) : AffectedByIssueService<T, R>(repository)
+) : NodeService<T, R>(repository)

@@ -36,7 +36,7 @@ class InterfacePartService(
     private val interfaceSpecificationVersionRepository: InterfaceSpecificationVersionRepository,
     private val templatedNodeService: TemplatedNodeService,
     private val nodeRepository: NodeRepository
-) : AffectedByIssueService<InterfacePart, InterfacePartRepository>(repository) {
+) : NamedAffectedByIssueService<InterfacePart, InterfacePartRepository>(repository) {
 
     /**
      * Creates a new [InterfacePart] based on the provided [input]
@@ -99,7 +99,7 @@ class InterfacePartService(
             interfacePart, Permission(NodePermission.ADMIN, authorizationContext), "update the InterfacePart"
         )
         templatedNodeService.updateTemplatedFields(interfacePart, input, false)
-        updateNamedNode(interfacePart, input)
+        updateNamedAffectedByIssue(interfacePart, input)
         return repository.save(interfacePart).awaitSingle()
     }
 
