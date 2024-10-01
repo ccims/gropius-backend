@@ -17,4 +17,5 @@ dependencies {
     api("org.jetbrains.kotlinx", "kotlinx-serialization-json", kotlinxSerializationVersion)
     api("io.ktor", "ktor-serialization-kotlinx-json", ktorVersion)
     api("org.springframework.boot", "spring-boot-starter-data-mongodb-reactive", springBootVersion)
+    implementation("org.springframework.boot", "spring-boot-starter-webflux", springBootVersion)
 }
