@@ -135,11 +135,7 @@ final class JiraSync(
         }
 
         for (imsProject in imsProjects) {
-            val (issueList, lastSeenTime) = fetchIssueList(imsProject)
-            fetchIssueContent(issueList, imsProject)
-            if (lastSeenTime != null) {
-                syncStatusService.updateTime(imsProject.rawId!!, lastSeenTime)
-            }
+            fetchIssueList(imsProject)
         }
     }
 
@@ -225,17 +221,15 @@ final class JiraSync(
      * @return issueList the list of issues
      */
     @OptIn(ExperimentalEncodingApi::class)
-    private suspend fun fetchIssueList(
-        imsProject: IMSProject
-    ): Pair<List<String>, OffsetDateTime?> {
-        val issueList = mutableListOf<String>()
+    private suspend fun fetchIssueList(imsProject: IMSProject) {
         var startAt = 0
         val lastSuccessfulSync: OffsetDateTime? =
             syncStatusService.findByImsProject(imsProject.rawId!!)?.lastSuccessfulSync
-        val times = mutableListOf<OffsetDateTime>()
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        val userList = jiraDataService.collectRequestUsers(imsProject, listOf())
         while (true) {
-            val imsProjectConfig = IMSProjectConfig(helper, imsProject)
-            val userList = jiraDataService.collectRequestUsers(imsProject, listOf())
+            val issueList = mutableListOf<String>()
+            val times = mutableListOf<OffsetDateTime>()
             val issueResponse = jiraDataService.tokenManager.executeUntilWorking(imsProject, userList, listOf()) {
                 val userTimeZone = ZoneId.of(
                     jiraDataService.sendRequest<Unit>(
@@ -244,11 +238,11 @@ final class JiraSync(
                         }, it
                     ).get().body<UserQuery>().timeZone
                 )
-                var query = "project=${imsProjectConfig.repo}"
+                var query = "project=${imsProjectConfig.repo} ORDER BY created DESC"
                 if (lastSuccessfulSync != null) {
                     query = "project=${imsProjectConfig.repo} AND updated > ${
                         lastSuccessfulSync.atZoneSameInstant(userTimeZone).format(JQL_FORMATTER)
-                    }"
+                    } ORDER BY created DESC"
                 }
                 logger.info("With $lastSuccessfulSync, ${imsProjectConfig.repo} and $userTimeZone, the query is '$query'")
                 jiraDataService.sendRequest<Unit>(
@@ -295,8 +289,12 @@ final class JiraSync(
             if (startAt >= issueResponse.total) {
                 break
             }
+            val lastSeenTime = times.maxOrNull()
+            fetchIssueContent(issueList, imsProject)
+            if (lastSeenTime != null) {
+                syncStatusService.updateTime(imsProject.rawId!!, lastSeenTime)
+            }
         }
-        return issueList to times.maxOrNull()
     }
 
     override suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue> {
