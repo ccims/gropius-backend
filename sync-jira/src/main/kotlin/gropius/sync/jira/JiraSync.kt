@@ -244,11 +244,11 @@ final class JiraSync(
                         }, it
                     ).get().body<UserQuery>().timeZone
                 )
-                var query = "project=${imsProjectConfig.repo} ORDER BY created DESC"
+                var query = "project=${imsProjectConfig.repo} ORDER BY updated ASC"
                 if (lastSuccessfulSync != null) {
                     query = "project=${imsProjectConfig.repo} AND updated > ${
                         lastSuccessfulSync.atZoneSameInstant(userTimeZone).format(JQL_FORMATTER)
-                    } ORDER BY created DESC"
+                    } ORDER BY updated ASC"
                 }
                 logger.info("With $lastSuccessfulSync, ${imsProjectConfig.repo} and $userTimeZone, the query is '$query'")
                 jiraDataService.sendRequest<Unit>(
