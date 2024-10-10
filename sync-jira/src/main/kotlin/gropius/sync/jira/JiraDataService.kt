@@ -24,6 +24,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -348,6 +349,7 @@ class JiraDataService(
     ): Pair<IMSUser, HttpResponse> {
         val userList = collectRequestUsers(imsProject, users)
         return tokenManager.executeUntilWorking(imsProject, userList, owner) {
+            delay(1100)
             sendRequest<T>(
                 imsProject, requestMethod, body, urlBuilder, it
             )
