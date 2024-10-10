@@ -12,6 +12,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
@@ -235,7 +236,10 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
     ): Pair<IMSUser, T> {
         val users = user.map { getPossibleUsersForUser(imsProject.ims().value, it) }.flatten().distinct()
         logger.info("Expanding ${user.map { "${it::class.simpleName}:${it.rawId}(${it.username})" }} to ${users.map { "${it::class.simpleName}:${it.rawId}(${it.username})" }}")
-        return executeUntilWorking(imsProject, users, executor, owner)
+        return executeUntilWorking(imsProject, users, {
+            delay(1100)
+            executor(it)
+        }, owner)
     }
 
     /**
