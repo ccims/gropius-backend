@@ -4,7 +4,7 @@ import gropius.model.architecture.IMSProject
 import gropius.model.issue.Issue
 import gropius.model.issue.Label
 import gropius.model.issue.timeline.IssueComment
-import gropius.model.issue.timeline.TemplatedFieldChangedEvent
+import gropius.model.issue.timeline.TimelineItem
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
 import gropius.model.user.User
@@ -177,6 +177,21 @@ final class GithubSync(
         return null
     }
 
+    override suspend fun syncFallbackComment(
+        imsProject: IMSProject, issueId: String, comment: String, original: TimelineItem?, users: List<User>
+    ): TimelineItemConversionInformation? {
+        val response = githubDataService.mutation(
+            imsProject, users, MutateCreateCommentMutation(issueId, comment), gropiusUserList(users)
+        ).second
+        val item = response.data?.addComment?.commentEdge?.node?.asIssueTimelineItems()
+        if (item != null) {
+            return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)
+        }
+        logger.error("${response.data} ${response.errors}")
+        //TODO("ERROR HANDLING")
+        return null
+    }
+
     override suspend fun syncAddedLabel(
         imsProject: IMSProject, issueId: String, label: Label, users: List<User>
     ): TimelineItemConversionInformation? {
@@ -212,12 +227,6 @@ final class GithubSync(
         logger.error("${response.data} ${response.errors}")
         //TODO("ERROR HANDLING")
         return null
-    }
-
-    override suspend fun syncTemplatedField(
-        imsProject: IMSProject, issueId: String, fieldChangedEvent: TemplatedFieldChangedEvent, users: List<User>
-    ): TimelineItemConversionInformation? {
-        TODO("Remove this, as soon as the fallback is done in AbstractSync")
     }
 
     override suspend fun syncStateChange(

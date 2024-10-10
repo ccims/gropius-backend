@@ -122,8 +122,22 @@ abstract class AbstractSync(
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
      */
-    abstract suspend fun syncComment(
+    open suspend fun syncComment(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment, users: List<User>
+    ): TimelineItemConversionInformation? {
+        return syncFallbackComment(imsProject, issueId, issueComment.body, issueComment, users)
+    }
+
+    /**
+     * Incorporate a fallback comment
+     * @param imsProject IMS project to sync
+     * @param issueId GitHub ID of the issue
+     * @param issueComment Comment to sync
+     * @param users List of users involved in this timeline item, sorted with most relevant first
+     * @return Conversion information
+     */
+    abstract suspend fun syncFallbackComment(
+        imsProject: IMSProject, issueId: String, comment: String, original: TimelineItem?, users: List<User>
     ): TimelineItemConversionInformation?
 
     /**
@@ -134,9 +148,11 @@ abstract class AbstractSync(
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
      */
-    abstract suspend fun syncTitleChange(
+    open suspend fun syncTitleChange(
         imsProject: IMSProject, issueId: String, newTitle: String, users: List<User>
-    ): TimelineItemConversionInformation?
+    ): TimelineItemConversionInformation? {
+        return syncFallbackComment(imsProject, issueId, "Gropius Title changed to $newTitle", null, users)
+    }
 
     /**
      * Incorporate a state change
@@ -158,9 +174,17 @@ abstract class AbstractSync(
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
      */
-    abstract suspend fun syncTemplatedField(
+    open suspend fun syncTemplatedField(
         imsProject: IMSProject, issueId: String, fieldChangedEvent: TemplatedFieldChangedEvent, users: List<User>
-    ): TimelineItemConversionInformation?
+    ): TimelineItemConversionInformation? {
+        return syncFallbackComment(
+            imsProject,
+            issueId,
+            "Gropius Field ${fieldChangedEvent.fieldName} changed to ${fieldChangedEvent.newValue}",
+            fieldChangedEvent,
+            users
+        )
+    }
 
     /**
      * Incorporate an added label
@@ -170,9 +194,11 @@ abstract class AbstractSync(
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
      */
-    abstract suspend fun syncAddedLabel(
+    open suspend fun syncAddedLabel(
         imsProject: IMSProject, issueId: String, label: Label, users: List<User>
-    ): TimelineItemConversionInformation?
+    ): TimelineItemConversionInformation? {
+        return syncFallbackComment(imsProject, issueId, "Gropius Label ${label.name} added", null, users)
+    }
 
     /**
      * Incorporate a removed label
@@ -182,9 +208,11 @@ abstract class AbstractSync(
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
      */
-    abstract suspend fun syncRemovedLabel(
+    open suspend fun syncRemovedLabel(
         imsProject: IMSProject, issueId: String, label: Label, users: List<User>
-    ): TimelineItemConversionInformation?
+    ): TimelineItemConversionInformation? {
+        return syncFallbackComment(imsProject, issueId, "Gropius Label ${label.name} removed", null, users)
+    }
 
     /**
      * Create an issue on the IMS
@@ -779,7 +807,8 @@ abstract class AbstractSync(
                     imsProject, finalBlock, relevantTimeline, true, virtualIDs
                 )
             ) {
-                val conversionInformation = syncRemovedLabel(imsProject,
+                val conversionInformation = syncRemovedLabel(
+                    imsProject,
                     issueInfo.githubId,
                     label!!,
                     finalBlock.map { it.lastModifiedBy().value })
@@ -794,7 +823,8 @@ abstract class AbstractSync(
                     imsProject, finalBlock, relevantTimeline, false, virtualIDs
                 )
             ) {
-                val conversionInformation = syncAddedLabel(imsProject,
+                val conversionInformation = syncAddedLabel(
+                    imsProject,
                     issueInfo.githubId,
                     label!!,
                     finalBlock.map { it.lastModifiedBy().value })
@@ -853,7 +883,8 @@ abstract class AbstractSync(
                     imsProject.rawId!!, it.rawId!!
                 ) != null
             }) {
-            val conversionInformation = syncTitleChange(imsProject,
+            val conversionInformation = syncTitleChange(
+                imsProject,
                 issueInfo.githubId,
                 finalBlock.first().newTitle,
                 finalBlock.map { it.createdBy().value })
@@ -884,7 +915,8 @@ abstract class AbstractSync(
                     imsProject.rawId!!, it.rawId!!
                 ) != null
             }) {
-            val conversionInformation = syncTemplatedField(imsProject,
+            val conversionInformation = syncTemplatedField(
+                imsProject,
                 issueInfo.githubId,
                 finalBlock.first(),
                 finalBlock.map { it.createdBy().value })

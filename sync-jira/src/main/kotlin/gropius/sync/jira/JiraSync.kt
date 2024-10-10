@@ -5,6 +5,7 @@ import gropius.model.issue.Issue
 import gropius.model.issue.Label
 import gropius.model.issue.timeline.IssueComment
 import gropius.model.issue.timeline.TemplatedFieldChangedEvent
+import gropius.model.issue.timeline.TimelineItem
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
 import gropius.model.user.User
@@ -319,6 +320,24 @@ final class JiraSync(
             HttpMethod.Post,
             gropiusUserList(users),
             JsonObject(mapOf("body" to JsonPrimitive(issueComment.body)))
+        ) {
+            appendPathSegments("issue")
+            appendPathSegments(issueId)
+            appendPathSegments("comment")
+        }.second.body<JsonObject>()
+        val iid = response["id"]!!.jsonPrimitive.content
+        return JiraTimelineItemConversionInformation(imsProject.rawId!!, iid)
+    }
+
+    override suspend fun syncFallbackComment(
+        imsProject: IMSProject, issueId: String, comment: String, original: TimelineItem?, users: List<User>
+    ): TimelineItemConversionInformation? {
+        val response = jiraDataService.request(
+            imsProject,
+            users,
+            HttpMethod.Post,
+            gropiusUserList(users),
+            JsonObject(mapOf("body" to JsonPrimitive(comment)))
         ) {
             appendPathSegments("issue")
             appendPathSegments(issueId)
