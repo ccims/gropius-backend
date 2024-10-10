@@ -207,6 +207,7 @@ class ComponentGraphUpdater(updateContext: NodeBatchUpdater = NodeBatchUpdateCon
                 definition.invisibleSelfDefined = false
             }
             internalUpdatedNodes += definition
+            handleUpdatedInterfaceDefinition(definition)
             validateRelatedComponentVersions(componentVersion, setOf(interfaceSpecificationVersion))
         }
     }

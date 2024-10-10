@@ -47,6 +47,7 @@ class InterfaceDefinition(
     @NodeRelationship(INTERFACE_SPECIFICATION_VERSION, Direction.OUTGOING)
     @GraphQLDescription("The InterfaceSpecificationVersion present on the ComponentVersion")
     @FilterProperty
+    @OrderProperty
     val interfaceSpecificationVersion by NodeProperty<InterfaceSpecificationVersion>()
 
     @NodeRelationship(COMPONENT_VERSION, Direction.OUTGOING)
