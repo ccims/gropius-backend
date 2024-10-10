@@ -21,6 +21,7 @@ data class IMSProjectConfig(
     val enableOutgoingAssignments: Boolean,
     val enableOutgoingTitleChanges: Boolean,
     val enableOutgoingState: Boolean,
+    val enableOutgoingTemplatedFields: Boolean,
     val defaultType: String?,
     val defaultTemplate: String?
 ) {
@@ -40,6 +41,7 @@ data class IMSProjectConfig(
         enableOutgoingAssignments = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-assignments"]),
         enableOutgoingTitleChanges = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-title-changes"]),
         enableOutgoingState = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-state"]),
+        enableOutgoingTemplatedFields = helper.parseBoolean(imsProject.templatedFields["enable-outgoing-templated-fields"]),
         defaultType = helper.parseString(imsProject.templatedFields["default-type"]),
         defaultTemplate = helper.parseString(imsProject.templatedFields["default-template"])
     )
@@ -83,6 +85,9 @@ data class IMSProjectConfig(
             "nullable" to true
             "type" to "boolean"
         }.toString(), "enable-outgoing-state" to obj {
+            "nullable" to true
+            "type" to "boolean"
+        }.toString(), "enable-outgoing-templated-fields" to obj {
             "nullable" to true
             "type" to "boolean"
         }.toString()) + IMSConfigManager.COMMON_TEMPLATE_FIELDS

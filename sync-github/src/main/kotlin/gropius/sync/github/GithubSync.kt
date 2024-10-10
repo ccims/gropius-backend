@@ -4,6 +4,7 @@ import gropius.model.architecture.IMSProject
 import gropius.model.issue.Issue
 import gropius.model.issue.Label
 import gropius.model.issue.timeline.IssueComment
+import gropius.model.issue.timeline.TemplatedFieldChangedEvent
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
 import gropius.model.user.User
@@ -78,6 +79,10 @@ final class GithubSync(
     override suspend fun isOutgoingCommentsEnabled(imsProject: IMSProject): Boolean {
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         return imsProjectConfig.enableOutgoingComments
+    }
+
+    override suspend fun isOutgoingTemplatedFieldsEnabled(imsProject: IMSProject): Boolean {
+        return false
     }
 
     override suspend fun isOutgoingTitleChangedEnabled(imsProject: IMSProject): Boolean {
@@ -207,6 +212,12 @@ final class GithubSync(
         logger.error("${response.data} ${response.errors}")
         //TODO("ERROR HANDLING")
         return null
+    }
+
+    override suspend fun syncTemplatedField(
+        imsProject: IMSProject, issueId: String, fieldChangedEvent: TemplatedFieldChangedEvent, users: List<User>
+    ): TimelineItemConversionInformation? {
+        TODO("Remove this, as soon as the fallback is done in AbstractSync")
     }
 
     override suspend fun syncStateChange(

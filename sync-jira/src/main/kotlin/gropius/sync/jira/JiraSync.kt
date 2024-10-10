@@ -4,6 +4,7 @@ import gropius.model.architecture.IMSProject
 import gropius.model.issue.Issue
 import gropius.model.issue.Label
 import gropius.model.issue.timeline.IssueComment
+import gropius.model.issue.timeline.TemplatedFieldChangedEvent
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
 import gropius.model.user.User
@@ -124,6 +125,11 @@ final class JiraSync(
     override suspend fun isOutgoingStatesEnabled(imsProject: IMSProject): Boolean {
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         return imsProjectConfig.enableOutgoingState
+    }
+
+    override suspend fun isOutgoingTemplatedFieldsEnabled(imsProject: IMSProject): Boolean {
+        val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        return imsProjectConfig.enableOutgoingTemplatedFields
     }
 
     override suspend fun fetchData(imsProjects: List<IMSProject>) {
@@ -345,6 +351,33 @@ final class JiraSync(
         val changelogEntry = response.second.body<IssueBean>().changelog.histories.lastOrNull()
         return JiraTimelineItemConversionInformation(
             imsProject.rawId!!, if (changelogEntry?.items?.singleOrNull()?.field == "summary") changelogEntry.id else ""
+        )
+    }
+
+    override suspend fun syncTemplatedField(
+        imsProject: IMSProject, issueId: String, fieldChangedEvent: TemplatedFieldChangedEvent, users: List<User>
+    ): TimelineItemConversionInformation? {
+        val response = jiraDataService.request(
+            imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
+                mapOf(
+                    "fields" to JsonObject(
+                        mapOf(
+                            fieldChangedEvent.fieldName to JsonPrimitive(fieldChangedEvent.newValue)
+                        )
+                    )
+                )
+            )
+        ) {
+            appendPathSegments("issue")
+            appendPathSegments(issueId)
+            parameters.append("returnIssue", "true")
+            parameters.append("expand", "names,schema,editmeta,changelog")
+
+        }
+        val changelogEntry = response.second.body<IssueBean>().changelog.histories.lastOrNull()
+        return JiraTimelineItemConversionInformation(
+            imsProject.rawId!!,
+            if (changelogEntry?.items?.singleOrNull()?.field == fieldChangedEvent.fieldName) changelogEntry.id else ""
         )
     }
 
