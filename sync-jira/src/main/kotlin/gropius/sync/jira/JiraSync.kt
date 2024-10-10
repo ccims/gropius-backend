@@ -175,25 +175,57 @@ final class JiraSync(
      */
     @OptIn(ExperimentalEncodingApi::class)
     private suspend fun fetchIssueContentComments(
-        issueList: List<String>, imsProject: IMSProject
+        issueList: List<IssueData>, imsProject: IMSProject
     ) {
-        for (issueId in issueList) {
+        for (issue in issueList) {
+            val times = mutableListOf<OffsetDateTime>()
             var startAt = 0
             while (true) {
                 val issueCommentList = jiraDataService.request<Unit>(imsProject, listOf(), HttpMethod.Get, listOf()) {
                     appendPathSegments("issue")
-                    appendPathSegments(issueId)
+                    appendPathSegments(issue.jiraId)
                     appendPathSegments("comment")
                     parameters.append("expand", "names,schema,editmeta,changelog")
                     parameters.append("startAt", "$startAt")
                 }.second.body<CommentQuery>()
                 issueCommentList.comments.forEach {
-                    issueDataService.insertComment(imsProject, issueId, it)
+                    issueDataService.insertComment(imsProject, issue.jiraId, it)
                 }
                 startAt = issueCommentList.startAt + issueCommentList.comments.size
                 if (startAt >= issueCommentList.total) {
                     break
                 }
+            }
+            for (comment in issue.comments.values) {
+                times.add(
+                    OffsetDateTime.parse(
+                        comment.created, IssueData.formatter
+                    )
+                )
+                times.add(
+                    OffsetDateTime.parse(
+                        comment.updated, IssueData.formatter
+                    )
+                )
+            }
+            for (history in issue.changelog.histories) {
+                times.add(
+                    OffsetDateTime.parse(
+                        history.created, IssueData.formatter
+                    )
+                )
+            }
+            val updated = issue.fields["updated"]
+            if (updated != null) {
+                times.add(
+                    OffsetDateTime.parse(
+                        updated.jsonPrimitive.content, IssueData.formatter
+                    )
+                )
+            }
+            val lastSeenTime = times.maxOrNull()
+            if (lastSeenTime != null) {
+                syncStatusService.updateTime(imsProject.rawId!!, lastSeenTime)
             }
         }
     }
@@ -205,14 +237,14 @@ final class JiraSync(
      */
     @OptIn(ExperimentalEncodingApi::class)
     private suspend fun fetchIssueContent(
-        issueList: List<String>, imsProject: IMSProject
+        issueList: List<IssueData>, imsProject: IMSProject
     ) {
         logger.info("ISSUE LIST $issueList")
         val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
-        fetchIssueContentComments(issueList, imsProject)
         if (imsConfig.isCloud) {
-            fetchIssueContentChangelog(issueList, imsProject)
+            fetchIssueContentChangelog(issueList.map { it.jiraId }, imsProject)
         }
+        fetchIssueContentComments(issueList, imsProject)
     }
 
     /**
@@ -228,7 +260,7 @@ final class JiraSync(
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         val userList = jiraDataService.collectRequestUsers(imsProject, listOf())
         while (true) {
-            val issueList = mutableListOf<String>()
+            val issueList = mutableListOf<IssueData>()
             val times = mutableListOf<OffsetDateTime>()
             val issueResponse = jiraDataService.tokenManager.executeUntilWorking(imsProject, userList, listOf()) {
                 val userTimeZone = ZoneId.of(
@@ -255,7 +287,7 @@ final class JiraSync(
                 )
             }.second.body<ProjectQuery>()
             issueResponse.issues(imsProject).forEach {
-                issueList.add(it.jiraId)
+                issueList.add(it)
                 issueDataService.insertIssue(imsProject, it)
                 for (comment in it.comments.values) {
                     times.add(
@@ -285,14 +317,14 @@ final class JiraSync(
                     )
                 }
             }
-            startAt = issueResponse.startAt + issueResponse.issues.size
-            if (startAt >= issueResponse.total) {
-                break
-            }
             val lastSeenTime = times.maxOrNull()
             fetchIssueContent(issueList, imsProject)
             if (lastSeenTime != null) {
                 syncStatusService.updateTime(imsProject.rawId!!, lastSeenTime)
+            }
+            startAt = issueResponse.startAt + issueResponse.issues.size
+            if (startAt >= issueResponse.total) {
+                break
             }
         }
     }
