@@ -168,7 +168,7 @@ class JiraDataService(
      * @return the IMSUser for the Jira user
      */
     suspend fun mapUser(imsProject: IMSProject, user: JsonElement): User {
-        if ((user as? JsonObject) != null) {
+        if ((user as? JsonObject) == null) {
             logger.warn("User is not a JsonObject, falling back to dummy user")
             val foundImsUser =
                 imsProject.ims().value.users().firstOrNull { it.username == "null-user" }
