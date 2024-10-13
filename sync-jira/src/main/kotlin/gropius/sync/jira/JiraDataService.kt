@@ -168,10 +168,32 @@ class JiraDataService(
      * @return the IMSUser for the Jira user
      */
     suspend fun mapUser(imsProject: IMSProject, user: JsonElement): User {
-        val encodedAccountId = if (user.jsonObject["accountId"] != null) jsonNodeMapper.jsonNodeToDeterministicString(
-            objectMapper.valueToTree<JsonNode>(user.jsonObject["accountId"]!!.jsonPrimitive.content)
-        )
-        else jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(user.jsonObject["key"]!!.jsonPrimitive.content))
+        if ((user as? JsonObject) != null) {
+            logger.warn("User is not a JsonObject, falling back to dummy user")
+            val foundImsUser =
+                imsProject.ims().value.users().firstOrNull { it.username == "null-user" }
+            if (foundImsUser != null) {
+                return foundImsUser
+            }
+            val imsUser = IMSUser(
+                "Null User",
+                null,
+                null,
+                "null-user",
+                mutableMapOf("jira_id" to "0")
+            )
+            imsUser.ims().value = imsProject.ims().value
+            imsUser.template().value = imsUser.ims().value.template().value.imsUserTemplate().value
+            val newUser = neoOperations.save(imsUser).awaitSingle()
+            tokenManager.advertiseIMSUser(newUser)
+            imsProject.ims().value.users() += newUser
+            return newUser
+        }
+        val encodedAccountId =
+            if ((user.jsonObject["accountId"] as? JsonObject) != null) jsonNodeMapper.jsonNodeToDeterministicString(
+                objectMapper.valueToTree<JsonNode>(user.jsonObject["accountId"]!!.jsonPrimitive.content)
+            )
+            else jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(user.jsonObject["key"]!!.jsonPrimitive.content))
         val foundImsUser =
             imsProject.ims().value.users().firstOrNull { it.templatedFields["jira_id"] == encodedAccountId }
         if (foundImsUser != null) {
