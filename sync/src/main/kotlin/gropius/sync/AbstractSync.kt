@@ -498,7 +498,7 @@ abstract class AbstractSync(
         nodesToSave: MutableList<Node>,
         savedNodeHandlers: MutableList<suspend (node: Node) -> Unit>
     ) {
-        //logger.info("Syncing incoming for issue ${issue.rawId} $timelineItem ${timelineItem.identification()}")
+        logger.trace("Syncing incoming for issue ${issue.rawId} $timelineItem ${timelineItem.identification()}")
         val oldInfo = collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGithubId(
             imsProject.rawId!!, timelineItem.identification()
         ).firstOrNull()
@@ -610,7 +610,7 @@ abstract class AbstractSync(
                     imsProject.rawId!!, it.rawId ?: virtualIDs[it]!!
                 )?.githubId != null
             }
-            logger.trace("LastNegativeEvent $lastNegativeEvent")
+            logger.debug("LastNegativeEvent $lastNegativeEvent")
             if (lastNegativeEvent == null) {
                 return !restoresDefaultState
             } else {
@@ -857,13 +857,13 @@ abstract class AbstractSync(
         val relevantTimeline = timeline.mapNotNull { it as? StateChangedEvent }
         if (relevantTimeline.isEmpty()) return
         val finalBlock = findFinalBlock(relevantTimeline) { it.newState().value }
-        logger.trace("finalBlock: $finalBlock in $relevantTimeline being ${relevantTimeline.map { it.newState().value.name }}")
+        logger.debug("finalBlock: $finalBlock in $relevantTimeline being ${relevantTimeline.map { it.newState().value.name }}")
         if (finalBlock.none {
                 collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
                     imsProject.rawId!!, it.rawId!!
                 ) != null
             }) {
-            logger.trace("syncOutgoingStateChanges: $finalBlock")
+            logger.debug("syncOutgoingStateChanges: $finalBlock")
             val conversionInformation = syncStateChange(imsProject,
                 issueInfo.githubId,
                 finalBlock.first().newState().value,

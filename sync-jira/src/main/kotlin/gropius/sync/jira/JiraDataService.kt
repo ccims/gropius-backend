@@ -291,7 +291,7 @@ class JiraDataService(
                 }
                 logger.info("Response Code for request with token token is ${res.status}(${res.status.isSuccess()}): $body is ${res.bodyAsText()}")
                 return if (res.status.isSuccess()) {
-                    logger.trace("Response for {} {}", res.request.url, res.bodyAsText())
+                    logger.debug("Response for {} {}", res.request.url, res.bodyAsText())
                     Optional.of(res)
                 } else {
                     Optional.empty()
@@ -321,7 +321,7 @@ class JiraDataService(
                 }
                 logger.info("Response Code for request with token token is ${res.status}(${res.status.isSuccess()}): $body is ${res.bodyAsText()}")
                 return if (res.status.isSuccess()) {
-                    logger.trace("Response for {} {}", res.request.url, res.bodyAsText())
+                    logger.debug("Response for {} {}", res.request.url, res.bodyAsText())
                     Optional.of(res)
                 } else {
                     Optional.empty()

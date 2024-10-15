@@ -202,16 +202,16 @@ abstract class TokenManager<ResponseType : BaseResponseType>(
             if (isAllowed(imsProject, user, owner)) {
                 val token = getUserToken(user)
                 if (token?.token != null) {
-                    logger.trace("Trying token of user ${user.rawId}")
+                    logger.debug("Trying token of user ${user.rawId}")
                     val ret = executor(token)
                     if (ret.isPresent) {
                         return user to ret.get()
                     }
                 } else {
-                    logger.trace("User ${user.rawId} had no token")
+                    logger.debug("User ${user.rawId} had no token")
                 }
             } else {
-                logger.trace("User $user does not allow sync from $owner")
+                logger.debug("User $user does not allow sync from $owner")
             }
         }
         throw NoTokenValidException()
