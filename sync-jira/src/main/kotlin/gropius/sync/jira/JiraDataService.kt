@@ -162,6 +162,27 @@ class JiraDataService(
     }
 
     /**
+     * Generate a new IMSUser to be a placeholder in erroneous situations
+     * @param imsProject the project to map the user to
+     * @return the created IMSUser
+     */
+    private suspend fun generateNullUser(imsProject: IMSProject, name: String, displayName: String): IMSUser {
+        val foundImsUser = imsProject.ims().value.users().firstOrNull { it.username == name }
+        if (foundImsUser != null) {
+            return foundImsUser
+        }
+        val imsUser = IMSUser(
+            displayName, null, null, name, mutableMapOf("jira_id" to "0")
+        )
+        imsUser.ims().value = imsProject.ims().value
+        imsUser.template().value = imsUser.ims().value.template().value.imsUserTemplate().value
+        val newUser = neoOperations.save(imsUser).awaitSingle()
+        tokenManager.advertiseIMSUser(newUser)
+        imsProject.ims().value.users() += newUser
+        return newUser
+    }
+
+    /**
      * Get a IMSUser for a Jira user
      * @param imsProject the project to map the user to
      * @param user the Jira user
@@ -170,30 +191,19 @@ class JiraDataService(
     suspend fun mapUser(imsProject: IMSProject, user: JsonElement): User {
         if ((user as? JsonObject) == null) {
             logger.warn("User is not a JsonObject, falling back to dummy user")
-            val foundImsUser =
-                imsProject.ims().value.users().firstOrNull { it.username == "null-user" }
-            if (foundImsUser != null) {
-                return foundImsUser
-            }
-            val imsUser = IMSUser(
-                "Null User",
-                null,
-                null,
-                "null-user",
-                mutableMapOf("jira_id" to "0")
-            )
-            imsUser.ims().value = imsProject.ims().value
-            imsUser.template().value = imsUser.ims().value.template().value.imsUserTemplate().value
-            val newUser = neoOperations.save(imsUser).awaitSingle()
-            tokenManager.advertiseIMSUser(newUser)
-            imsProject.ims().value.users() += newUser
-            return newUser
+            return generateNullUser(imsProject, "null-user", "Null User")
         }
         val encodedAccountId =
-            if ((user.jsonObject["accountId"] as? JsonObject) != null) jsonNodeMapper.jsonNodeToDeterministicString(
+            if ((user.jsonObject["accountId"] as? JsonPrimitive) != null) jsonNodeMapper.jsonNodeToDeterministicString(
                 objectMapper.valueToTree<JsonNode>(user.jsonObject["accountId"]!!.jsonPrimitive.content)
             )
-            else jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(user.jsonObject["key"]!!.jsonPrimitive.content))
+            else if ((user.jsonObject["key"] as? JsonPrimitive) != null) jsonNodeMapper.jsonNodeToDeterministicString(
+                objectMapper.valueToTree<JsonNode>(user.jsonObject["key"]!!.jsonPrimitive.content)
+            )
+            else {
+                logger.warn("User has no key, $user")
+                return generateNullUser(imsProject, "null-id-user", "Null ID User")
+            }
         val foundImsUser =
             imsProject.ims().value.users().firstOrNull { it.templatedFields["jira_id"] == encodedAccountId }
         if (foundImsUser != null) {

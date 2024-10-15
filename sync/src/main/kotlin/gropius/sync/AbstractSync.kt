@@ -498,7 +498,7 @@ abstract class AbstractSync(
         nodesToSave: MutableList<Node>,
         savedNodeHandlers: MutableList<suspend (node: Node) -> Unit>
     ) {
-        logger.info("Syncing incoming for issue ${issue.rawId} $timelineItem ${timelineItem.identification()}")
+        //logger.info("Syncing incoming for issue ${issue.rawId} $timelineItem ${timelineItem.identification()}")
         val oldInfo = collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGithubId(
             imsProject.rawId!!, timelineItem.identification()
         ).firstOrNull()
