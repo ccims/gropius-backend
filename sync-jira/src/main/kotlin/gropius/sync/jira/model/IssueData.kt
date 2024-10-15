@@ -145,8 +145,8 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         val convInfo =
             timelineItemConversionInformation ?: JiraTimelineItemConversionInformation(imsProject.rawId!!, id);
         val timelineId = timelineItemConversionInformation?.gropiusId
-        val sourceSet = data.fromString!!.split(' ').toSet()
-        val destinationSet = data.toString!!.split(' ').toSet()
+        val sourceSet = (data.fromString ?: "").split(' ').toSet()
+        val destinationSet = (data.toString ?: "").split(' ').toSet()
         logger.info("GOING FROM $sourceSet to $destinationSet, meaning added: ${(destinationSet subtract sourceSet)} and removed ${(sourceSet subtract destinationSet)}")
         for (addedLabel in (destinationSet subtract sourceSet)) {
             val addedLabelEvent = if (timelineId != null) service.neoOperations.findById<AddedLabelEvent>(

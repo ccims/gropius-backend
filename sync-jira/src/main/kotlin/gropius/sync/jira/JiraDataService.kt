@@ -162,16 +162,48 @@ class JiraDataService(
     }
 
     /**
+     * Generate a new IMSUser to be a placeholder in erroneous situations
+     * @param imsProject the project to map the user to
+     * @return the created IMSUser
+     */
+    private suspend fun generateNullUser(imsProject: IMSProject, name: String, displayName: String): IMSUser {
+        val foundImsUser = imsProject.ims().value.users().firstOrNull { it.username == name }
+        if (foundImsUser != null) {
+            return foundImsUser
+        }
+        val imsUser = IMSUser(
+            displayName, null, null, name, mutableMapOf("jira_id" to "0")
+        )
+        imsUser.ims().value = imsProject.ims().value
+        imsUser.template().value = imsUser.ims().value.template().value.imsUserTemplate().value
+        val newUser = neoOperations.save(imsUser).awaitSingle()
+        tokenManager.advertiseIMSUser(newUser)
+        imsProject.ims().value.users() += newUser
+        return newUser
+    }
+
+    /**
      * Get a IMSUser for a Jira user
      * @param imsProject the project to map the user to
      * @param user the Jira user
      * @return the IMSUser for the Jira user
      */
     suspend fun mapUser(imsProject: IMSProject, user: JsonElement): User {
-        val encodedAccountId = if (user.jsonObject["accountId"] != null) jsonNodeMapper.jsonNodeToDeterministicString(
-            objectMapper.valueToTree<JsonNode>(user.jsonObject["accountId"]!!.jsonPrimitive.content)
-        )
-        else jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(user.jsonObject["key"]!!.jsonPrimitive.content))
+        if ((user as? JsonObject) == null) {
+            logger.warn("User is not a JsonObject, falling back to dummy user")
+            return generateNullUser(imsProject, "null-user", "Null User")
+        }
+        val encodedAccountId =
+            if ((user.jsonObject["accountId"] as? JsonPrimitive) != null) jsonNodeMapper.jsonNodeToDeterministicString(
+                objectMapper.valueToTree<JsonNode>(user.jsonObject["accountId"]!!.jsonPrimitive.content)
+            )
+            else if ((user.jsonObject["key"] as? JsonPrimitive) != null) jsonNodeMapper.jsonNodeToDeterministicString(
+                objectMapper.valueToTree<JsonNode>(user.jsonObject["key"]!!.jsonPrimitive.content)
+            )
+            else {
+                logger.warn("User has no key, $user")
+                return generateNullUser(imsProject, "null-id-user", "Null ID User")
+            }
         val foundImsUser =
             imsProject.ims().value.users().firstOrNull { it.templatedFields["jira_id"] == encodedAccountId }
         if (foundImsUser != null) {
@@ -259,7 +291,7 @@ class JiraDataService(
                 }
                 logger.info("Response Code for request with token token is ${res.status}(${res.status.isSuccess()}): $body is ${res.bodyAsText()}")
                 return if (res.status.isSuccess()) {
-                    logger.trace("Response for {} {}", res.request.url, res.bodyAsText())
+                    logger.debug("Response for {} {}", res.request.url, res.bodyAsText())
                     Optional.of(res)
                 } else {
                     Optional.empty()
@@ -289,7 +321,7 @@ class JiraDataService(
                 }
                 logger.info("Response Code for request with token token is ${res.status}(${res.status.isSuccess()}): $body is ${res.bodyAsText()}")
                 return if (res.status.isSuccess()) {
-                    logger.trace("Response for {} {}", res.request.url, res.bodyAsText())
+                    logger.debug("Response for {} {}", res.request.url, res.bodyAsText())
                     Optional.of(res)
                 } else {
                     Optional.empty()
