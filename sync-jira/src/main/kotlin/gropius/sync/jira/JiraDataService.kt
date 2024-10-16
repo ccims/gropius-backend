@@ -108,6 +108,7 @@ class JiraDataService(
     /**
      * Find and ensure the IMSIssueTemplate in the database
      * @param imsProject The IMSProject to work with
+     * @param name name of the type to look for, if known
      * @return the IssueType
      */
     suspend fun issueType(imsProject: IMSProject, name: String): IssueType {
