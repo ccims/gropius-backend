@@ -5,6 +5,7 @@ import gropius.model.issue.Issue
 import gropius.model.issue.Label
 import gropius.model.issue.timeline.Assignment
 import gropius.model.issue.timeline.IssueComment
+import gropius.model.issue.timeline.TimelineItem
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
 import gropius.model.user.GropiusUser
@@ -83,6 +84,10 @@ final class GithubSync(
     override suspend fun isOutgoingCommentsEnabled(imsProject: IMSProject): Boolean {
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         return imsProjectConfig.enableOutgoingComments
+    }
+
+    override suspend fun isOutgoingTemplatedFieldsEnabled(imsProject: IMSProject): Boolean {
+        return false
     }
 
     override suspend fun isOutgoingTitleChangedEnabled(imsProject: IMSProject): Boolean {
@@ -222,6 +227,21 @@ final class GithubSync(
         val item =
             response.data?.removeAssigneesFromAssignable?.assignable?.asIssue()?.timelineItems?.nodes?.lastOrNull()
                 ?.asNode()
+        if (item != null) {
+            return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)
+        }
+        logger.error("${response.data} ${response.errors}")
+        //TODO("ERROR HANDLING")
+        return null
+    }
+
+    override suspend fun syncFallbackComment(
+        imsProject: IMSProject, issueId: String, comment: String, original: TimelineItem?, users: List<User>
+    ): TimelineItemConversionInformation? {
+        val response = githubDataService.mutation(
+            imsProject, users, MutateCreateCommentMutation(issueId, comment), gropiusUserList(users)
+        ).second
+        val item = response.data?.addComment?.commentEdge?.node?.asIssueTimelineItems()
         if (item != null) {
             return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)
         }
