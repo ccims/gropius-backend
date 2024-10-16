@@ -906,14 +906,10 @@ abstract class AbstractSync(
      * @param timeline Timeline of the issue
      * @param imsProject IMS project to sync
      * @param issueInfo Issue to sync
-     * @param label Label to sync
-     * @param virtualIDs mapping for timeline items that are geerated with generated ids and do not exist in the database
      */
     private suspend fun syncOutgoingAssignments(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
-        val labelStateMap = this.labelStateMap(imsProject)
-        val stateLabelMap = labelStateMap.map { it.value to it.key }.toMap()
         val virtualIDs = mutableMapOf<TimelineItem, String>()
 
         val modifiedTimeline =
@@ -934,9 +930,11 @@ abstract class AbstractSync(
 
     /**
      * Sync Outgoing Assignments
-     * @param timeline Timeline of the issue
+     * @param relevantTimeline Timeline of the issue
      * @param imsProject IMS project to sync
      * @param issueInfo Issue to sync
+     * @param assignment Assignment to sync
+     * @param virtualIDs mapping for timeline items that are geerated with generated ids and do not exist in the database
      */
     private suspend fun syncOutgoingSingleAssignment(
         relevantTimeline: List<TimelineItem>,
@@ -945,17 +943,17 @@ abstract class AbstractSync(
         assignment: Assignment,
         virtualIDs: Map<TimelineItem, String>
     ) {
-        var labelIsSynced = false
+        var assignmentIsSynced = false
         val finalBlock = findFinalTypeBlock(relevantTimeline)
         for (item in finalBlock) {
             val relevantEvent = collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
                 imsProject.rawId!!, item.rawId ?: virtualIDs[item]!!
             )
             if (relevantEvent?.githubId != null) {
-                labelIsSynced = true
+                assignmentIsSynced = true
             }
         }
-        if (!labelIsSynced) {
+        if (!assignmentIsSynced) {
             if (shouldSyncType<RemovedAssignmentEvent, Assignment>(
                     imsProject, finalBlock, relevantTimeline, true, virtualIDs
                 )
