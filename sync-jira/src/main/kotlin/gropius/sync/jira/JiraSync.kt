@@ -3,6 +3,7 @@ package gropius.sync.jira
 import gropius.model.architecture.IMSProject
 import gropius.model.issue.Issue
 import gropius.model.issue.Label
+import gropius.model.issue.timeline.Assignment
 import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
@@ -299,6 +300,18 @@ final class JiraSync(
 
     override suspend fun findUnsyncedIssues(imsProject: IMSProject): List<IncomingIssue> {
         return issueDataService.findByImsProject(imsProject.rawId!!)
+    }
+
+    override suspend fun syncSingleAssigned(
+        imsProject: IMSProject, issueId: String, assignment: Assignment, users: List<User>
+    ): TimelineItemConversionInformation? {
+        TODO()
+    }
+
+    override suspend fun syncSingleUnassigned(
+        imsProject: IMSProject, issueId: String, assignment: Assignment, users: List<User>
+    ): TimelineItemConversionInformation? {
+        TODO()
     }
 
     override suspend fun syncComment(

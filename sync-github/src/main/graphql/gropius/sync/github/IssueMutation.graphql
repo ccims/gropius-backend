@@ -86,3 +86,31 @@ mutation MutateCreateIssue($id: ID!, $title: String!, $body: String!) {
         }
     }
 }
+mutation MutateAssignUser($id: ID!, $user: ID!) {
+    addAssigneesToAssignable(input:{assignableId: $id, assigneeIds: [$user]}){
+        assignable {
+            ...on Issue {
+                timelineItems(itemTypes: [ASSIGNED_EVENT], last: 1) {
+                    nodes {
+                        ...TimelineItemData
+                    }
+                }
+            }
+        }
+        clientMutationId
+    }
+}
+mutation MutateUnassignUser($id: ID!, $user: ID!) {
+    removeAssigneesFromAssignable(input:{assignableId: $id, assigneeIds: [$user]}){
+        assignable {
+            ...on Issue {
+                timelineItems(itemTypes: [UNASSIGNED_EVENT], last: 1) {
+                    nodes {
+                        ...TimelineItemData
+                    }
+                }
+            }
+        }
+        clientMutationId
+    }
+}

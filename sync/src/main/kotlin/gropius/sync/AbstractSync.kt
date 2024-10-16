@@ -175,6 +175,30 @@ abstract class AbstractSync(
     ): TimelineItemConversionInformation?
 
     /**
+     * Incorporate an added assignment
+     * @param imsProject IMS project to sync
+     * @param issueId GitHub ID of the issue
+     * @param assignment Assignment to sync
+     * @param users List of users involved in this timeline item, sorted with most relevant first
+     * @return Conversion information
+     */
+    abstract suspend fun syncSingleAssigned(
+        imsProject: IMSProject, issueId: String, assignment: Assignment, users: List<User>
+    ): TimelineItemConversionInformation?
+
+    /**
+     * Incorporate a removed assignment
+     * @param imsProject IMS project to sync
+     * @param issueId GitHub ID of the issue
+     * @param assignment Assignment to sync
+     * @param users List of users involved in this timeline item, sorted with most relevant first
+     * @return Conversion information
+     */
+    abstract suspend fun syncSingleUnassigned(
+        imsProject: IMSProject, issueId: String, assignment: Assignment, users: List<User>
+    ): TimelineItemConversionInformation?
+
+    /**
      * Create an issue on the IMS
      * @param imsProject IMS project to sync
      * @param issue Issue to sync
@@ -882,10 +906,87 @@ abstract class AbstractSync(
      * @param timeline Timeline of the issue
      * @param imsProject IMS project to sync
      * @param issueInfo Issue to sync
+     * @param label Label to sync
+     * @param virtualIDs mapping for timeline items that are geerated with generated ids and do not exist in the database
      */
     private suspend fun syncOutgoingAssignments(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
+        val labelStateMap = this.labelStateMap(imsProject)
+        val stateLabelMap = labelStateMap.map { it.value to it.key }.toMap()
+        val virtualIDs = mutableMapOf<TimelineItem, String>()
+
+        val modifiedTimeline =
+            timeline.filterIsInstance<Assignment>() + timeline.filterIsInstance<RemovedAssignmentEvent>()
+        val groups = modifiedTimeline.groupBy {
+            when (it) {
+                is Assignment -> it
+                is RemovedAssignmentEvent -> it.removedAssignment().value!!
+                else -> throw IllegalStateException("Kotlin Generator Defective")
+            }
+        }
+        for ((assignment, relevantTimeline) in groups) {
+            syncOutgoingSingleAssignment(
+                relevantTimeline.sortedBy { it.createdAt }, imsProject, issueInfo, assignment, virtualIDs
+            )
+        }
+    }
+
+    /**
+     * Sync Outgoing Assignments
+     * @param timeline Timeline of the issue
+     * @param imsProject IMS project to sync
+     * @param issueInfo Issue to sync
+     */
+    private suspend fun syncOutgoingSingleAssignment(
+        relevantTimeline: List<TimelineItem>,
+        imsProject: IMSProject,
+        issueInfo: IssueConversionInformation,
+        assignment: Assignment,
+        virtualIDs: Map<TimelineItem, String>
+    ) {
+        var labelIsSynced = false
+        val finalBlock = findFinalTypeBlock(relevantTimeline)
+        for (item in finalBlock) {
+            val relevantEvent = collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
+                imsProject.rawId!!, item.rawId ?: virtualIDs[item]!!
+            )
+            if (relevantEvent?.githubId != null) {
+                labelIsSynced = true
+            }
+        }
+        if (!labelIsSynced) {
+            if (shouldSyncType<RemovedAssignmentEvent, Assignment>(
+                    imsProject, finalBlock, relevantTimeline, true, virtualIDs
+                )
+            ) {
+                val conversionInformation = syncSingleUnassigned(imsProject,
+                    issueInfo.githubId,
+                    assignment!!,
+                    finalBlock.map { it.lastModifiedBy().value })
+                if (conversionInformation != null) {
+                    conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
+                    collectedSyncInfo.timelineItemConversionInformationService.save(
+                        conversionInformation
+                    ).awaitSingle()
+                }
+            }
+            if (shouldSyncType<Assignment, RemovedAssignmentEvent>(
+                    imsProject, finalBlock, relevantTimeline, false, virtualIDs
+                )
+            ) {
+                val conversionInformation = syncSingleAssigned(imsProject,
+                    issueInfo.githubId,
+                    assignment!!,
+                    finalBlock.map { it.lastModifiedBy().value })
+                if (conversionInformation != null) {
+                    conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
+                    collectedSyncInfo.timelineItemConversionInformationService.save(
+                        conversionInformation
+                    ).awaitSingle()
+                }
+            }
+        }
     }
 
     /**

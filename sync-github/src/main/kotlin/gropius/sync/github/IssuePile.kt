@@ -540,7 +540,7 @@ class UnassignedTimelineItem(
                 gropiusId
             ) else RemovedAssignmentEvent(createdAt, createdAt)
             val opposite = issue.timelineItems().filterIsInstance<Assignment>().sortedBy { it.createdAt }
-                .lastOrNull { it.user().value.username == user }
+                .lastOrNull { it.user().value.username == user } // TODO: Catch multiple
             if ((event == null) || (opposite == null)) {
                 return listOf<TimelineItem>() to convInfo;
             }
