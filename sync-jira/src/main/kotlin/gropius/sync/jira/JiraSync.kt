@@ -7,6 +7,8 @@ import gropius.model.issue.timeline.Assignment
 import gropius.model.issue.timeline.IssueComment
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
+import gropius.model.user.GropiusUser
+import gropius.model.user.IMSUser
 import gropius.model.user.User
 import gropius.sync.*
 import gropius.sync.jira.config.IMSConfig
@@ -18,10 +20,7 @@ import io.ktor.client.plugins.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.OffsetDateTime
@@ -305,13 +304,67 @@ final class JiraSync(
     override suspend fun syncSingleAssigned(
         imsProject: IMSProject, issueId: String, assignment: Assignment, users: List<User>
     ): TimelineItemConversionInformation? {
-        TODO()
+        val assignedUser = assignment.user().value
+        val imsUsers =
+            if (assignedUser as? IMSUser != null) listOf(assignedUser) else if (assignedUser as? GropiusUser != null) assignedUser.imsUsers()
+                .filter { it.ims().value == imsProject.ims().value } else emptyList()
+        val ids = imsUsers.map { it.username }
+        if (ids.isEmpty()) {
+            return null
+        }
+        val response = jiraDataService.request(
+            imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
+                mapOf(
+                    "fields" to JsonObject(
+                        mapOf(
+                            "assignee" to JsonObject(
+                                mapOf(
+                                    "name" to JsonPrimitive(ids.first())
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        ) {
+            appendPathSegments("issue")
+            appendPathSegments(issueId)
+            parameters.append("returnIssue", "true")
+            parameters.append("expand", "names,schema,editmeta,changelog")
+
+        }
+        val changelogEntry = response.second.body<IssueBean>().changelog.histories.lastOrNull()
+        return JiraTimelineItemConversionInformation(
+            imsProject.rawId!!,
+            if (changelogEntry?.items?.singleOrNull()?.field == "assignee") changelogEntry.id else ""
+        )
     }
 
     override suspend fun syncSingleUnassigned(
         imsProject: IMSProject, issueId: String, assignment: Assignment, users: List<User>
     ): TimelineItemConversionInformation? {
-        TODO()
+        val response = jiraDataService.request(
+            imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
+                mapOf(
+                    "fields" to JsonObject(
+                        mapOf(
+                            "assignee" to JsonNull
+                        )
+                    )
+                )
+            )
+        ) {
+            appendPathSegments("issue")
+            appendPathSegments(issueId)
+            parameters.append("returnIssue", "true")
+            parameters.append("expand", "names,schema,editmeta,changelog")
+
+        }
+        val changelogEntry = response.second.body<IssueBean>().changelog.histories.lastOrNull()
+        return JiraTimelineItemConversionInformation(
+            imsProject.rawId!!,
+            if (changelogEntry?.items?.singleOrNull()?.field == "assignee") changelogEntry.id else ""
+        )
     }
 
     override suspend fun syncComment(
