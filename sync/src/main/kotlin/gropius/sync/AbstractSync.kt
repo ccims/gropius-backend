@@ -832,8 +832,7 @@ abstract class AbstractSync(
                     imsProject, finalBlock, relevantTimeline, true, virtualIDs
                 )
             ) {
-                val conversionInformation = syncRemovedLabel(
-                    imsProject,
+                val conversionInformation = syncRemovedLabel(imsProject,
                     issueInfo.githubId,
                     label!!,
                     finalBlock.map { it.lastModifiedBy().value })
@@ -848,8 +847,7 @@ abstract class AbstractSync(
                     imsProject, finalBlock, relevantTimeline, false, virtualIDs
                 )
             ) {
-                val conversionInformation = syncAddedLabel(
-                    imsProject,
+                val conversionInformation = syncAddedLabel(imsProject,
                     issueInfo.githubId,
                     label!!,
                     finalBlock.map { it.lastModifiedBy().value })
@@ -910,8 +908,7 @@ abstract class AbstractSync(
                     imsProject.rawId!!, it.rawId!!
                 ) != null
             }) {
-            val conversionInformation = syncTitleChange(
-                imsProject,
+            val conversionInformation = syncTitleChange(imsProject,
                 issueInfo.githubId,
                 finalBlock.first().newTitle,
                 finalBlock.map { it.createdBy().value })
@@ -944,8 +941,7 @@ abstract class AbstractSync(
                     imsProject.rawId!!, it.rawId!!
                 ) != null
             }) {
-            val conversionInformation = syncTemplatedField(
-                imsProject,
+            val conversionInformation = syncTemplatedField(imsProject,
                 issueInfo.githubId,
                 finalBlock.first(),
                 finalBlock.map { it.createdBy().value })
@@ -1027,6 +1023,57 @@ abstract class AbstractSync(
      * @param issueInfo Issue to sync
      * @param assignment Assignment to sync
      * @param virtualIDs mapping for timeline items that are geerated with generated ids and do not exist in the database
+     * @param finalBlock Final block relevant for this assignment
+     */
+    private suspend fun syncOutgoingSingleAssignmentBlock(
+        relevantTimeline: List<TimelineItem>,
+        imsProject: IMSProject,
+        issueInfo: IssueConversionInformation,
+        assignment: Assignment,
+        virtualIDs: Map<TimelineItem, String>,
+        finalBlock: List<TimelineItem>
+    ) {
+        if (shouldSyncType<RemovedAssignmentEvent, Assignment>(
+                imsProject, finalBlock, relevantTimeline, true, virtualIDs
+            )
+        ) {
+            val conversionInformation = syncSingleUnassigned(
+                imsProject,
+                issueInfo.githubId,
+                assignment,
+                finalBlock.map { it.lastModifiedBy().value })
+            if (conversionInformation != null) {
+                conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
+                collectedSyncInfo.timelineItemConversionInformationService.save(
+                    conversionInformation
+                ).awaitSingle()
+            }
+        }
+        if (shouldSyncType<Assignment, RemovedAssignmentEvent>(
+                imsProject, finalBlock, relevantTimeline, false, virtualIDs
+            )
+        ) {
+            val conversionInformation = syncSingleAssigned(
+                imsProject,
+                issueInfo.githubId,
+                assignment,
+                finalBlock.map { it.lastModifiedBy().value })
+            if (conversionInformation != null) {
+                conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
+                collectedSyncInfo.timelineItemConversionInformationService.save(
+                    conversionInformation
+                ).awaitSingle()
+            }
+        }
+    }
+
+    /**
+     * Sync Outgoing Assignments
+     * @param relevantTimeline Timeline of the issue
+     * @param imsProject IMS project to sync
+     * @param issueInfo Issue to sync
+     * @param assignment Assignment to sync
+     * @param virtualIDs mapping for timeline items that are geerated with generated ids and do not exist in the database
      */
     private suspend fun syncOutgoingSingleAssignment(
         relevantTimeline: List<TimelineItem>,
@@ -1046,36 +1093,9 @@ abstract class AbstractSync(
             }
         }
         if (!assignmentIsSynced) {
-            if (shouldSyncType<RemovedAssignmentEvent, Assignment>(
-                    imsProject, finalBlock, relevantTimeline, true, virtualIDs
-                )
-            ) {
-                val conversionInformation = syncSingleUnassigned(imsProject,
-                    issueInfo.githubId,
-                    assignment!!,
-                    finalBlock.map { it.lastModifiedBy().value })
-                if (conversionInformation != null) {
-                    conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
-                    collectedSyncInfo.timelineItemConversionInformationService.save(
-                        conversionInformation
-                    ).awaitSingle()
-                }
-            }
-            if (shouldSyncType<Assignment, RemovedAssignmentEvent>(
-                    imsProject, finalBlock, relevantTimeline, false, virtualIDs
-                )
-            ) {
-                val conversionInformation = syncSingleAssigned(imsProject,
-                    issueInfo.githubId,
-                    assignment!!,
-                    finalBlock.map { it.lastModifiedBy().value })
-                if (conversionInformation != null) {
-                    conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
-                    collectedSyncInfo.timelineItemConversionInformationService.save(
-                        conversionInformation
-                    ).awaitSingle()
-                }
-            }
+            syncOutgoingSingleAssignmentBlock(
+                relevantTimeline, imsProject, issueInfo, assignment, virtualIDs, finalBlock
+            )
         }
     }
 
