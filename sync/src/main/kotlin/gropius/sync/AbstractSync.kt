@@ -117,7 +117,7 @@ abstract class AbstractSync(
     /**
      * Incorporate a comment
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param issueComment Comment to sync
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
@@ -131,8 +131,9 @@ abstract class AbstractSync(
     /**
      * Incorporate a fallback comment
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
-     * @param issueComment Comment to sync
+     * @param issueId Remote ID of the issue
+     * @param comment Comment to sync
+     * @param original TimelineItem it fell back from
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
      */
@@ -143,7 +144,7 @@ abstract class AbstractSync(
     /**
      * Incorporate a title change
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param newTitle New title of the issue
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
@@ -157,7 +158,7 @@ abstract class AbstractSync(
     /**
      * Incorporate a state change
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param newState New state of the issue
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
@@ -169,7 +170,7 @@ abstract class AbstractSync(
     /**
      * Incorporate a templated field change
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param fieldChangedEvent Event describing the field change
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
@@ -189,7 +190,7 @@ abstract class AbstractSync(
     /**
      * Incorporate an added label
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param label Label to sync
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
@@ -203,7 +204,7 @@ abstract class AbstractSync(
     /**
      * Incorporate a removed label
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param label Label to sync
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
@@ -217,7 +218,7 @@ abstract class AbstractSync(
     /**
      * Incorporate an added assignment
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param assignment Assignment to sync
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
@@ -229,7 +230,7 @@ abstract class AbstractSync(
     /**
      * Incorporate a removed assignment
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param assignment Assignment to sync
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
