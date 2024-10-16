@@ -110,9 +110,13 @@ class JiraDataService(
      * @param imsProject The IMSProject to work with
      * @return the IssueType
      */
-    suspend fun issueType(imsProject: IMSProject): IssueType {
+    suspend fun issueType(imsProject: IMSProject, name: String): IssueType {
         val template = issueTemplate(imsProject)
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        val namedType = template.issueTypes().firstOrNull { it.name == name }
+        if (namedType != null) {
+            return namedType
+        }
         if (imsProjectConfig.defaultType != null) {
             val type = neoOperations.findById<IssueType>(imsProjectConfig.defaultType)
             if ((type != null) && (type.partOf().contains(template))) {

@@ -136,7 +136,7 @@ final class JiraSync(
     override suspend fun fetchData(imsProjects: List<IMSProject>) {
         for (imsProject in imsProjects) {
             jiraDataService.issueTemplate(imsProject)
-            jiraDataService.issueType(imsProject)
+            jiraDataService.issueType(imsProject, "")
             jiraDataService.issueState(imsProject, null, true)
             jiraDataService.issueState(imsProject, null, false)
         }
