@@ -901,7 +901,9 @@ abstract class AbstractSync(
     ) {
         val virtualIDs = mapOf<TimelineItem, String>()//For future features
         val relevantTimeline = timeline.mapNotNull { it as? TitleChangedEvent }
-        if (relevantTimeline.isEmpty()) return
+        if (relevantTimeline.isEmpty()) {
+            return
+        }
         val finalBlock = findFinalBlock(relevantTimeline) { it.newTitle }
         if (finalBlock.none {
                 collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
@@ -933,7 +935,9 @@ abstract class AbstractSync(
     ) {
         val virtualIDs = mapOf<TimelineItem, String>()//For future features
         val relevantTimeline = timeline.mapNotNull { it as? TemplatedFieldChangedEvent }
-        if (relevantTimeline.isEmpty()) return
+        if (relevantTimeline.isEmpty()) {
+            return
+        }
         val finalBlock = findFinalBlock(relevantTimeline) { it.fieldName to it.newValue }
         if (finalBlock.none {
                 collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
@@ -965,7 +969,9 @@ abstract class AbstractSync(
     ) {
         val virtualIDs = mapOf<TimelineItem, String>()//For future features
         val relevantTimeline = timeline.mapNotNull { it as? StateChangedEvent }
-        if (relevantTimeline.isEmpty()) return
+        if (relevantTimeline.isEmpty()) {
+            return
+        }
         val finalBlock = findFinalBlock(relevantTimeline) { it.newState().value }
         logger.debug("finalBlock: $finalBlock in $relevantTimeline being ${relevantTimeline.map { it.newState().value.name }}")
         if (finalBlock.none {
