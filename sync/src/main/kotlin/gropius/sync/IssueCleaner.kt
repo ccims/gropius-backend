@@ -49,11 +49,15 @@ class IssueCleaner(
             if (item is Assignment) {
                 issue.assignments() += item
             }
-            if (item is RemovedAssignmentEvent) {
-                issue.assignments() -= item.removedAssignment().value
-            }
+        }
+        for (item in issue.timelineItems().sortedBy { it.createdAt }) {
             if (item is AssignmentTypeChangedEvent) {
                 TODO()
+            }
+        }
+        for (item in issue.timelineItems().sortedBy { it.createdAt }) {
+            if (item is RemovedAssignmentEvent) {
+                issue.assignments() -= item.removedAssignment().value
             }
         }
     }

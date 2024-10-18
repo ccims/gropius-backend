@@ -29,6 +29,7 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.jvm.optionals.getOrNull
 
 /**
  * Details of the issue status after the transition.
@@ -270,13 +271,13 @@ final class JiraSync(
             val issueList = mutableListOf<IssueData>()
             val times = mutableListOf<OffsetDateTime>()
             val issueResponse = jiraDataService.tokenManager.executeUntilWorking(imsProject, userList, listOf()) {
-                val userTimeZone = ZoneId.of(
-                    jiraDataService.sendRequest<Unit>(
-                        imsProject, HttpMethod.Get, null, {
-                            appendPathSegments("myself")
-                        }, it
-                    ).get().body<UserQuery>().timeZone
-                )
+                val requestData = jiraDataService.sendRequest<Unit>(
+                    imsProject, HttpMethod.Get, null, {
+                        appendPathSegments("myself")
+                    }, it
+                ).getOrNull() ?: TODO("Timezone bad")
+                logger.trace("TIME ZONE RESPONSE ${requestData.bodyAsText()}")
+                val userTimeZone = ZoneId.of(requestData.body<UserQuery>().timeZone)
                 var query = "project=${imsProjectConfig.repo} ORDER BY updated ASC"
                 if (lastSuccessfulSync != null) {
                     query = "project=${imsProjectConfig.repo} AND updated > ${
@@ -474,12 +475,21 @@ final class JiraSync(
     override suspend fun syncTemplatedField(
         imsProject: IMSProject, issueId: String, fieldChangedEvent: TemplatedFieldChangedEvent, users: List<User>
     ): TimelineItemConversionInformation? {
+        val customName = jiraDataService.issueDataRepository.findByImsProject(imsProject.rawId!!).map {
+            it.names.map { it.value.jsonPrimitive.content to it.key }.toMap()[fieldChangedEvent.fieldName]
+        }.filterNotNull().firstOrNull()
+        logger.trace("Writing ${fieldChangedEvent.fieldName} to $customName with ${fieldChangedEvent.newValue}")
+        if (customName == null) {
+            return null
+        }
         val response = jiraDataService.request(
             imsProject, users, HttpMethod.Put, gropiusUserList(users), JsonObject(
                 mapOf(
                     "fields" to JsonObject(
                         mapOf(
-                            fieldChangedEvent.fieldName to JsonPrimitive(fieldChangedEvent.newValue)
+                            customName to JsonPrimitive(
+                                jiraDataService.objectMapper.readTree(fieldChangedEvent.newValue).textValue()
+                            )
                         )
                     )
                 )

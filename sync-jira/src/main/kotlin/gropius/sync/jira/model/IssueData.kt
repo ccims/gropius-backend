@@ -2,7 +2,6 @@ package gropius.sync.jira.model
 
 import com.fasterxml.jackson.databind.JsonNode
 import gropius.model.architecture.IMSProject
-import gropius.model.architecture.Project
 import gropius.model.issue.Issue
 import gropius.model.issue.timeline.*
 import gropius.sync.IncomingIssue
@@ -13,7 +12,6 @@ import gropius.sync.jira.JiraDataService
 import gropius.util.schema.Schema
 import gropius.util.schema.Type
 import jakarta.transaction.Transactional
-import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.serialization.json.*
 import org.bson.*
@@ -76,6 +74,10 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         } else if (fieldId == "labels") {
             return gropiusLabels(
                 timelineItemConversionInformation, imsProject, service, jiraService
+            )
+        } else if (fieldId == "assignee") {
+            return gropiusAssignment(
+                timelineItemConversionInformation, imsProject, service, jiraService, issue
             )
         }
         if (issue.template().value.templateFieldSpecifications.containsKey(data.field)) {
@@ -216,6 +218,67 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         titleChangedEvent.oldState().value = jiraService.issueState(imsProject, issue, data.fromString == null)
         titleChangedEvent.newState().value = jiraService.issueState(imsProject, issue, data.toString == null)
         return listOf<TimelineItem>(titleChangedEvent) to convInfo;
+    }
+
+    /**
+     * Convert a single assignment change to a Gropius TimelineItem
+     * @param timelineItemConversionInformation the timeline item conversion information
+     * @param imsProject the ims project
+     * @param service the service
+     * @param jiraService the jira service
+     * @param issue the issue to work on (sometimes not yet saved or complete)
+     * @return the pair of timeline items and conversion information
+     */
+    private suspend fun gropiusAssignment(
+        timelineItemConversionInformation: TimelineItemConversionInformation?,
+        imsProject: IMSProject,
+        service: JiraDataService,
+        jiraService: JiraDataService,
+        issue: Issue
+    ): Pair<List<TimelineItem>, TimelineItemConversionInformation> {
+        val convInfo =
+            timelineItemConversionInformation ?: JiraTimelineItemConversionInformation(imsProject.rawId!!, id);
+        val timelineId = timelineItemConversionInformation?.gropiusId
+        val encodedAccountId = service.jsonNodeMapper.jsonNodeToDeterministicString(
+            service.objectMapper.valueToTree<JsonNode>(data.to)
+        )
+        val newUser = if (data.to != null) imsProject.ims().value.users()
+            .firstOrNull { (it.username == data.to) or (it.templatedFields["jira_id"] == encodedAccountId) } else null
+        if (newUser != null) {
+            val titleChangedEvent = (if (timelineId != null) service.neoOperations.findById<Assignment>(
+                timelineId
+            ) else null) ?: Assignment(
+                OffsetDateTime.parse(
+                    created, IssueData.formatter
+                ).minusNanos(1), OffsetDateTime.parse(
+                    created, IssueData.formatter
+                ).minusNanos(1)
+            )
+            titleChangedEvent.createdBy().value = jiraService.mapUser(imsProject, author)
+            titleChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
+            titleChangedEvent.user().value = newUser
+            return listOf<TimelineItem>(titleChangedEvent) to convInfo;
+        } else if (data.to != null) {
+            logger.warn("Cannot find user for ${data.to} ${data.toString}")
+        }
+        val oldAssignment =
+            issue.assignments().lastOrNull { it.user().value.username == data.from } ?: issue.assignments().lastOrNull()
+        if (oldAssignment != null) {//TODO: Replace with robuster logic once handling of multiple timeline items works
+            val titleChangedEvent = (if (timelineId != null) service.neoOperations.findById<RemovedAssignmentEvent>(
+                timelineId
+            ) else null) ?: RemovedAssignmentEvent(
+                OffsetDateTime.parse(
+                    created, IssueData.formatter
+                ).minusNanos(1), OffsetDateTime.parse(
+                    created, IssueData.formatter
+                ).minusNanos(1)
+            )
+            titleChangedEvent.createdBy().value = jiraService.mapUser(imsProject, author)
+            titleChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
+            titleChangedEvent.removedAssignment().value = oldAssignment
+            return listOf<TimelineItem>(titleChangedEvent) to convInfo
+        }
+        return listOf<TimelineItem>() to convInfo
     }
 
     /**
@@ -427,7 +490,7 @@ data class IssueData(
         issue.body().value.issue().value = issue
         issue.state().value = jiraService.issueState(imsProject, null, true)
         issue.template().value = jiraService.issueTemplate(imsProject)
-        issue.trackables() += jiraService.neoOperations.findAll(Project::class.java).awaitFirst()
+        issue.trackables() += imsProject.trackable().value
         issue.type().value =
             jiraService.issueType(imsProject, fields["issuetype"]?.jsonObject?.get("name")?.jsonPrimitive?.content!!)
         return issue
