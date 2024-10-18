@@ -91,6 +91,10 @@ class IMSConfigManager(
             "github_id" to obj {
                 "nullable" to true
                 "type" to "int32"
+            }.toString(),
+            "github_node_id" to obj {
+                "nullable" to true
+                "type" to "string"
             }.toString()
         )
     }

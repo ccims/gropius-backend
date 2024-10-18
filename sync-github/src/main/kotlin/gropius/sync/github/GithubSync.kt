@@ -190,7 +190,7 @@ final class GithubSync(
             if (assignedUser as? IMSUser != null) listOf(assignedUser) else if (assignedUser as? GropiusUser != null) assignedUser.imsUsers()
                 .filter { it.ims().value == imsProject.ims().value } else emptyList()
         val ids = imsUsers.map {
-            it.templatedFields["github_id"]!!
+            githubDataService.objectMapper.readTree(it.templatedFields["github_node_id"]!!).textValue()
         }
         if (ids.isEmpty()) {
             return null
@@ -216,7 +216,7 @@ final class GithubSync(
             if (assignedUser as? IMSUser != null) listOf(assignedUser) else if (assignedUser as? GropiusUser != null) assignedUser.imsUsers()
                 .filter { it.ims().value == imsProject.ims().value } else emptyList()
         val ids = imsUsers.map {
-            it.templatedFields["github_id"]!!
+            githubDataService.objectMapper.readTree(it.templatedFields["github_node_id"]!!).textValue()
         }
         if (ids.isEmpty()) {
             return null
