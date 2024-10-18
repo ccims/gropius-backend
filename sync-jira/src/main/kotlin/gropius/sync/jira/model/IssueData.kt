@@ -204,7 +204,7 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         val convInfo =
             timelineItemConversionInformation ?: JiraTimelineItemConversionInformation(imsProject.rawId!!, id);
         val timelineId = timelineItemConversionInformation?.gropiusId
-        val titleChangedEvent = if (timelineId != null) service.neoOperations.findById<StateChangedEvent>(
+        val stateChangedEvent = if (timelineId != null) service.neoOperations.findById<StateChangedEvent>(
             timelineId
         )!! else StateChangedEvent(
             OffsetDateTime.parse(
@@ -213,11 +213,11 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
                 created, IssueData.formatter
             ).minusNanos(1)
         )
-        titleChangedEvent.createdBy().value = jiraService.mapUser(imsProject, author)
-        titleChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
-        titleChangedEvent.oldState().value = jiraService.issueState(imsProject, issue, data.fromString == null)
-        titleChangedEvent.newState().value = jiraService.issueState(imsProject, issue, data.toString == null)
-        return listOf<TimelineItem>(titleChangedEvent) to convInfo;
+        stateChangedEvent.createdBy().value = jiraService.mapUser(imsProject, author)
+        stateChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
+        stateChangedEvent.oldState().value = jiraService.issueState(imsProject, issue, data.fromString == null)
+        stateChangedEvent.newState().value = jiraService.issueState(imsProject, issue, data.toString == null)
+        return listOf<TimelineItem>(stateChangedEvent) to convInfo;
     }
 
     /**
@@ -245,7 +245,7 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
         val newUser = if (data.to != null) imsProject.ims().value.users()
             .firstOrNull { (it.username == data.to) or (it.templatedFields["jira_id"] == encodedAccountId) } else null
         if (newUser != null) {
-            val titleChangedEvent = (if (timelineId != null) service.neoOperations.findById<Assignment>(
+            val assignmentEvent = (if (timelineId != null) service.neoOperations.findById<Assignment>(
                 timelineId
             ) else null) ?: Assignment(
                 OffsetDateTime.parse(
@@ -254,29 +254,30 @@ class JiraTimelineItem(val id: String, val created: String, val author: JsonObje
                     created, IssueData.formatter
                 ).minusNanos(1)
             )
-            titleChangedEvent.createdBy().value = jiraService.mapUser(imsProject, author)
-            titleChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
-            titleChangedEvent.user().value = newUser
-            return listOf<TimelineItem>(titleChangedEvent) to convInfo;
+            assignmentEvent.createdBy().value = jiraService.mapUser(imsProject, author)
+            assignmentEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
+            assignmentEvent.user().value = newUser
+            return listOf<TimelineItem>(assignmentEvent) to convInfo;
         } else if (data.to != null) {
             logger.warn("Cannot find user for ${data.to} ${data.toString}")
         }
         val oldAssignment =
             issue.assignments().lastOrNull { it.user().value.username == data.from } ?: issue.assignments().lastOrNull()
         if (oldAssignment != null) {//TODO: Replace with robuster logic once handling of multiple timeline items works
-            val titleChangedEvent = (if (timelineId != null) service.neoOperations.findById<RemovedAssignmentEvent>(
-                timelineId
-            ) else null) ?: RemovedAssignmentEvent(
-                OffsetDateTime.parse(
-                    created, IssueData.formatter
-                ).minusNanos(1), OffsetDateTime.parse(
-                    created, IssueData.formatter
-                ).minusNanos(1)
-            )
-            titleChangedEvent.createdBy().value = jiraService.mapUser(imsProject, author)
-            titleChangedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
-            titleChangedEvent.removedAssignment().value = oldAssignment
-            return listOf<TimelineItem>(titleChangedEvent) to convInfo
+            val assignmentRemovedEvent =
+                (if (timelineId != null) service.neoOperations.findById<RemovedAssignmentEvent>(
+                    timelineId
+                ) else null) ?: RemovedAssignmentEvent(
+                    OffsetDateTime.parse(
+                        created, IssueData.formatter
+                    ).minusNanos(1), OffsetDateTime.parse(
+                        created, IssueData.formatter
+                    ).minusNanos(1)
+                )
+            assignmentRemovedEvent.createdBy().value = jiraService.mapUser(imsProject, author)
+            assignmentRemovedEvent.lastModifiedBy().value = jiraService.mapUser(imsProject, author)
+            assignmentRemovedEvent.removedAssignment().value = oldAssignment
+            return listOf<TimelineItem>(assignmentRemovedEvent) to convInfo
         }
         return listOf<TimelineItem>() to convInfo
     }
