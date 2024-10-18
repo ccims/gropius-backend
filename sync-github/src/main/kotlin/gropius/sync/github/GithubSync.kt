@@ -3,17 +3,23 @@ package gropius.sync.github
 import gropius.model.architecture.IMSProject
 import gropius.model.issue.Issue
 import gropius.model.issue.Label
+import gropius.model.issue.timeline.Assignment
 import gropius.model.issue.timeline.IssueComment
+import gropius.model.issue.timeline.TimelineItem
 import gropius.model.template.IMSTemplate
 import gropius.model.template.IssueState
+import gropius.model.user.GropiusUser
+import gropius.model.user.IMSUser
 import gropius.model.user.User
 import gropius.sync.*
 import gropius.sync.github.config.IMSConfigManager
 import gropius.sync.github.config.IMSProjectConfig
 import gropius.sync.github.generated.*
 import gropius.sync.github.generated.MutateAddLabelMutation.Data.AddLabelsToLabelable.Labelable.Companion.asIssue
+import gropius.sync.github.generated.MutateAssignUserMutation.Data.AddAssigneesToAssignable.Assignable.Companion.asIssue
 import gropius.sync.github.generated.MutateCreateCommentMutation.Data.AddComment.CommentEdge.Node.Companion.asIssueTimelineItems
 import gropius.sync.github.generated.MutateRemoveLabelMutation.Data.RemoveLabelsFromLabelable.Labelable.Companion.asIssue
+import gropius.sync.github.generated.MutateUnassignUserMutation.Data.RemoveAssigneesFromAssignable.Assignable.Companion.asIssue
 import gropius.sync.github.generated.fragment.TimelineItemData.Companion.asNode
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -78,6 +84,10 @@ final class GithubSync(
     override suspend fun isOutgoingCommentsEnabled(imsProject: IMSProject): Boolean {
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
         return imsProjectConfig.enableOutgoingComments
+    }
+
+    override suspend fun isOutgoingTemplatedFieldsEnabled(imsProject: IMSProject): Boolean {
+        return false
     }
 
     override suspend fun isOutgoingTitleChangedEnabled(imsProject: IMSProject): Boolean {
@@ -162,6 +172,74 @@ final class GithubSync(
         if (body.isNullOrEmpty()) return null;
         val response = githubDataService.mutation(
             imsProject, users, MutateCreateCommentMutation(issueId, body), gropiusUserList(users)
+        ).second
+        val item = response.data?.addComment?.commentEdge?.node?.asIssueTimelineItems()
+        if (item != null) {
+            return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)
+        }
+        logger.error("${response.data} ${response.errors}")
+        //TODO("ERROR HANDLING")
+        return null
+    }
+
+    override suspend fun syncSingleAssigned(
+        imsProject: IMSProject, issueId: String, assignment: Assignment, users: List<User>
+    ): TimelineItemConversionInformation? {
+        val assignedUser = assignment.user().value
+        val imsUsers =
+            if (assignedUser as? IMSUser != null) listOf(assignedUser) else if (assignedUser as? GropiusUser != null) assignedUser.imsUsers()
+                .filter { it.ims().value == imsProject.ims().value } else emptyList()
+        val ids = imsUsers.map {
+            githubDataService.objectMapper.readTree(it.templatedFields["github_node_id"]!!).textValue()
+        }
+        if (ids.isEmpty()) {
+            return null
+        }
+        val response = githubDataService.mutation(
+            imsProject, users, MutateAssignUserMutation(issueId, ids.first()), gropiusUserList(users)
+        ).second
+        val item =
+            response.data?.addAssigneesToAssignable?.assignable?.asIssue()?.timelineItems?.nodes?.lastOrNull()?.asNode()
+        if (item != null) {
+            return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)
+        }
+        logger.error("${response.data} ${response.errors}")
+        //TODO("ERROR HANDLING")
+        return null
+    }
+
+    override suspend fun syncSingleUnassigned(
+        imsProject: IMSProject, issueId: String, assignment: Assignment, users: List<User>
+    ): TimelineItemConversionInformation? {
+        val assignedUser = assignment.user().value
+        val imsUsers =
+            if (assignedUser as? IMSUser != null) listOf(assignedUser) else if (assignedUser as? GropiusUser != null) assignedUser.imsUsers()
+                .filter { it.ims().value == imsProject.ims().value } else emptyList()
+        val ids = imsUsers.map {
+            githubDataService.objectMapper.readTree(it.templatedFields["github_node_id"]!!).textValue()
+        }
+        if (ids.isEmpty()) {
+            return null
+        }
+        val response = githubDataService.mutation(
+            imsProject, users, MutateUnassignUserMutation(issueId, ids.first()), gropiusUserList(users)
+        ).second
+        val item =
+            response.data?.removeAssigneesFromAssignable?.assignable?.asIssue()?.timelineItems?.nodes?.lastOrNull()
+                ?.asNode()
+        if (item != null) {
+            return TODOTimelineItemConversionInformation(imsProject.rawId!!, item.id)
+        }
+        logger.error("${response.data} ${response.errors}")
+        //TODO("ERROR HANDLING")
+        return null
+    }
+
+    override suspend fun syncFallbackComment(
+        imsProject: IMSProject, issueId: String, comment: String, original: TimelineItem?, users: List<User>
+    ): TimelineItemConversionInformation? {
+        val response = githubDataService.mutation(
+            imsProject, users, MutateCreateCommentMutation(issueId, comment), gropiusUserList(users)
         ).second
         val item = response.data?.addComment?.commentEdge?.node?.asIssueTimelineItems()
         if (item != null) {

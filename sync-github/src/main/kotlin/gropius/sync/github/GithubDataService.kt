@@ -21,6 +21,7 @@ import gropius.sync.github.config.IMSConfig
 import gropius.sync.github.config.IMSProjectConfig
 import gropius.sync.github.generated.fragment.LabelData
 import gropius.sync.github.generated.fragment.UserData
+import gropius.sync.github.generated.fragment.UserData.Companion.asNode
 import gropius.sync.github.generated.fragment.UserData.Companion.asUser
 import gropius.sync.model.LabelInfo
 import gropius.sync.repository.LabelInfoRepository
@@ -115,6 +116,12 @@ class GithubDataService(
         val databaseId = userData?.asUser()?.databaseId
         val encodedAccountId =
             jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(databaseId ?: 0))
+        val encodedUserId =
+            jsonNodeMapper.jsonNodeToDeterministicString(
+                objectMapper.valueToTree<JsonNode>(
+                    userData?.asNode()?.id ?: ""
+                )
+            )
         val username = userData?.login ?: FALLBACK_USER_NAME
         val ims = neoOperations.findById<IMS>(imsProject.ims().value.rawId!!)!!
         if (databaseId != null) {
@@ -133,7 +140,7 @@ class GithubDataService(
             userData?.asUser()?.email,
             null,
             username,
-            mutableMapOf("github_id" to encodedAccountId)
+            mutableMapOf("github_id" to encodedAccountId, "github_node_id" to encodedUserId)
         )
         imsUser.ims().value = imsProject.ims().value
         imsUser.template().value = imsUser.ims().value.template().value.imsUserTemplate().value

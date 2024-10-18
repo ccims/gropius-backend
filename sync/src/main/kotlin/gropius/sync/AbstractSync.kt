@@ -117,31 +117,48 @@ abstract class AbstractSync(
     /**
      * Incorporate a comment
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param issueComment Comment to sync
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
      */
-    abstract suspend fun syncComment(
+    open suspend fun syncComment(
         imsProject: IMSProject, issueId: String, issueComment: IssueComment, users: List<User>
+    ): TimelineItemConversionInformation? {
+        return syncFallbackComment(imsProject, issueId, issueComment.body, issueComment, users)
+    }
+
+    /**
+     * Incorporate a fallback comment
+     * @param imsProject IMS project to sync
+     * @param issueId Remote ID of the issue
+     * @param comment Comment to sync
+     * @param original TimelineItem it fell back from
+     * @param users List of users involved in this timeline item, sorted with most relevant first
+     * @return Conversion information
+     */
+    abstract suspend fun syncFallbackComment(
+        imsProject: IMSProject, issueId: String, comment: String, original: TimelineItem?, users: List<User>
     ): TimelineItemConversionInformation?
 
     /**
      * Incorporate a title change
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param newTitle New title of the issue
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
      */
-    abstract suspend fun syncTitleChange(
+    open suspend fun syncTitleChange(
         imsProject: IMSProject, issueId: String, newTitle: String, users: List<User>
-    ): TimelineItemConversionInformation?
+    ): TimelineItemConversionInformation? {
+        return syncFallbackComment(imsProject, issueId, "Gropius Title changed to $newTitle", null, users)
+    }
 
     /**
      * Incorporate a state change
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param newState New state of the issue
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
@@ -151,27 +168,75 @@ abstract class AbstractSync(
     ): TimelineItemConversionInformation?
 
     /**
+     * Incorporate a templated field change
+     * @param imsProject IMS project to sync
+     * @param issueId Remote ID of the issue
+     * @param fieldChangedEvent Event describing the field change
+     * @param users List of users involved in this timeline item, sorted with most relevant first
+     * @return Conversion information
+     */
+    open suspend fun syncTemplatedField(
+        imsProject: IMSProject, issueId: String, fieldChangedEvent: TemplatedFieldChangedEvent, users: List<User>
+    ): TimelineItemConversionInformation? {
+        return syncFallbackComment(
+            imsProject,
+            issueId,
+            "Gropius Field ${fieldChangedEvent.fieldName} changed to ${fieldChangedEvent.newValue}",
+            fieldChangedEvent,
+            users
+        )
+    }
+
+    /**
      * Incorporate an added label
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param label Label to sync
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
      */
-    abstract suspend fun syncAddedLabel(
+    open suspend fun syncAddedLabel(
         imsProject: IMSProject, issueId: String, label: Label, users: List<User>
-    ): TimelineItemConversionInformation?
+    ): TimelineItemConversionInformation? {
+        return syncFallbackComment(imsProject, issueId, "Gropius Label ${label.name} added", null, users)
+    }
 
     /**
      * Incorporate a removed label
      * @param imsProject IMS project to sync
-     * @param issueId GitHub ID of the issue
+     * @param issueId Remote ID of the issue
      * @param label Label to sync
      * @param users List of users involved in this timeline item, sorted with most relevant first
      * @return Conversion information
      */
-    abstract suspend fun syncRemovedLabel(
+    open suspend fun syncRemovedLabel(
         imsProject: IMSProject, issueId: String, label: Label, users: List<User>
+    ): TimelineItemConversionInformation? {
+        return syncFallbackComment(imsProject, issueId, "Gropius Label ${label.name} removed", null, users)
+    }
+
+    /**
+     * Incorporate an added assignment
+     * @param imsProject IMS project to sync
+     * @param issueId Remote ID of the issue
+     * @param assignment Assignment to sync
+     * @param users List of users involved in this timeline item, sorted with most relevant first
+     * @return Conversion information
+     */
+    abstract suspend fun syncSingleAssigned(
+        imsProject: IMSProject, issueId: String, assignment: Assignment, users: List<User>
+    ): TimelineItemConversionInformation?
+
+    /**
+     * Incorporate a removed assignment
+     * @param imsProject IMS project to sync
+     * @param issueId Remote ID of the issue
+     * @param assignment Assignment to sync
+     * @param users List of users involved in this timeline item, sorted with most relevant first
+     * @return Conversion information
+     */
+    abstract suspend fun syncSingleUnassigned(
+        imsProject: IMSProject, issueId: String, assignment: Assignment, users: List<User>
     ): TimelineItemConversionInformation?
 
     /**
@@ -195,6 +260,13 @@ abstract class AbstractSync(
      * @return true if and only if outgoing sync of labels is enabled
      */
     abstract suspend fun isOutgoingLabelsEnabled(imsProject: IMSProject): Boolean
+
+    /**
+     * Check if Outgoing Sync of TemplatedFields is Enabled
+     * @param imsProject IMS project to check for
+     * @return true if and only if outgoing sync of templatedFields is enabled
+     */
+    abstract suspend fun isOutgoingTemplatedFieldsEnabled(imsProject: IMSProject): Boolean
 
     /**
      * Check if Outgoing Sync of Comments is Enabled
@@ -660,6 +732,9 @@ abstract class AbstractSync(
                 if (isOutgoingAssignmentsEnabled(imsProject)) {
                     syncOutgoingAssignments(timeline, imsProject, issueInfo)
                 }
+                if (isOutgoingTemplatedFieldsEnabled(imsProject)) {
+                    syncOutgoingTemplatedFields(timeline, imsProject, issueInfo)
+                }
                 if (isOutgoingStatesEnabled(imsProject)) {
                     syncOutgoingStateChanges(timeline, imsProject, issueInfo)
                 }
@@ -824,7 +899,9 @@ abstract class AbstractSync(
     ) {
         val virtualIDs = mapOf<TimelineItem, String>()//For future features
         val relevantTimeline = timeline.mapNotNull { it as? TitleChangedEvent }
-        if (relevantTimeline.isEmpty()) return
+        if (relevantTimeline.isEmpty()) {
+            return
+        }
         val finalBlock = findFinalBlock(relevantTimeline) { it.newTitle }
         if (finalBlock.none {
                 collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
@@ -834,6 +911,39 @@ abstract class AbstractSync(
             val conversionInformation = syncTitleChange(imsProject,
                 issueInfo.githubId,
                 finalBlock.first().newTitle,
+                finalBlock.map { it.createdBy().value })
+            if (conversionInformation != null) {
+                conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
+                collectedSyncInfo.timelineItemConversionInformationService.save(
+                    conversionInformation
+                ).awaitSingle()
+            }
+        }
+    }
+
+    /**
+     * Sync Outgoing TemplatedFields Changes
+     * @param timeline Timeline of the issue
+     * @param imsProject IMS project to sync
+     * @param issueInfo Issue to sync
+     */
+    private suspend fun syncOutgoingTemplatedFields(
+        timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
+    ) {
+        val virtualIDs = mapOf<TimelineItem, String>()//For future features
+        val relevantTimeline = timeline.mapNotNull { it as? TemplatedFieldChangedEvent }
+        if (relevantTimeline.isEmpty()) {
+            return
+        }
+        val finalBlock = findFinalBlock(relevantTimeline) { it.fieldName to it.newValue }
+        if (finalBlock.none {
+                collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
+                    imsProject.rawId!!, it.rawId!!
+                ) != null
+            }) {
+            val conversionInformation = syncTemplatedField(imsProject,
+                issueInfo.githubId,
+                finalBlock.first(),
                 finalBlock.map { it.createdBy().value })
             if (conversionInformation != null) {
                 conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
@@ -855,7 +965,9 @@ abstract class AbstractSync(
     ) {
         val virtualIDs = mapOf<TimelineItem, String>()//For future features
         val relevantTimeline = timeline.mapNotNull { it as? StateChangedEvent }
-        if (relevantTimeline.isEmpty()) return
+        if (relevantTimeline.isEmpty()) {
+            return
+        }
         val finalBlock = findFinalBlock(relevantTimeline) { it.newState().value }
         logger.debug("finalBlock: $finalBlock in $relevantTimeline being ${relevantTimeline.map { it.newState().value.name }}")
         if (finalBlock.none {
@@ -886,6 +998,105 @@ abstract class AbstractSync(
     private suspend fun syncOutgoingAssignments(
         timeline: List<TimelineItem>, imsProject: IMSProject, issueInfo: IssueConversionInformation
     ) {
+        val virtualIDs = mutableMapOf<TimelineItem, String>()
+
+        val modifiedTimeline =
+            timeline.filterIsInstance<Assignment>() + timeline.filterIsInstance<RemovedAssignmentEvent>()
+        val groups = modifiedTimeline.groupBy {
+            when (it) {
+                is Assignment -> it
+                is RemovedAssignmentEvent -> it.removedAssignment().value!!
+                else -> throw IllegalStateException("Kotlin Generator Defective")
+            }
+        }
+        for ((assignment, relevantTimeline) in groups) {
+            syncOutgoingSingleAssignment(
+                relevantTimeline.sortedBy { it.createdAt }, imsProject, issueInfo, assignment, virtualIDs
+            )
+        }
+    }
+
+    /**
+     * Sync Outgoing Assignments
+     * @param relevantTimeline Timeline of the issue
+     * @param imsProject IMS project to sync
+     * @param issueInfo Issue to sync
+     * @param assignment Assignment to sync
+     * @param virtualIDs mapping for timeline items that are geerated with generated ids and do not exist in the database
+     * @param finalBlock Final block relevant for this assignment
+     */
+    private suspend fun syncOutgoingSingleAssignmentBlock(
+        relevantTimeline: List<TimelineItem>,
+        imsProject: IMSProject,
+        issueInfo: IssueConversionInformation,
+        assignment: Assignment,
+        virtualIDs: Map<TimelineItem, String>,
+        finalBlock: List<TimelineItem>
+    ) {
+        if (shouldSyncType<RemovedAssignmentEvent, Assignment>(
+                imsProject, finalBlock, relevantTimeline, true, virtualIDs
+            )
+        ) {
+            val conversionInformation = syncSingleUnassigned(
+                imsProject,
+                issueInfo.githubId,
+                assignment,
+                finalBlock.map { it.lastModifiedBy().value })
+            if (conversionInformation != null) {
+                conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
+                collectedSyncInfo.timelineItemConversionInformationService.save(
+                    conversionInformation
+                ).awaitSingle()
+            }
+        }
+        if (shouldSyncType<Assignment, RemovedAssignmentEvent>(
+                imsProject, finalBlock, relevantTimeline, false, virtualIDs
+            )
+        ) {
+            val conversionInformation = syncSingleAssigned(
+                imsProject,
+                issueInfo.githubId,
+                assignment,
+                finalBlock.map { it.lastModifiedBy().value })
+            if (conversionInformation != null) {
+                conversionInformation.gropiusId = finalBlock.map { it.rawId ?: virtualIDs[it]!! }.first()
+                collectedSyncInfo.timelineItemConversionInformationService.save(
+                    conversionInformation
+                ).awaitSingle()
+            }
+        }
+    }
+
+    /**
+     * Sync Outgoing Assignments
+     * @param relevantTimeline Timeline of the issue
+     * @param imsProject IMS project to sync
+     * @param issueInfo Issue to sync
+     * @param assignment Assignment to sync
+     * @param virtualIDs mapping for timeline items that are geerated with generated ids and do not exist in the database
+     */
+    private suspend fun syncOutgoingSingleAssignment(
+        relevantTimeline: List<TimelineItem>,
+        imsProject: IMSProject,
+        issueInfo: IssueConversionInformation,
+        assignment: Assignment,
+        virtualIDs: Map<TimelineItem, String>
+    ) {
+        var assignmentIsSynced = false
+        val finalBlock = findFinalTypeBlock(relevantTimeline)
+        for (item in finalBlock) {
+            val relevantEvent = collectedSyncInfo.timelineItemConversionInformationService.findByImsProjectAndGropiusId(
+                imsProject.rawId!!, item.rawId ?: virtualIDs[item]!!
+            )
+            if (relevantEvent?.githubId != null) {
+                assignmentIsSynced = true
+            }
+        }
+        if (!assignmentIsSynced) {
+            syncOutgoingSingleAssignmentBlock(
+                relevantTimeline, imsProject, issueInfo, assignment, virtualIDs, finalBlock
+            )
+        }
     }
 
     /**

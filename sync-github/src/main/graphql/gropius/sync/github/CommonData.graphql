@@ -48,3 +48,9 @@ fragment IssueData on Issue {
 query CurrentMetaData {
     ...MetaData
 }
+query FindUser($login: String!) {
+    ...MetaData
+    user(login: $login) {
+        ...UserData
+    }
+}

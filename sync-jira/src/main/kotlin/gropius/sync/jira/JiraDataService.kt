@@ -14,6 +14,7 @@ import gropius.sync.JsonHelper
 import gropius.sync.SyncDataService
 import gropius.sync.jira.config.IMSConfig
 import gropius.sync.jira.config.IMSProjectConfig
+import gropius.sync.jira.model.IssueDataRepository
 import gropius.util.JsonNodeMapper
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -46,6 +47,7 @@ import java.util.*
  * @param objectMapper Reference for the spring instance of ObjectMapper
  * @param jsonNodeMapper Reference for the spring instance of JsonNodeMapper
  * @param gropiusUserRepository Reference for the spring instance of GropiusUserRepository
+ * @param issueDataRepository Reference for the spring instance of IssueDataRepository
  */
 @Component
 class JiraDataService(
@@ -55,7 +57,8 @@ class JiraDataService(
     val helper: JsonHelper,
     val objectMapper: ObjectMapper,
     val jsonNodeMapper: JsonNodeMapper,
-    val gropiusUserRepository: GropiusUserRepository
+    val gropiusUserRepository: GropiusUserRepository,
+    val issueDataRepository: IssueDataRepository
 ) : SyncDataService {
 
     companion object {
@@ -108,11 +111,16 @@ class JiraDataService(
     /**
      * Find and ensure the IMSIssueTemplate in the database
      * @param imsProject The IMSProject to work with
+     * @param name name of the type to look for, if known
      * @return the IssueType
      */
-    suspend fun issueType(imsProject: IMSProject): IssueType {
+    suspend fun issueType(imsProject: IMSProject, name: String): IssueType {
         val template = issueTemplate(imsProject)
         val imsProjectConfig = IMSProjectConfig(helper, imsProject)
+        val namedType = template.issueTypes().firstOrNull { it.name == name }
+        if (namedType != null) {
+            return namedType
+        }
         if (imsProjectConfig.defaultType != null) {
             val type = neoOperations.findById<IssueType>(imsProjectConfig.defaultType)
             if ((type != null) && (type.partOf().contains(template))) {
@@ -269,8 +277,7 @@ class JiraDataService(
     ): Optional<HttpResponse> {
         val imsConfig = IMSConfig(helper, imsProject.ims().value, imsProject.ims().value.template().value)
         val cloudId =
-            token.cloudIds?.filter { URI(it.url + "/rest/api/2") == URI(imsConfig.rootUrl.toString()) }?.map { it.id }
-                ?.firstOrNull()
+            token.cloudIds?.filter { URI(it.url) == URI(imsConfig.rootUrl.toString()) }?.map { it.id }?.firstOrNull()
         if (token.type == "PAT") {
             try {
                 val res = client.request(imsConfig.rootUrl.toString()) {
@@ -289,15 +296,15 @@ class JiraDataService(
                         setBody(body)
                     }
                 }
-                logger.info("Response Code for request with token token is ${res.status}(${res.status.isSuccess()}): $body is ${res.bodyAsText()}")
                 return if (res.status.isSuccess()) {
                     logger.debug("Response for {} {}", res.request.url, res.bodyAsText())
                     Optional.of(res)
                 } else {
+                    logger.info("Response Code for request with token token is ${res.status}(${res.status.isSuccess()}): $body is ${res.bodyAsText()}")
                     Optional.empty()
                 }
             } catch (e: ClientRequestException) {
-                e.printStackTrace()
+                logger.warn("Request failed with token $token", e)
                 return Optional.empty()
             }
         } else if (cloudId != null) {
@@ -319,18 +326,23 @@ class JiraDataService(
                         setBody(body)
                     }
                 }
-                logger.info("Response Code for request with token token is ${res.status}(${res.status.isSuccess()}): $body is ${res.bodyAsText()}")
                 return if (res.status.isSuccess()) {
                     logger.debug("Response for {} {}", res.request.url, res.bodyAsText())
                     Optional.of(res)
                 } else {
+                    logger.info("Response Code for request with token token is ${res.status}(${res.status.isSuccess()}): $body is ${res.bodyAsText()}")
                     Optional.empty()
                 }
             } catch (e: ClientRequestException) {
-                e.printStackTrace()
+                logger.warn("Request failed with token $token", e)
                 return Optional.empty()
             }
         } else {
+            logger.error("Invalid value for token type: ${token.type} and cloudId: ${token.cloudIds} with ${
+                token.cloudIds?.map {
+                    URI(it.url) to URI(imsConfig.rootUrl.toString())
+                }
+            }")
             return Optional.empty()
         }
     }
