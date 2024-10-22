@@ -116,25 +116,25 @@ class GithubDataService(
         val databaseId = userData?.asUser()?.databaseId
         val encodedAccountId =
             jsonNodeMapper.jsonNodeToDeterministicString(objectMapper.valueToTree<JsonNode>(databaseId ?: 0))
-        val encodedUserId =
-            jsonNodeMapper.jsonNodeToDeterministicString(
-                objectMapper.valueToTree<JsonNode>(
-                    userData?.asNode()?.id ?: ""
-                )
+        val encodedUserId = jsonNodeMapper.jsonNodeToDeterministicString(
+            objectMapper.valueToTree<JsonNode>(
+                userData?.asNode()?.id ?: ""
             )
+        )
         val username = userData?.login ?: FALLBACK_USER_NAME
-        val ims = neoOperations.findById<IMS>(imsProject.ims().value.rawId!!)!!
         if (databaseId != null) {
-            val foundImsUser = ims.users().firstOrNull { it.templatedFields["github_id"] == encodedAccountId }
+            val foundImsUser =
+                imsProject.ims().value.users().firstOrNull { it.templatedFields["github_id"] == encodedAccountId }
             if (foundImsUser != null) {
                 return foundImsUser
             }
         } else {
-            val foundImsUser = ims.users().firstOrNull { it.username == username }
+            val foundImsUser = imsProject.ims().value.users().firstOrNull { it.username == username }
             if (foundImsUser != null) {
                 return foundImsUser
             }
         }
+        val ims = neoOperations.findById<IMS>(imsProject.ims().value.rawId!!)!!
         val imsUser = IMSUser(
             userData?.asUser()?.name ?: username,
             userData?.asUser()?.email,
@@ -142,8 +142,8 @@ class GithubDataService(
             username,
             mutableMapOf("github_id" to encodedAccountId, "github_node_id" to encodedUserId)
         )
-        imsUser.ims().value = imsProject.ims().value
-        imsUser.template().value = imsUser.ims().value.template().value.imsUserTemplate().value
+        imsUser.ims().value = ims
+        imsUser.template().value = ims.template().value.imsUserTemplate().value
         val newUser = neoOperations.save(imsUser).awaitSingle()
         tokenManager.advertiseIMSUser(newUser)
         imsProject.ims().value.users() += newUser

@@ -339,8 +339,9 @@ abstract class AbstractSync(
      * @return Conversion information
      */
     private suspend fun syncIncomingIssue(
-        imsProject: IMSProject, incomingIssue: IncomingIssue, dereplicatorRequest: SimpleIssueDereplicatorRequest
+        oldImsProject: IMSProject, incomingIssue: IncomingIssue, dereplicatorRequest: SimpleIssueDereplicatorRequest
     ) {
+        val imsProject = collectedSyncInfo.neoOperations.findById<IMSProject>(oldImsProject.rawId!!)!!
         val issueInfo = collectedSyncInfo.issueConversionInformationService.findByImsProjectAndGithubId(
             imsProject.rawId!!, incomingIssue.identification()
         ) ?: IssueConversionInformation(imsProject.rawId!!, incomingIssue.identification(), null)
@@ -832,7 +833,8 @@ abstract class AbstractSync(
                     imsProject, finalBlock, relevantTimeline, true, virtualIDs
                 )
             ) {
-                val conversionInformation = syncRemovedLabel(imsProject,
+                val conversionInformation = syncRemovedLabel(
+                    imsProject,
                     issueInfo.githubId,
                     label!!,
                     finalBlock.map { it.lastModifiedBy().value })
@@ -847,7 +849,8 @@ abstract class AbstractSync(
                     imsProject, finalBlock, relevantTimeline, false, virtualIDs
                 )
             ) {
-                val conversionInformation = syncAddedLabel(imsProject,
+                val conversionInformation = syncAddedLabel(
+                    imsProject,
                     issueInfo.githubId,
                     label!!,
                     finalBlock.map { it.lastModifiedBy().value })
@@ -908,7 +911,8 @@ abstract class AbstractSync(
                     imsProject.rawId!!, it.rawId!!
                 ) != null
             }) {
-            val conversionInformation = syncTitleChange(imsProject,
+            val conversionInformation = syncTitleChange(
+                imsProject,
                 issueInfo.githubId,
                 finalBlock.first().newTitle,
                 finalBlock.map { it.createdBy().value })
@@ -941,7 +945,8 @@ abstract class AbstractSync(
                     imsProject.rawId!!, it.rawId!!
                 ) != null
             }) {
-            val conversionInformation = syncTemplatedField(imsProject,
+            val conversionInformation = syncTemplatedField(
+                imsProject,
                 issueInfo.githubId,
                 finalBlock.first(),
                 finalBlock.map { it.createdBy().value })
@@ -1037,8 +1042,7 @@ abstract class AbstractSync(
                 imsProject, finalBlock, relevantTimeline, true, virtualIDs
             )
         ) {
-            val conversionInformation = syncSingleUnassigned(
-                imsProject,
+            val conversionInformation = syncSingleUnassigned(imsProject,
                 issueInfo.githubId,
                 assignment,
                 finalBlock.map { it.lastModifiedBy().value })
@@ -1053,8 +1057,7 @@ abstract class AbstractSync(
                 imsProject, finalBlock, relevantTimeline, false, virtualIDs
             )
         ) {
-            val conversionInformation = syncSingleAssigned(
-                imsProject,
+            val conversionInformation = syncSingleAssigned(imsProject,
                 issueInfo.githubId,
                 assignment,
                 finalBlock.map { it.lastModifiedBy().value })
