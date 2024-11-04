@@ -21,6 +21,12 @@ import java.net.URI
     READ is granted via an associated ProjectPermission.
     """
 )
+@AggregatedNodeRelationship(
+    "componentIssues",
+    "The set of Issues which are part of any of the Components of this Project.",
+    "components",
+    [AggregationEntry("component"), AggregationEntry("issues")]
+)
 @Authorization(
     ProjectPermission.MANAGE_COMPONENTS,
     allow = [Rule(RELATED_TO_NODE_PERMISSION_RULE, options = [NodePermission.ADMIN])]

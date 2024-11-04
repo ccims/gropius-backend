@@ -44,8 +44,6 @@ class Component(
 
     companion object {
         const val VERSION = "VERSION"
-        const val INCOMING_META_AGGREGATED_ISSUE_RELATION = "INCOMING_META_AGGREGATED_ISSUE_RELATION"
-        const val OUTGOING_META_AGGREGATED_ISSUE_RELATION = "OUTGOING_META_AGGREGATED_ISSUE_RELATION"
     }
 
     @NodeRelationship(BaseTemplate.USED_IN, Direction.INCOMING)
