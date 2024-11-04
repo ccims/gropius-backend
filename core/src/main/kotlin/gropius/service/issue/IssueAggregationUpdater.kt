@@ -135,7 +135,22 @@ class IssueAggregationUpdater(
      */
     suspend fun createdComponentVersion(componentVersion: ComponentVersion) {
         val component = componentVersion.component(cache).value
-        component.issues(cache).forEach {
+        component.issues(cache) {
+            load(Issue::trackables)
+            load(Issue::affects)
+            load(Issue::type)
+            load(Issue::state)
+            load(Issue::outgoingRelations) {
+                load(IssueRelation::relatedIssue) {
+                    load(Issue::aggregatedBy)
+                }
+            }
+            load(Issue::incomingRelations) {
+                load(IssueRelation::issue) {
+                    load(Issue::aggregatedBy)
+                }
+            }
+        }.forEach {
             if (!doesIssueAffectComponentRelatedEntity(it, component)) {
                 createOrUpdateAggregatedIssue(componentVersion, it)
             }
