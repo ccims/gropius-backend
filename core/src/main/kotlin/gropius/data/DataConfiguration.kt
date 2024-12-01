@@ -31,7 +31,7 @@ class DataConfiguration {
      */
     @Bean
     fun cypherDslConfiguration(): CypherDslConfiguration {
-        return CypherDslConfiguration.newConfig().withDialect(Dialect.NEO4J_5).build()
+        return CypherDslConfiguration.newConfig().withDialect(Dialect.NEO4J_5_23).build()
     }
 
 }
