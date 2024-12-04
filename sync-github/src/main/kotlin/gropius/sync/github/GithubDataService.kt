@@ -134,6 +134,7 @@ class GithubDataService(
                 return foundImsUser
             }
         }
+        logger.info("Creating new IMSUser: $userData, $databaseId, $encodedAccountId, $encodedUserId, $username")
         val ims = neoOperations.findById<IMS>(imsProject.ims().value.rawId!!)!!
         val imsUser = IMSUser(
             userData?.asUser()?.name ?: username,
