@@ -349,7 +349,7 @@ abstract class AbstractSync(
             .awaitSingle() else incomingIssue.createIssue(imsProject, syncDataService())
         val oldType = issue.type().value
         val oldState = issue.state().value
-        val isNewIssue = issue.rawId == null
+        val isNewIssue = !issue.isPersisted
         if (issue.imsIssues().none { it.imsProject().value == imsProject }) {
             val imsIssue = IMSIssue(mutableMapOf())
             imsIssue.issue().value = issue
@@ -368,7 +368,7 @@ abstract class AbstractSync(
             )
         }
         var dereplicationResult: IssueDereplicatorIssueResult? = null
-        if (issue.rawId == null) {
+        if (isNewIssue) {
             dereplicationResult = issueDereplicator.validateIssue(imsProject, issue, dereplicatorRequest)
             issue = dereplicationResult.resultingIssue
             for (fakeSyncedItem in dereplicationResult.fakeSyncedItems) {
@@ -384,7 +384,9 @@ abstract class AbstractSync(
         }
         val savedList = collectedSyncInfo.neoOperations.saveAll(nodesToSave).collectList().awaitSingle()
         val savedIssue = savedList.removeFirst()
-        if (issue.rawId == null) issue = savedIssue as Issue
+        if (isNewIssue) {
+            issue = savedIssue as Issue
+        }
         val updater = IssueAggregationUpdater()
         if (isNewIssue) {
             updater.addedIssueToTrackable(
