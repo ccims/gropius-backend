@@ -113,19 +113,16 @@ class IssueCleaner(
 
     /**
      * Execute the cleaning process
+     * Does NOT save the issue
      *
-     * @param id Issue ID to clean
+     * @param issue issue to clean
      */
-    @Transactional
-    @Suppress("UNUSED_VALUE")
-    suspend fun cleanIssue(id: String) {
-        var issue = neoOperations.findById<Issue>(id)!!
+    suspend fun cleanIssue(issue: Issue) {
         cleanLabels(issue)
         cleanAssignments(issue)
         cleanState(issue)
         cleanTitle(issue)
         cleanComments(issue)
         cleanTemplatedFields(issue)
-        issue = neoOperations.save(issue).awaitSingle()
     }
 }
