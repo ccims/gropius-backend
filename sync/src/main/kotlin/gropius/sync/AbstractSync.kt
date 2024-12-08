@@ -370,7 +370,7 @@ abstract class AbstractSync(
         var dereplicationResult: IssueDereplicatorIssueResult? = null
         if (isNewIssue) {
             dereplicationResult = issueDereplicator.validateIssue(imsProject, issue, dereplicatorRequest)
-            issue = dereplicationResult.resultingIssue
+            dereplicationResult.resultingIssue
             for (fakeSyncedItem in dereplicationResult.fakeSyncedItems) {
                 nodesToSave.add(fakeSyncedItem)
                 savedNodeHandlers.add { updatedNode ->
@@ -383,21 +383,21 @@ abstract class AbstractSync(
             }
         }
         val savedList = collectedSyncInfo.neoOperations.saveAll(nodesToSave).collectList().awaitSingle()
-        val savedIssue = savedList.removeFirst()
-        if (isNewIssue) {
-            issue = savedIssue as Issue
-        }
+        issue = savedList.removeFirst() as Issue
         val updater = IssueAggregationUpdater()
+        updater.internalUpdatedNodes += issue
+        collectedSyncInfo.issueCleaner.cleanIssue(issue)
         if (isNewIssue) {
             updater.addedIssueToTrackable(
                 issue, collectedSyncInfo.neoOperations.findById<Trackable>(imsProject.trackable().value.rawId!!)!!
             )
+        } else {
+            updater.changedIssueStateOrType(
+                issue,
+                collectedSyncInfo.neoOperations.findById<IssueState>(oldState.rawId!!)!!,
+                collectedSyncInfo.neoOperations.findById<IssueType>(oldType.rawId!!)!!
+            )
         }
-        updater.changedIssueStateOrType(
-            issue,
-            collectedSyncInfo.neoOperations.findById<IssueState>(oldState.rawId!!)!!,
-            collectedSyncInfo.neoOperations.findById<IssueType>(oldType.rawId!!)!!
-        )
         savedList.zip(savedNodeHandlers).forEach { (savedNode, savedNodeHandler) ->
             savedNodeHandler(savedNode)
         }
@@ -405,9 +405,8 @@ abstract class AbstractSync(
             issueInfo.gropiusId = issue.rawId!!
         }
         collectedSyncInfo.issueConversionInformationService.save(issueInfo).awaitSingle()
-        collectedSyncInfo.issueCleaner.cleanIssue(issue.rawId!!)
-        incomingIssue.markDone(syncDataService())
         updater.save(collectedSyncInfo.nodeRepository)
+        incomingIssue.markDone(syncDataService())
     }
 
     /**
