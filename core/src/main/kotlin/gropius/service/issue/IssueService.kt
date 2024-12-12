@@ -32,6 +32,7 @@ import gropius.repository.issue.LabelRepository
 import gropius.repository.issue.timeline.*
 import gropius.repository.template.*
 import gropius.repository.user.UserRepository
+import gropius.service.NodeBatchUpdateContext
 import gropius.service.common.AuditedNodeService
 import gropius.service.template.TemplatedNodeService
 import gropius.util.JsonNodeMapper
@@ -111,6 +112,7 @@ class IssueService(
         val type = issueTypeRepository.findById(input.type)
         val state = issueStateRepository.findById(input.state)
         val byUser = getUser(authorizationContext)
+        val updateContext = NodeBatchUpdateContext()
         val issue = createIssue(
             trackables,
             template,
@@ -120,10 +122,11 @@ class IssueService(
             state,
             input.templatedFields,
             OffsetDateTime.now(),
-            byUser
+            byUser,
+            updateContext
         )
         createdAuditedNode(issue, byUser)
-        return repository.save(issue).awaitSingle()
+        return updateContext.save(issue, nodeRepository)
     }
 
     /**
@@ -143,6 +146,8 @@ class IssueService(
      * @param templatedFields the initial templated fields, must be compatible with [template]
      * @param atTime the point in time when the [Issue] is created
      * @param byUser the [User] who creates the [Issue]
+     * @param updateContext context used for the aggregation updater
+     * @return the created [Issue]
      */
     suspend fun createIssue(
         trackables: List<Trackable>,
@@ -153,7 +158,8 @@ class IssueService(
         state: IssueState,
         templatedFields: List<JSONFieldInput>,
         atTime: OffsetDateTime,
-        byUser: User
+        byUser: User,
+        updateContext: NodeBatchUpdateContext
     ): Issue {
         if (trackables.isEmpty()) {
             throw IllegalStateException("An Issue must be created on at least one Trackable")
@@ -171,7 +177,7 @@ class IssueService(
         createdTimelineItem(issue, bodyItem, atTime, byUser)
         issue.body().value = bodyItem
         for (trackable in trackables) {
-            addIssueToTrackable(issue, trackable, atTime, byUser)
+            addIssueToTrackable(issue, trackable, atTime, byUser, updateContext)
         }
         return issue
     }
@@ -192,21 +198,22 @@ class IssueService(
         checkManageIssuesPermission(issue, authorizationContext)
         val template = issueTemplateRepository.findById(input.template)
         return if (issue.template().value != template) {
-            timelineItemRepository.save(
-                changeIssueTemplate(
-                    issue,
-                    issue.template().value,
-                    template,
-                    input.templatedFields.orElse(emptyList()),
-                    input.type.orElse(null)?.let { issueTypeRepository.findById(it) },
-                    input.state.orElse(null)?.let { issueStateRepository.findById(it) },
-                    input.priority.orElse(null)?.let { issuePriorityRepository.findById(it) },
-                    input.assignmentTypeMapping.toMapping(assignmentTypeRepository),
-                    input.issueRelationTypeMapping.toMapping(issueRelationTypeRepository),
-                    OffsetDateTime.now(),
-                    getUser(authorizationContext)
-                )
-            ).awaitSingle()
+            val updateContext = NodeBatchUpdateContext()
+            val event = changeIssueTemplate(
+                issue,
+                issue.template().value,
+                template,
+                input.templatedFields.orElse(emptyList()),
+                input.type.orElse(null)?.let { issueTypeRepository.findById(it) },
+                input.state.orElse(null)?.let { issueStateRepository.findById(it) },
+                input.priority.orElse(null)?.let { issuePriorityRepository.findById(it) },
+                input.assignmentTypeMapping.toMapping(assignmentTypeRepository),
+                input.issueRelationTypeMapping.toMapping(issueRelationTypeRepository),
+                OffsetDateTime.now(),
+                getUser(authorizationContext),
+                updateContext
+            )
+            updateContext.save(event, nodeRepository)
         } else {
             null
         }
@@ -251,6 +258,7 @@ class IssueService(
      * @param issueRelationTypeMapping used to map incompatible [IssueRelationType]s
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
+     * @param updateContext context used for the aggregation updater
      * @return the created [TemplateChangedEvent]
      */
     suspend fun changeIssueTemplate(
@@ -264,7 +272,8 @@ class IssueService(
         assignmentTypeMapping: Map<AssignmentType, AssignmentType?>,
         issueRelationTypeMapping: Map<IssueRelationType, IssueRelationType?>,
         atTime: OffsetDateTime,
-        byUser: User
+        byUser: User,
+        updateContext: NodeBatchUpdateContext
     ): TemplateChangedEvent {
         val event = TemplateChangedEvent(atTime, atTime)
         event.oldTemplate().value = oldTemplate
@@ -285,9 +294,8 @@ class IssueService(
             updateIssueRelationsAfterTemplateUpdate(
                 issue, event, issueRelationTypeMapping, atTime.plusNanos(timeOffset), byUser
             )
-            val aggregationUpdater = IssueAggregationUpdater()
+            val aggregationUpdater = IssueAggregationUpdater(updateContext)
             aggregationUpdater.changedIssueStateOrType(issue, state ?: issue.state().value, type ?: issue.type().value)
-            aggregationUpdater.save(nodeRepository)
         }
         return event
     }
@@ -376,18 +384,18 @@ class IssueService(
         if (issue.type().value !in newTemplate.issueTypes()) {
             val existingType = type ?: throw IllegalStateException("Old IssueType not compatible")
             event.childItems() += changeIssueType(
-                issue, issue.type().value, existingType, atTime, byUser, false
+                issue, issue.type().value, existingType, atTime, byUser, null
             )
         }
         if (issue.state().value !in newTemplate.issueStates()) {
             val existingState = state ?: throw IllegalStateException("Old IssueState not compatible")
             event.childItems() += changeIssueState(
-                issue, issue.state().value, existingState, atTime, byUser, false
+                issue, issue.state().value, existingState, atTime, byUser, null
             )
         }
         if (issue.priority().value !in newTemplate.issuePriorities()) {
             event.childItems() += changeIssuePriority(
-                issue, issue.priority().value, priority, atTime, byUser
+                issue, issue.priority().value, priority, atTime, byUser, null
             )
         }
     }
@@ -514,9 +522,11 @@ class IssueService(
         checkManageIssuesPermission(trackable, authorizationContext)
         checkManageIssuesPermission(issue, authorizationContext)
         return if (trackable !in issue.trackables()) {
-            timelineItemRepository.save(
-                addIssueToTrackable(issue, trackable, OffsetDateTime.now(), getUser(authorizationContext))
-            ).awaitSingle()
+            val updateContext = NodeBatchUpdateContext()
+            val event = addIssueToTrackable(
+                issue, trackable, OffsetDateTime.now(), getUser(authorizationContext), updateContext
+            )
+            updateContext.save(event, nodeRepository)
         } else {
             null
         }
@@ -534,10 +544,11 @@ class IssueService(
      * @param trackable the [Trackable] where the [issue] should be added
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
+     * @param updateContext context used for the aggregation updater
      * @returns the created [AddedToTrackableEvent]
      */
     suspend fun addIssueToTrackable(
-        issue: Issue, trackable: Trackable, atTime: OffsetDateTime, byUser: User
+        issue: Issue, trackable: Trackable, atTime: OffsetDateTime, byUser: User, updateContext: NodeBatchUpdateContext
     ): AddedToTrackableEvent {
         val event = AddedToTrackableEvent(atTime, atTime)
         event.addedToTrackable().value = trackable
@@ -547,9 +558,8 @@ class IssueService(
             ) { it.removedFromTrackable().value == trackable }
         ) {
             issue.trackables() += trackable
-            val aggregationUpdater = IssueAggregationUpdater()
+            val aggregationUpdater = IssueAggregationUpdater(updateContext)
             aggregationUpdater.addedIssueToTrackable(issue, trackable)
-            aggregationUpdater.save(nodeRepository)
         }
         return event
     }
@@ -572,10 +582,11 @@ class IssueService(
         val trackable = trackableRepository.findById(input.trackable)
         checkManageIssuesPermission(trackable, authorizationContext)
         return if (trackable in issue.trackables()) {
-            val event = timelineItemRepository.save(
-                removeIssueFromTrackable(issue, trackable, OffsetDateTime.now(), getUser(authorizationContext))
-            ).awaitSingle()
-            event
+            val updateContext = NodeBatchUpdateContext()
+            val event = removeIssueFromTrackable(
+                issue, trackable, OffsetDateTime.now(), getUser(authorizationContext), updateContext
+            )
+            updateContext.save(event, nodeRepository)
         } else {
             null
         }
@@ -596,10 +607,11 @@ class IssueService(
      * @param trackable the [Trackable] where [issue] should be removed
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
+     * @param updateContext context used for the aggregation updater
      * @returns the created [RemovedFromTrackableEvent]
      */
     suspend fun removeIssueFromTrackable(
-        issue: Issue, trackable: Trackable, atTime: OffsetDateTime, byUser: User
+        issue: Issue, trackable: Trackable, atTime: OffsetDateTime, byUser: User, updateContext: NodeBatchUpdateContext
     ): RemovedFromTrackableEvent {
         val event = RemovedFromTrackableEvent(atTime, atTime)
         event.removedFromTrackable().value = trackable
@@ -622,9 +634,8 @@ class IssueService(
                 .map { removeArtefactFromIssue(issue, it, atTime.plusNanos(timeOffset++), byUser) }
             event.childItems() += issue.labels().filter { Collections.disjoint(issue.trackables(), it.trackables()) }
                 .map { removeLabelFromIssue(issue, it, atTime.plusNanos(timeOffset++), byUser) }
-            val aggregationUpdater = IssueAggregationUpdater()
+            val aggregationUpdater = IssueAggregationUpdater(updateContext)
             aggregationUpdater.removedIssueFromTrackable(issue, trackable)
-            aggregationUpdater.save(nodeRepository)
         }
         return event
     }
@@ -989,10 +1000,16 @@ class IssueService(
      * @param newTitle the new `title`
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
+     * @param updateContext currently unused
      * @returns the created [TitleChangedEvent]
      */
     suspend fun changeIssueTitle(
-        issue: Issue, oldTitle: String, newTitle: String, atTime: OffsetDateTime, byUser: User
+        issue: Issue,
+        oldTitle: String,
+        newTitle: String,
+        atTime: OffsetDateTime,
+        byUser: User,
+        updateContext: NodeBatchUpdateContext
     ): TitleChangedEvent {
         val event = TitleChangedEvent(atTime, atTime, oldTitle, newTitle)
         changeIssueProperty(issue, newTitle, atTime, byUser, issue::title, event)
@@ -1031,10 +1048,16 @@ class IssueService(
      * @param newPriority the new `priority`
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
+     * @param updateContext currently unused
      * @returns the created [PriorityChangedEvent]
      */
     suspend fun changeIssuePriority(
-        issue: Issue, oldPriority: IssuePriority?, newPriority: IssuePriority?, atTime: OffsetDateTime, byUser: User
+        issue: Issue,
+        oldPriority: IssuePriority?,
+        newPriority: IssuePriority?,
+        atTime: OffsetDateTime,
+        byUser: User,
+        updateContext: NodeBatchUpdateContext?
     ): PriorityChangedEvent {
         if (newPriority != null) {
             checkIssuePriorityCompatibility(issue, newPriority)
@@ -1093,7 +1116,7 @@ class IssueService(
      * @param newState the new `state`
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
-     * @param doAggregation whether the aggregation should be updated, defaults to `true`
+     * @param updateContext context used for the aggregation updater (if not provided, no aggregation is done)
      * @returns the created [StateChangedEvent]
      */
     suspend fun changeIssueState(
@@ -1102,17 +1125,16 @@ class IssueService(
         newState: IssueState,
         atTime: OffsetDateTime,
         byUser: User,
-        doAggregation: Boolean = true
+        updateContext: NodeBatchUpdateContext?
     ): StateChangedEvent {
         checkIssueStateCompatibility(issue, newState)
         val event = StateChangedEvent(atTime, atTime)
         event.newState().value = newState
         event.oldState().value = oldState
         changeIssueProperty(issue, newState, atTime, byUser, issue.state()::value, event)
-        if (doAggregation) {
-            val aggregationUpdater = IssueAggregationUpdater()
+        if (updateContext != null) {
+            val aggregationUpdater = IssueAggregationUpdater(updateContext)
             aggregationUpdater.changedIssueStateOrType(issue, oldState, issue.type().value)
-            aggregationUpdater.save(nodeRepository)
         }
         return event
     }
@@ -1164,7 +1186,7 @@ class IssueService(
      * @param newType the new `type`
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
-     * @param doAggregation whether the aggregation should be updated, defaults to `true`
+     * @param updateContext context used for the aggregation updater (if not provided, no aggregation is done)
      * @returns the created [TypeChangedEvent]
      */
     suspend fun changeIssueType(
@@ -1173,17 +1195,16 @@ class IssueService(
         newType: IssueType,
         atTime: OffsetDateTime,
         byUser: User,
-        doAggregation: Boolean = true
+        updateContext: NodeBatchUpdateContext?
     ): TypeChangedEvent {
         checkIssueTypeCompatibility(issue, newType)
         val event = TypeChangedEvent(atTime, atTime)
         event.newType().value = newType
         event.oldType().value = oldType
         changeIssueProperty(issue, newType, atTime, byUser, issue.type()::value, event)
-        if (doAggregation) {
-            val aggregationUpdater = IssueAggregationUpdater()
+        if (updateContext != null) {
+            val aggregationUpdater = IssueAggregationUpdater(updateContext)
             aggregationUpdater.changedIssueStateOrType(issue, issue.state().value, oldType)
-            aggregationUpdater.save(nodeRepository)
         }
         return event
     }
@@ -1225,9 +1246,11 @@ class IssueService(
             "affect the entity with Issues"
         )
         return if (affectedEntity !in issue.affects()) {
-            timelineItemRepository.save(
-                addAffectedEntityToIssue(issue, affectedEntity, OffsetDateTime.now(), getUser(authorizationContext))
-            ).awaitSingle()
+            val updateContext = NodeBatchUpdateContext()
+            val event = addAffectedEntityToIssue(
+                issue, affectedEntity, OffsetDateTime.now(), getUser(authorizationContext), updateContext
+            )
+            updateContext.save(event, nodeRepository)
         } else {
             null
         }
@@ -1247,11 +1270,16 @@ class IssueService(
      * @param affectedEntity the [AffectedByIssue] which should be affected by the [issue]
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
+     * @param updateContext context used for the aggregation updater
      * @returns the created [AddedAffectedEntityEvent]
      * @throws IllegalArgumentException if [issue] cannot affect the [affectedEntity]
      */
     suspend fun addAffectedEntityToIssue(
-        issue: Issue, affectedEntity: AffectedByIssue, atTime: OffsetDateTime, byUser: User
+        issue: Issue,
+        affectedEntity: AffectedByIssue,
+        atTime: OffsetDateTime,
+        byUser: User,
+        updateContext: NodeBatchUpdateContext
     ): AddedAffectedEntityEvent {
         val event = AddedAffectedEntityEvent(atTime, atTime)
         event.addedAffectedEntity().value = affectedEntity
@@ -1261,9 +1289,8 @@ class IssueService(
             ) { it.removedAffectedEntity().value == affectedEntity }
         ) {
             issue.affects() += affectedEntity
-            val aggregationUpdater = IssueAggregationUpdater()
+            val aggregationUpdater = IssueAggregationUpdater(updateContext)
             aggregationUpdater.addedAffectedEntity(issue, affectedEntity)
-            aggregationUpdater.save(nodeRepository)
         }
         return event
     }
@@ -1294,11 +1321,11 @@ class IssueService(
             )
         }
         return if (affectedEntity in issue.affects()) {
-            timelineItemRepository.save(
-                removeAffectedEntityFromIssue(
-                    issue, affectedEntity, OffsetDateTime.now(), getUser(authorizationContext)
-                )
-            ).awaitSingle()
+            val updateContext = NodeBatchUpdateContext()
+            val event = removeAffectedEntityFromIssue(
+                issue, affectedEntity, OffsetDateTime.now(), getUser(authorizationContext), updateContext
+            )
+            updateContext.save(event, nodeRepository)
         } else {
             null
         }
@@ -1318,10 +1345,15 @@ class IssueService(
      * @param affectedEntity the [AffectedByIssue] which should be removed from the affected entities on the [issue]
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
+     * @param updateContext context used for the aggregation updater
      * @returns the created [RemovedAffectedEntityEvent]
      */
     suspend fun removeAffectedEntityFromIssue(
-        issue: Issue, affectedEntity: AffectedByIssue, atTime: OffsetDateTime, byUser: User
+        issue: Issue,
+        affectedEntity: AffectedByIssue,
+        atTime: OffsetDateTime,
+        byUser: User,
+        updateContext: NodeBatchUpdateContext
     ): RemovedAffectedEntityEvent {
         val event = RemovedAffectedEntityEvent(atTime, atTime)
         event.removedAffectedEntity().value = affectedEntity
@@ -1331,9 +1363,8 @@ class IssueService(
             ) { it.addedAffectedEntity().value == affectedEntity }
         ) {
             issue.affects() -= affectedEntity
-            val aggregationUpdater = IssueAggregationUpdater()
+            val aggregationUpdater = IssueAggregationUpdater(updateContext)
             aggregationUpdater.removedAffectedEntity(issue, affectedEntity)
-            aggregationUpdater.save(nodeRepository)
         }
         return event
     }
@@ -1604,9 +1635,10 @@ class IssueService(
         )
         val issueRelationType = input.issueRelationType?.let { issueRelationTypeRepository.findById(it) }
         val byUser = getUser(authorizationContext)
-        val issueRelation = createIssueRelation(issue, relatedIssue, issueRelationType, OffsetDateTime.now(), byUser)
+        val updateContext = NodeBatchUpdateContext()
+        val issueRelation = createIssueRelation(issue, relatedIssue, issueRelationType, OffsetDateTime.now(), byUser, updateContext)
         createdAuditedNode(issueRelation, byUser)
-        return issueRelationRepository.save(issueRelation).awaitSingle()
+        return updateContext.save(issueRelation, nodeRepository)
     }
 
     /**
@@ -1622,10 +1654,16 @@ class IssueService(
      * @param issueRelationType the optional type of the created [IssueRelation], must be compatible with the template of [issue]
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
+     * @param updateContext context used for the aggregation updater
      * @returns the created [IssueRelation]
      */
     suspend fun createIssueRelation(
-        issue: Issue, relatedIssue: Issue, issueRelationType: IssueRelationType?, atTime: OffsetDateTime, byUser: User
+        issue: Issue,
+        relatedIssue: Issue,
+        issueRelationType: IssueRelationType?,
+        atTime: OffsetDateTime,
+        byUser: User,
+        updateContext: NodeBatchUpdateContext
     ): IssueRelation {
         if (issueRelationType != null) {
             checkIssueRelationTypeCompatibility(issue, issueRelationType)
@@ -1641,9 +1679,8 @@ class IssueService(
         createdTimelineItemOnRelatedIssue(relatedIssue, relatedEvent, atTime, byUser)
         relatedIssue.incomingRelations() += relation
 
-        val aggregationUpdater = IssueAggregationUpdater()
+        val aggregationUpdater = IssueAggregationUpdater(updateContext)
         aggregationUpdater.createdIssueRelation(relation)
-        aggregationUpdater.save(nodeRepository)
 
         return relation
     }
@@ -1759,9 +1796,10 @@ class IssueService(
         val issue = issueRelation.issue().value
         checkManageIssuesPermission(issue, authorizationContext)
         return if (issueRelation in issue.outgoingRelations()) {
-            val event = removeIssueRelation(issueRelation, OffsetDateTime.now(), getUser(authorizationContext))
-            repository.save(issueRelation.relatedIssue().value!!).awaitSingle()
-            timelineItemRepository.save(event).awaitSingle()
+            val updateContext = NodeBatchUpdateContext()
+            val event = removeIssueRelation(issueRelation, OffsetDateTime.now(), getUser(authorizationContext), updateContext)
+            updateContext.internalUpdatedNodes += issueRelation.relatedIssue().value!!
+            updateContext.save(event, nodeRepository)
         } else {
             null
         }
@@ -1779,12 +1817,13 @@ class IssueService(
      * @param issueRelation the [IssueRelation] to remove from its [Issue]
      * @param atTime the point in time when the modification happened, updates [Issue.lastUpdatedAt] if necessary
      * @param byUser the [User] who caused the update, updates [Issue.participants] if necessary
+     * @param updateContext context used for the aggregation updater
      * @returns the created [RemovedOutgoingRelationEvent]
      */
     suspend fun removeIssueRelation(
-        issueRelation: IssueRelation, atTime: OffsetDateTime, byUser: User
+        issueRelation: IssueRelation, atTime: OffsetDateTime, byUser: User, updateContext: NodeBatchUpdateContext
     ): RemovedOutgoingRelationEvent {
-        val aggregationUpdater = IssueAggregationUpdater()
+        val aggregationUpdater = IssueAggregationUpdater(updateContext)
         val issue = issueRelation.issue(aggregationUpdater.cache).value
         val relatedIssue = issueRelation.relatedIssue(aggregationUpdater.cache).value
         val event = RemovedOutgoingRelationEvent(atTime, atTime)
@@ -1797,7 +1836,6 @@ class IssueService(
         relatedIssue.incomingRelations() -= issueRelation
 
         aggregationUpdater.deletedIssueRelation(issueRelation)
-        aggregationUpdater.save(nodeRepository)
 
         return event
     }
@@ -2110,13 +2148,15 @@ class IssueService(
         issue: Issue,
         currentValue: T,
         newValue: T,
-        internalFunction: suspend (issue: Issue, oldValue: T, newValue: T, atTime: OffsetDateTime, byUser: User) -> E,
+        internalFunction: suspend (issue: Issue, oldValue: T, newValue: T, atTime: OffsetDateTime, byUser: User, updateContext: NodeBatchUpdateContext) -> E,
     ): E? {
         checkManageIssuesPermission(issue, authorizationContext)
         return if (currentValue != newValue) {
-            timelineItemRepository.save(
-                internalFunction(issue, currentValue, newValue, OffsetDateTime.now(), getUser(authorizationContext))
-            ).awaitSingle()
+            val updateContext = NodeBatchUpdateContext()
+            val event = internalFunction(
+                issue, currentValue, newValue, OffsetDateTime.now(), getUser(authorizationContext), updateContext
+            )
+            updateContext.save(event, nodeRepository)
         } else {
             null
         }
