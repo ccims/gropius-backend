@@ -105,7 +105,7 @@ class ComponentService(
         val updateContext = NodeBatchUpdateContext()
         input.versions.ifPresent { inputs ->
             savedComponent.versions() += inputs.map {
-                componentVersionService.createComponentVersion(component, it, updateContext)
+                componentVersionService.createComponentVersion(savedComponent, it, updateContext)
             }
         }
         return updateContext.save(savedComponent, nodeRepository)
