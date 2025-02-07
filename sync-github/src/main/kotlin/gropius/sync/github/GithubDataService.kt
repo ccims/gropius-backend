@@ -211,24 +211,25 @@ class GithubDataService(
      * @return the mapped Label
      */
     suspend fun mapLabel(imsProject: IMSProject, labelData: LabelData): Label? {
-        val labelInfo = labelInfoRepository.findByImsProjectAndGithubId(imsProject.rawId!!, labelData.id)
-        if (labelInfo != null) {
-            return neoOperations.findById<Label>(labelInfo.neo4jId)
+        val colorString = if (labelData.color.startsWith("#")) labelData.color else "#${labelData.color}"
+        for (label in imsProject.trackable().value.labels()) {
+            if (label.name == labelData.name) {
+                return label
+            }
         }
-        var label = Label(
+        val label = Label(
             labelData.createdAt ?: OffsetDateTime.MIN,
             labelData.createdAt ?: OffsetDateTime.MIN,
             labelData.name,
             "GitHub Label",
-            if (labelData.color.startsWith("#")) labelData.color else "#${labelData.color}"
+            colorString
         )
         label.createdBy().value = gropiusUserRepository.findByUsername(FALLBACK_USER_NAME) ?: GropiusUser(
             "GitHub", null, null, FALLBACK_USER_NAME, true
         )
         label.lastModifiedBy().value = label.createdBy().value
-        label.trackables() += imsProject.trackable().value
-        label = neoOperations.save(label).awaitSingle()
-        labelInfoRepository.save(LabelInfo(imsProject.rawId!!, labelData.id, label.rawId!!)).awaitSingle()
+        labelInfoRepository.save(LabelInfo(imsProject.rawId!!, labelData.id, label.name)).awaitSingle()
+        imsProject.trackable().value.labels() += label
         return label
     }
 

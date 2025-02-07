@@ -254,7 +254,7 @@ final class GithubSync(
         imsProject: IMSProject, issueId: String, label: Label, users: List<User>
     ): TimelineItemConversionInformation? {
         val labelInfo =
-            githubDataService.labelInfoRepository.findByImsProjectAndNeo4jId(imsProject.rawId!!, label.rawId!!)
+            githubDataService.labelInfoRepository.findByImsProjectAndLocalName(imsProject.rawId!!, label.name)
         if (labelInfo == null) {
             logger.error("Create label on remote")
             //TODO("Create label on remote")
@@ -319,7 +319,12 @@ final class GithubSync(
         imsProject: IMSProject, issueId: String, label: Label, users: List<User>
     ): TimelineItemConversionInformation? {
         val labelInfo =
-            githubDataService.labelInfoRepository.findByImsProjectAndNeo4jId(imsProject.rawId!!, label.rawId!!)!!
+            githubDataService.labelInfoRepository.findByImsProjectAndLocalName(imsProject.rawId!!, label.name)
+        if (labelInfo == null) {
+            logger.error("Create label on remote")
+            //TODO("Create label on remote")
+            return null
+        }
         val response = githubDataService.mutation(
             imsProject, users, MutateRemoveLabelMutation(issueId, labelInfo.githubId), gropiusUserList(users)
         ).second
@@ -346,8 +351,9 @@ final class GithubSync(
             listOf(issue.createdBy().value, issue.lastModifiedBy().value) + issue.timelineItems()
                 .map { it.createdBy().value },
             MutateCreateIssueMutation(repoId, issue.title, issue.bodyBody),
-            gropiusUserList(listOf(issue.createdBy().value, issue.lastModifiedBy().value) + issue.timelineItems()
-                .map { it.createdBy().value })
+            gropiusUserList(
+                listOf(issue.createdBy().value, issue.lastModifiedBy().value) + issue.timelineItems()
+                    .map { it.createdBy().value })
         ).second
         val item = response.data?.createIssue?.issue
         if (item != null) {

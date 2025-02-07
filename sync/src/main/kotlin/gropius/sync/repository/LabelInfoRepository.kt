@@ -12,10 +12,10 @@ import org.springframework.stereotype.Repository
 interface LabelInfoRepository : ReactiveMongoRepository<LabelInfo, ObjectId> {
     /**
      * Lookup to find the mapping given a neo4j id
-     * @param neo4jId Database query param
+     * @param localName Name query param
      * @return result of database operation
      */
-    suspend fun findByImsProjectAndNeo4jId(imsProject: String, neo4jId: String): LabelInfo?
+    suspend fun findByImsProjectAndLocalName(imsProject: String, localName: String): LabelInfo?
 
     /**
      * Lookup to find the mapping given a GitHub id
