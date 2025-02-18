@@ -4,6 +4,8 @@ import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.execution.OptionalInput
 import com.expediagroup.graphql.generator.scalars.ID
 import gropius.dto.input.common.JSONFieldInput
+import gropius.dto.input.common.TypeMappingInput
+import gropius.dto.input.common.ensureUniqueMapping
 import gropius.dto.input.common.validateAndEnsureNoDuplicates
 import gropius.dto.input.ifPresent
 import gropius.dto.input.template.UpdateTemplatedNodeInput
@@ -26,7 +28,9 @@ class UpdateComponentInput(
         Affect all ComponentVersions of the updated Component
         """
     )
-    val componentVersionTemplatedFields: OptionalInput<List<JSONFieldInput>>
+    val componentVersionTemplatedFields: OptionalInput<List<JSONFieldInput>>,
+    @GraphQLDescription("Mapping to map existing IntraComponentDependencySpecificationTypes to new ones")
+    val intraComponentDependencySpecificationTypeMapping: OptionalInput<List<TypeMappingInput>>
 ) : UpdateTrackableInput(), UpdateTemplatedNodeInput {
 
     override fun validate() {
@@ -36,6 +40,9 @@ class UpdateComponentInput(
         }
         componentVersionTemplatedFields.ifPresent {
             it.validateAndEnsureNoDuplicates()
+        }
+        intraComponentDependencySpecificationTypeMapping.ifPresent {
+            it.ensureUniqueMapping()
         }
     }
 }

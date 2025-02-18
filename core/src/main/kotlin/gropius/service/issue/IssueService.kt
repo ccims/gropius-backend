@@ -6,9 +6,11 @@ import com.fasterxml.jackson.databind.JsonNode
 import gropius.authorization.GropiusAuthorizationContext
 import gropius.dto.input.common.DeleteNodeInput
 import gropius.dto.input.common.JSONFieldInput
+import gropius.dto.input.common.TypeMappingInput
 import gropius.dto.input.ifPresent
 import gropius.dto.input.issue.*
 import gropius.dto.input.orElse
+import gropius.dto.input.toMapping
 import gropius.model.architecture.AffectedByIssue
 import gropius.model.architecture.Trackable
 import gropius.model.issue.Artefact
@@ -217,24 +219,6 @@ class IssueService(
         } else {
             null
         }
-    }
-
-    /**
-     * Transforms a list of [TypeMappingInput] to a mapping using the provided [typeRepository]
-     *
-     * @param T the type of the returned types
-     * @param typeRepository used to map [ID] to [T]
-     * @return the generated mapping
-     */
-    private suspend fun <T : Node> OptionalInput<List<TypeMappingInput>>.toMapping(
-        typeRepository: GropiusRepository<T, String>
-    ): Map<T, T?> {
-        ifPresent { inputs ->
-            val allTypeIds = inputs.flatMap { listOf(it.newType, it.oldType) }.filterNotNull().toSet()
-            val allTypesById = typeRepository.findAllById(allTypeIds).associateBy { it.graphQLId }
-            return inputs.associate { allTypesById[it.oldType]!! to allTypesById[it.newType] }
-        }
-        return emptyMap()
     }
 
     /**

@@ -5,6 +5,7 @@ import gropius.dto.input.orElse
 import gropius.dto.input.template.CreateComponentTemplateInput
 import gropius.model.template.ComponentTemplate
 import gropius.model.template.ComponentVersionTemplate
+import gropius.model.template.IntraComponentDependencySpecificationType
 import gropius.model.template.SubTemplate
 import gropius.repository.template.ComponentTemplateRepository
 import kotlinx.coroutines.reactor.awaitSingle
@@ -49,6 +50,12 @@ class ComponentTemplateService(
         }
         template.possibleInvisibleInterfaceSpecifications() += template.extends().flatMap {
             it.possibleInvisibleInterfaceSpecifications()
+        }
+        template.intraComponentDependencySpecificationTypes() += input.intraComponentDependencySpecificationTypes.map {
+            IntraComponentDependencySpecificationType(it.name, it.description)
+        }
+        template.intraComponentDependencySpecificationTypes() += template.extends().flatMap {
+            it.intraComponentDependencySpecificationTypes()
         }
         return repository.save(template).awaitSingle()
     }

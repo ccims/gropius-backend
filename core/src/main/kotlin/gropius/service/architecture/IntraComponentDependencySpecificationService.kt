@@ -9,10 +9,12 @@ import gropius.dto.input.common.DeleteNodeInput
 import gropius.dto.input.ifPresent
 import gropius.dto.input.orElse
 import gropius.model.architecture.*
+import gropius.model.template.IntraComponentDependencySpecificationType
 import gropius.model.user.permission.NodePermission
 import gropius.repository.architecture.*
 import gropius.repository.findAllById
 import gropius.repository.findById
+import gropius.repository.template.IntraComponentDependencySpecificationTypeRepository
 import gropius.service.common.NamedNodeService
 import io.github.graphglue.authorization.Permission
 import io.github.graphglue.model.property.NodeSetPropertyDelegate
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Service
  * @param interfaceRepository used to get [Interface]s by id
  * @param interfacePartRepository used to get [InterfacePart]s by id
  * @param intraComponentDependencyParticipantRepository used to get [IntraComponentDependencyParticipant]s by id
+ * @param intraComponentDependencySpecificationTypeRepository used to get [IntraComponentDependencySpecificationType]s by id
  */
 @Service
 class IntraComponentDependencySpecificationService(
@@ -35,7 +38,8 @@ class IntraComponentDependencySpecificationService(
     private val componentVersionRepository: ComponentVersionRepository,
     private val interfaceRepository: InterfaceRepository,
     private val interfacePartRepository: InterfacePartRepository,
-    private val intraComponentDependencyParticipantRepository: IntraComponentDependencyParticipantRepository
+    private val intraComponentDependencyParticipantRepository: IntraComponentDependencyParticipantRepository,
+    private val intraComponentDependencySpecificationTypeRepository: IntraComponentDependencySpecificationTypeRepository
 ) : NamedNodeService<IntraComponentDependencySpecification, IntraComponentDependencySpecificationRepository>(repository) {
 
     /**
@@ -64,7 +68,31 @@ class IntraComponentDependencySpecificationService(
         intraComponentDependencySpecification.outgoingParticipants() += input.outgoingParticipants.map {
             createIntraComponentDependencyParticipant(it, componentVersion)
         }
+        input.type?.let {
+            val type = intraComponentDependencySpecificationTypeRepository.findById(it)
+            checkTypeCompatibility(intraComponentDependencySpecification, type)
+            intraComponentDependencySpecification.type().value = type
+        }
         return repository.save(intraComponentDependencySpecification).awaitSingle()
+    }
+
+    /**
+     * Checks if the [IntraComponentDependencySpecificationType] is compatible with the [IntraComponentDependencySpecification]
+     *
+     * @param intraComponentDependencySpecification the [IntraComponentDependencySpecification] to check
+     * @param type the [IntraComponentDependencySpecificationType] to check
+     * @throws IllegalArgumentException if the [IntraComponentDependencySpecificationType] is not compatible with the
+     *   [IntraComponentDependencySpecification]
+     */
+    private suspend fun checkTypeCompatibility(
+        intraComponentDependencySpecification: IntraComponentDependencySpecification,
+        type: IntraComponentDependencySpecificationType
+    ) {
+        if (intraComponentDependencySpecification.componentVersion().value.component().value.template().value !in type.partOf()) {
+            throw IllegalArgumentException(
+                "IntraComponentDependencySpecificationType cannot be used with this ComponentVersion as it is not provided by the template of the Component"
+            )
+        }
     }
 
     /**
@@ -87,6 +115,15 @@ class IntraComponentDependencySpecificationService(
         )
         updateNamedNode(intraComponentDependencySpecification, input)
         updateIntraComponentDependencySpecificationParticipants(input, intraComponentDependencySpecification)
+        input.type.ifPresent {
+            if (it != null) {
+                val type = intraComponentDependencySpecificationTypeRepository.findById(it)
+                checkTypeCompatibility(intraComponentDependencySpecification, type)
+                intraComponentDependencySpecification.type().value = type
+            } else {
+                intraComponentDependencySpecification.type().value = null
+            }
+        }
         return repository.save(intraComponentDependencySpecification).awaitSingle()
     }
 

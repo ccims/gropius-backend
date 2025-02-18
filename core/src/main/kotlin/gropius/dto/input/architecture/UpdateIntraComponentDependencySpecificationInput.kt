@@ -7,6 +7,8 @@ import gropius.dto.input.common.UpdateNamedNodeInput
 
 @GraphQLDescription("Input for the updateIntraComponentDependencySpecification mutation")
 class UpdateIntraComponentDependencySpecificationInput(
+    @GraphQLDescription("If provided, the new type of the IntraComponentDependencySpecification")
+    val type: OptionalInput<ID?>,
     @GraphQLDescription("Added incomingParticipants")
     val addedIncomingParticipants: OptionalInput<List<IntraComponentDependencyParticipantInput>>,
     @GraphQLDescription("Added outgoingParticipants")

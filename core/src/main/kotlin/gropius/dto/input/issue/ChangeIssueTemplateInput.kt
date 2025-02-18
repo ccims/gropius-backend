@@ -5,6 +5,8 @@ import com.expediagroup.graphql.generator.execution.OptionalInput
 import com.expediagroup.graphql.generator.scalars.ID
 import gropius.dto.input.common.Input
 import gropius.dto.input.common.JSONFieldInput
+import gropius.dto.input.common.TypeMappingInput
+import gropius.dto.input.common.ensureUniqueMapping
 import gropius.dto.input.common.validateAndEnsureNoDuplicates
 import gropius.dto.input.ifPresent
 
@@ -31,5 +33,7 @@ class ChangeIssueTemplateInput(
     override fun validate() {
         super.validate()
         templatedFields.ifPresent { it.validateAndEnsureNoDuplicates() }
+        assignmentTypeMapping.ifPresent { it.ensureUniqueMapping() }
+        issueRelationTypeMapping.ifPresent { it.ensureUniqueMapping() }
     }
 }
