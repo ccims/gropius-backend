@@ -152,9 +152,7 @@ class ComponentService(
      * @return a set of updated nodes, must be saved
      */
     private suspend fun updateComponentTemplate(
-        input: UpdateComponentInput,
-        component: Component,
-        updateContext: NodeBatchUpdateContext
+        input: UpdateComponentInput, component: Component, updateContext: NodeBatchUpdateContext
     ) {
         input.template.ifPresent { templateId ->
             component.template().value = componentTemplateRepository.findById(templateId)
@@ -165,10 +163,29 @@ class ComponentService(
             }
             val typeMapping = input.intraComponentDependencySpecificationTypeMapping.toMapping(
                 intraComponentDependencySpecificationTypeRepository
-            )
+            ) {
+                checkTypeCompatibility(component.template().value, it)
+            }
             updateIntraComponentDependencySpecificationsAfterTemplateUpdate(component, typeMapping, updateContext)
             val graphUpdater = ComponentGraphUpdater(updateContext)
             graphUpdater.updateComponentTemplate(component)
+        }
+    }
+
+    /**
+     * Checks if the [IntraComponentDependencySpecificationType]s are compatible with the new template
+     *
+     * @param template the new template
+     * @param type the [IntraComponentDependencySpecificationType] to check
+     * @throws IllegalArgumentException if the type is not compatible with the template
+     */
+    private suspend fun checkTypeCompatibility(
+        template: ComponentTemplate, type: IntraComponentDependencySpecificationType
+    ) {
+        if (template !in type.partOf()) {
+            throw IllegalArgumentException(
+                "IntraComponentDependencySpecificationType cannot be used with this ComponentVersion as it is not provided by the template of the Component"
+            )
         }
     }
 

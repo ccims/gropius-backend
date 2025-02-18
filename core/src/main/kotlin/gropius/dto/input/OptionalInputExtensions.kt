@@ -63,10 +63,12 @@ infix fun KProperty0<OptionalInput<List<*>>>.ensureDisjoint(otherProperty: KProp
  *
  * @param T the type of the returned types
  * @param typeRepository used to map [ID] to [T]
+ * @param validator used to validate the types
  * @return the generated mapping
  */
 suspend fun <T : Node> OptionalInput<List<TypeMappingInput>>.toMapping(
-    typeRepository: GropiusRepository<T, String>
+    typeRepository: GropiusRepository<T, String>,
+    validator: suspend (T) -> Unit
 ): Map<T, T?> {
     ifPresent { inputs ->
         val allTypeIds = inputs.flatMap { listOf(it.newType, it.oldType) }.filterNotNull().toSet()

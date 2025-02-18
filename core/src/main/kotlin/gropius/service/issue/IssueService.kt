@@ -1,13 +1,9 @@
 package gropius.service.issue
 
-import com.expediagroup.graphql.generator.execution.OptionalInput
-import com.expediagroup.graphql.generator.scalars.ID
 import com.fasterxml.jackson.databind.JsonNode
 import gropius.authorization.GropiusAuthorizationContext
 import gropius.dto.input.common.DeleteNodeInput
 import gropius.dto.input.common.JSONFieldInput
-import gropius.dto.input.common.TypeMappingInput
-import gropius.dto.input.ifPresent
 import gropius.dto.input.issue.*
 import gropius.dto.input.orElse
 import gropius.dto.input.toMapping
@@ -22,7 +18,6 @@ import gropius.model.user.GropiusUser
 import gropius.model.user.User
 import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.TrackablePermission
-import gropius.repository.GropiusRepository
 import gropius.repository.architecture.AffectedByIssueRepository
 import gropius.repository.architecture.TrackableRepository
 import gropius.repository.common.NodeRepository
@@ -209,8 +204,12 @@ class IssueService(
                 input.type.orElse(null)?.let { issueTypeRepository.findById(it) },
                 input.state.orElse(null)?.let { issueStateRepository.findById(it) },
                 input.priority.orElse(null)?.let { issuePriorityRepository.findById(it) },
-                input.assignmentTypeMapping.toMapping(assignmentTypeRepository),
-                input.issueRelationTypeMapping.toMapping(issueRelationTypeRepository),
+                input.assignmentTypeMapping.toMapping(assignmentTypeRepository) {
+                    checkAssignmentTypeCompatibility(issue, it)
+                },
+                input.issueRelationTypeMapping.toMapping(issueRelationTypeRepository) {
+                    checkIssueRelationTypeCompatibility(issue, it)
+                },
                 OffsetDateTime.now(),
                 getUser(authorizationContext),
                 updateContext
@@ -1620,7 +1619,8 @@ class IssueService(
         val issueRelationType = input.issueRelationType?.let { issueRelationTypeRepository.findById(it) }
         val byUser = getUser(authorizationContext)
         val updateContext = NodeBatchUpdateContext()
-        val issueRelation = createIssueRelation(issue, relatedIssue, issueRelationType, OffsetDateTime.now(), byUser, updateContext)
+        val issueRelation =
+            createIssueRelation(issue, relatedIssue, issueRelationType, OffsetDateTime.now(), byUser, updateContext)
         createdAuditedNode(issueRelation, byUser)
         return updateContext.save(issueRelation, nodeRepository)
     }
@@ -1781,7 +1781,8 @@ class IssueService(
         checkManageIssuesPermission(issue, authorizationContext)
         return if (issueRelation in issue.outgoingRelations()) {
             val updateContext = NodeBatchUpdateContext()
-            val event = removeIssueRelation(issueRelation, OffsetDateTime.now(), getUser(authorizationContext), updateContext)
+            val event =
+                removeIssueRelation(issueRelation, OffsetDateTime.now(), getUser(authorizationContext), updateContext)
             updateContext.internalUpdatedNodes += issueRelation.relatedIssue().value!!
             updateContext.save(event, nodeRepository)
         } else {
