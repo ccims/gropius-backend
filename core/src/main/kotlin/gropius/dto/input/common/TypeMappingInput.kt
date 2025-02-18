@@ -1,8 +1,7 @@
-package gropius.dto.input.issue
+package gropius.dto.input.common
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.scalars.ID
-import gropius.dto.input.common.Input
 
 @GraphQLDescription("Input to map an old type to a new type")
 class TypeMappingInput(

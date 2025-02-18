@@ -45,4 +45,9 @@ class ComponentTemplate(
     @GraphQLDescription("SubTemplate applied to all ComponentVersions of Components with this Template")
     val componentVersionTemplate by NodeProperty<ComponentVersionTemplate>()
 
+    @NodeRelationship(IntraComponentDependencySpecificationType.PART_OF, Direction.INCOMING)
+    @GraphQLDescription("IntraComponentDependencySpecificationTypes which can be used in the context of Components with this template.")
+    @FilterProperty
+    val intraComponentDependencySpecificationTypes by NodeSetProperty<IntraComponentDependencySpecificationType>()
+
 }

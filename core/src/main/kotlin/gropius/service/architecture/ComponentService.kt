@@ -7,16 +7,19 @@ import gropius.dto.input.architecture.UpdateComponentInput
 import gropius.dto.input.common.DeleteNodeInput
 import gropius.dto.input.ifPresent
 import gropius.dto.input.isPresent
+import gropius.dto.input.toMapping
 import gropius.model.architecture.Component
 import gropius.model.architecture.ComponentVersion
 import gropius.model.architecture.InterfaceSpecification
 import gropius.model.template.ComponentTemplate
+import gropius.model.template.IntraComponentDependencySpecificationType
 import gropius.model.user.GropiusUser
 import gropius.model.user.permission.GlobalPermission
 import gropius.model.user.permission.NodePermission
 import gropius.repository.architecture.ComponentRepository
 import gropius.repository.findById
 import gropius.repository.template.ComponentTemplateRepository
+import gropius.repository.template.IntraComponentDependencySpecificationTypeRepository
 import gropius.service.NodeBatchUpdateContext
 import gropius.service.template.TemplatedNodeService
 import gropius.service.user.permission.ComponentPermissionService
@@ -33,6 +36,7 @@ import org.springframework.stereotype.Service
  * @param componentPermissionService used to create the initial permission for a created [Component]
  * @param interfaceSpecificationService used to create [InterfaceSpecification]s
  * @param componentVersionService used to create [ComponentVersion]s
+ * @param intraComponentDependencySpecificationTypeRepository used to get [IntraComponentDependencySpecificationType]s
  */
 @Service
 class ComponentService(
@@ -41,7 +45,8 @@ class ComponentService(
     private val componentTemplateRepository: ComponentTemplateRepository,
     private val componentPermissionService: ComponentPermissionService,
     private val interfaceSpecificationService: InterfaceSpecificationService,
-    private val componentVersionService: ComponentVersionService
+    private val componentVersionService: ComponentVersionService,
+    private val intraComponentDependencySpecificationTypeRepository: IntraComponentDependencySpecificationTypeRepository
 ) : TrackableService<Component, ComponentRepository>(repository) {
 
     /**
@@ -147,9 +152,7 @@ class ComponentService(
      * @return a set of updated nodes, must be saved
      */
     private suspend fun updateComponentTemplate(
-        input: UpdateComponentInput,
-        component: Component,
-        updateContext: NodeBatchUpdateContext
+        input: UpdateComponentInput, component: Component, updateContext: NodeBatchUpdateContext
     ) {
         input.template.ifPresent { templateId ->
             component.template().value = componentTemplateRepository.findById(templateId)
@@ -158,8 +161,57 @@ class ComponentService(
                 it.template().value = componentVersionTemplate
                 templatedNodeService.updateTemplatedFields(it, input.componentVersionTemplatedFields, true)
             }
+            val typeMapping = input.intraComponentDependencySpecificationTypeMapping.toMapping(
+                intraComponentDependencySpecificationTypeRepository
+            ) {
+                checkTypeCompatibility(component.template().value, it)
+            }
+            updateIntraComponentDependencySpecificationsAfterTemplateUpdate(component, typeMapping, updateContext)
             val graphUpdater = ComponentGraphUpdater(updateContext)
             graphUpdater.updateComponentTemplate(component)
+        }
+    }
+
+    /**
+     * Checks if the [IntraComponentDependencySpecificationType]s are compatible with the new template
+     *
+     * @param template the new template
+     * @param type the [IntraComponentDependencySpecificationType] to check
+     * @throws IllegalArgumentException if the type is not compatible with the template
+     */
+    private suspend fun checkTypeCompatibility(
+        template: ComponentTemplate, type: IntraComponentDependencySpecificationType
+    ) {
+        if (template !in type.partOf()) {
+            throw IllegalArgumentException(
+                "IntraComponentDependencySpecificationType cannot be used with this ComponentVersion as it is not provided by the template of the Component"
+            )
+        }
+    }
+
+    /**
+     * Updates the [IntraComponentDependencySpecificationType]s where the old type is incompatible with the new template
+     * based on [typeMapping] and removes types with no replacement
+     * Adds the updated nodes to [updateContext]
+     *
+     * @param component the [Component] to update
+     * @param typeMapping the mapping of old to new [IntraComponentDependencySpecificationType]s
+     * @param updateContext the context used to update the nodes
+     */
+    private suspend fun updateIntraComponentDependencySpecificationsAfterTemplateUpdate(
+        component: Component,
+        typeMapping: Map<IntraComponentDependencySpecificationType, IntraComponentDependencySpecificationType?>,
+        updateContext: NodeBatchUpdateContext
+    ) {
+        val newTemplate = component.template().value
+        for (version in component.versions()) {
+            for (intraComponentDependencySpecification in version.intraComponentDependencySpecifications()) {
+                val type = intraComponentDependencySpecification.type().value
+                if (type != null && type !in newTemplate.intraComponentDependencySpecificationTypes()) {
+                    intraComponentDependencySpecification.type().value = typeMapping[type]
+                    updateContext.internalUpdatedNodes += intraComponentDependencySpecification
+                }
+            }
         }
     }
 

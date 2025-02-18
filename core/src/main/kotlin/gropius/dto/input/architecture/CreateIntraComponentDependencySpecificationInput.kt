@@ -6,6 +6,8 @@ import gropius.dto.input.common.CreateNamedNodeInput
 
 @GraphQLDescription("Input for the createIntraComponentDependencySpecification mutation")
 class CreateIntraComponentDependencySpecificationInput(
+    @GraphQLDescription("The id of the type of the created IntraComponentDependencySpecification, must be compatible with the template of the Component")
+    val type: ID?,
     @GraphQLDescription("The id of the ComponentVersion the created IntraComponentDependencySpecification is part of")
     val componentVersion: ID,
     @GraphQLDescription("Initial incomingParticipants, must not be empty")

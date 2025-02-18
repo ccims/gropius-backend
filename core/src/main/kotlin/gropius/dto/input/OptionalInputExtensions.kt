@@ -1,6 +1,12 @@
 package gropius.dto.input
 
 import com.expediagroup.graphql.generator.execution.OptionalInput
+import com.expediagroup.graphql.generator.scalars.ID
+import gropius.dto.input.common.TypeMappingInput
+import gropius.repository.GropiusRepository
+import gropius.repository.findAllById
+import io.github.graphglue.model.Node
+import kotlin.collections.get
 import kotlin.reflect.KProperty0
 
 /**
@@ -50,4 +56,24 @@ infix fun KProperty0<OptionalInput<List<*>>>.ensureDisjoint(otherProperty: KProp
             }
         }
     }
+}
+
+/**
+ * Transforms a list of [gropius.dto.input.common.TypeMappingInput] to a mapping using the provided [typeRepository]
+ *
+ * @param T the type of the returned types
+ * @param typeRepository used to map [ID] to [T]
+ * @param validator used to validate the types
+ * @return the generated mapping
+ */
+suspend fun <T : Node> OptionalInput<List<TypeMappingInput>>.toMapping(
+    typeRepository: GropiusRepository<T, String>,
+    validator: suspend (T) -> Unit
+): Map<T, T?> {
+    ifPresent { inputs ->
+        val allTypeIds = inputs.flatMap { listOf(it.newType, it.oldType) }.filterNotNull().toSet()
+        val allTypesById = typeRepository.findAllById(allTypeIds).associateBy { it.graphQLId }
+        return inputs.associate { allTypesById[it.oldType]!! to allTypesById[it.newType] }
+    }
+    return emptyMap()
 }
