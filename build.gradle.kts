@@ -12,7 +12,6 @@ plugins {
 allprojects {
     repositories {
         mavenCentral()
-        mavenLocal()
     }
 
     tasks.withType<KotlinCompile> {
