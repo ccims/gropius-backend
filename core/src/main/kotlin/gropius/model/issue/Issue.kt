@@ -51,22 +51,6 @@ class Issue(
     @FilterProperty
     @OrderProperty
     var lastUpdatedAt: OffsetDateTime,
-    @property:GraphQLDescription("DateTime when working on this Issue started / will start.")
-    @FilterProperty
-    @OrderProperty
-    var startDate: OffsetDateTime?,
-    @property:GraphQLDescription("DateTime when working on this Issue should be finished.")
-    @FilterProperty
-    @OrderProperty
-    var dueDate: OffsetDateTime?,
-    @property:GraphQLDescription("Estimated amount of time necessary for this Issue.")
-    @FilterProperty
-    @OrderProperty
-    var estimatedTime: Duration?,
-    @property:GraphQLDescription("Time spent working on this Issue.")
-    @FilterProperty
-    @OrderProperty
-    var spentTime: Duration?
 ) : AuditedNode(createdAt, lastModifiedAt), MutableTemplatedNode {
 
     companion object {

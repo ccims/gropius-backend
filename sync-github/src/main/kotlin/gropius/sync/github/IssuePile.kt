@@ -114,7 +114,7 @@ data class IssuePileData(
     override suspend fun createIssue(imsProject: IMSProject, service: SyncDataService): Issue {
         val githubService = (service as GithubDataService)
         val issue = Issue(
-            createdAt, lastUpdate, mutableMapOf(), initialTitle, initialDescription, lastUpdate, null, null, null, null
+            createdAt, lastUpdate, mutableMapOf(), initialTitle, initialDescription, lastUpdate
         )
         issue.body().value = Body(createdAt, lastUpdate, lastUpdate)
         issue.body().value.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)

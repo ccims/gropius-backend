@@ -162,7 +162,7 @@ class IssueService(
             throw IllegalStateException("An Issue must be created on at least one Trackable")
         }
         val fields = templatedNodeService.validateInitialTemplatedFields(template, templatedFields)
-        val issue = Issue(atTime, atTime, fields, title, body, atTime, null, null, null, null)
+        val issue = Issue(atTime, atTime, fields, title, body, atTime)
         issue.template().value = template
         checkIssueTypeCompatibility(issue, type)
         checkIssueStateCompatibility(issue, state)
