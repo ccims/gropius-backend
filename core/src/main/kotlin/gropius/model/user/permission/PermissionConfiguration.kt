@@ -74,7 +74,7 @@ class PermissionConfiguration {
                   - change the Template
                   - add / remove Labels
                   - add / remove Artefacts
-                  - change any field on the Issue (title, startDate, dueDate, ...)
+                  - change any field on the Issue (title, ...)
                   - change templated fields
                 In contrast to `MODERATOR`, this does not allow editing / removing Comments of other users
             """.trimIndent()

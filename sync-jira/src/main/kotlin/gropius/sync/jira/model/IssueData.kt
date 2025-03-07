@@ -474,11 +474,7 @@ data class IssueData(
             mutableMapOf(),
             fields["summary"]!!.jsonPrimitive.content,
             fields["description"]!!.jsonPrimitive.content,
-            updated,
-            null,
-            null,
-            null,
-            null
+            updated
         )
         issue.body().value = Body(
             created, updated, updated
