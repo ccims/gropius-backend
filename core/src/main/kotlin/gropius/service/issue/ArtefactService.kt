@@ -61,6 +61,7 @@ class ArtefactService(
         val template = artefactTemplateRepository.findById(input.template)
         val templatedFields = templatedNodeService.validateInitialTemplatedFields(template, input)
         val artefact = Artefact(now, now, templatedFields, input.file, input.from, input.to, input.version)
+        artefact.template().value = template
         artefact.trackable().value = trackable
         createdAuditedNode(artefact, getUser(authorizationContext))
         return repository.save(artefact).awaitSingle()
