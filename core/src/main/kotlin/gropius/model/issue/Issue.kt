@@ -51,6 +51,10 @@ class Issue(
     @FilterProperty
     @OrderProperty
     var lastUpdatedAt: OffsetDateTime,
+    var startDate: OffsetDateTime? = null,
+    var dueDate: OffsetDateTime? = null,
+    var estimatedTime: Duration? = null,
+    var spentTime: Duration? = null
 ) : AuditedNode(createdAt, lastModifiedAt), MutableTemplatedNode {
 
     companion object {
