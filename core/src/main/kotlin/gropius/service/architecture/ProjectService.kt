@@ -7,6 +7,7 @@ import gropius.dto.input.architecture.RemoveComponentVersionFromProjectInput
 import gropius.dto.input.architecture.UpdateProjectInput
 import gropius.dto.input.common.DeleteNodeInput
 import gropius.dto.input.ifPresent
+import gropius.dto.input.isPresent
 import gropius.model.architecture.ComponentVersion
 import gropius.model.architecture.Project
 import gropius.model.user.permission.ComponentPermission
@@ -76,18 +77,25 @@ class ProjectService(
     ): Project {
         input.validate()
         val project = repository.findById(input.id)
-        checkPermission(
-            project, Permission(NodePermission.ADMIN, authorizationContext), "update the Project"
-        )
-        input.defaultView.ifPresent {
-            project.defaultView().value = if (it == null) null else viewRepository.findById(it)
-        }
-        projectPermissionService.updatePermissionsOfNode(
-            project, input.addedPermissions, input.removedPermissions, authorizationContext
-        )
-        updateTrackable(project, input)
         val batchUpdater = NodeBatchUpdateContext()
-        layoutService.updateLayout(project, input, batchUpdater)
+        if (input.defaultView.isPresent || input.relationLayouts.isPresent || input.relationPartnerLayouts.isPresent) {
+            checkPermission(
+                project, Permission(ProjectPermission.MANAGE_VIEWS, authorizationContext), "update the Project"
+            )
+            input.defaultView.ifPresent {
+                project.defaultView().value = if (it == null) null else viewRepository.findById(it)
+            }
+            layoutService.updateLayout(project, input, batchUpdater)
+        }
+        if (input.addedPermissions.isPresent || input.removedPermissions.isPresent || input.name.isPresent || input.description.isPresent || input.repositoryURL.isPresent) {
+            checkPermission(
+                project, Permission(NodePermission.ADMIN, authorizationContext), "update the Project"
+            )
+            projectPermissionService.updatePermissionsOfNode(
+                project, input.addedPermissions, input.removedPermissions, authorizationContext
+            )
+            updateTrackable(project, input)
+        }
         return batchUpdater.save(project, nodeRepository)
     }
 
