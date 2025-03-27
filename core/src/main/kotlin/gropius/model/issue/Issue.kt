@@ -13,7 +13,6 @@ import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.TrackablePermission
 import io.github.graphglue.model.*
 import org.springframework.data.neo4j.core.schema.CompositeProperty
-import java.time.Duration
 import java.time.OffsetDateTime
 
 @DomainNode(searchQueryName = "searchIssues")
@@ -50,11 +49,7 @@ class Issue(
     @property:GraphQLDescription("The DateTime when the Issue was last updated, this includes a changed timeline.")
     @FilterProperty
     @OrderProperty
-    var lastUpdatedAt: OffsetDateTime,
-    var startDate: OffsetDateTime? = null,
-    var dueDate: OffsetDateTime? = null,
-    var estimatedTime: Duration? = null,
-    var spentTime: Duration? = null
+    var lastUpdatedAt: OffsetDateTime
 ) : AuditedNode(createdAt, lastModifiedAt), MutableTemplatedNode {
 
     companion object {
