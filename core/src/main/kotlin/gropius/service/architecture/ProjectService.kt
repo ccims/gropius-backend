@@ -192,7 +192,7 @@ class ProjectService(
                 }
             }
         }
-        nodeRepository.deleteAll(toDelete)
+        nodeRepository.deleteAll(toDelete).awaitSingleOrNull()
         return repository.save(project).awaitSingle()
     }
 
