@@ -10,6 +10,8 @@ import gropius.dto.input.ifPresent
 import gropius.dto.input.isPresent
 import gropius.model.architecture.ComponentVersion
 import gropius.model.architecture.Project
+import gropius.model.architecture.RelationPartner
+import gropius.model.architecture.layout.Layout
 import gropius.model.user.permission.ComponentPermission
 import gropius.model.user.permission.GlobalPermission
 import gropius.model.user.permission.NodePermission
@@ -21,6 +23,7 @@ import gropius.repository.findById
 import gropius.service.NodeBatchUpdateContext
 import gropius.service.user.permission.ProjectPermissionService
 import io.github.graphglue.authorization.Permission
+import io.github.graphglue.model.Node
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
@@ -171,6 +174,25 @@ class ProjectService(
         )
         val componentVersion = componentVersionRepository.findById(input.componentVersion)
         project.components() -= componentVersion
+        val effectivelyRemovedNodes = mutableSetOf<RelationPartner>(componentVersion)
+        effectivelyRemovedNodes += componentVersion.interfaceDefinitions().mapNotNull { it.visibleInterface().value }
+        val layoutedNodes = mutableSetOf<Layout>(project)
+        layoutedNodes += project.views()
+        val toDelete = mutableSetOf<Node>()
+        for (layoutedNode in layoutedNodes) {
+            for (relationPartnerLayout in layoutedNode.relationPartnerLayouts()) {
+                if (relationPartnerLayout.relationPartner().value in effectivelyRemovedNodes) {
+                    toDelete += relationPartnerLayout
+                }
+            }
+            for (relationLayout in layoutedNode.relationLayouts()) {
+                val relation = relationLayout.relation().value
+                if (relation.start().value in effectivelyRemovedNodes || relation.end().value in effectivelyRemovedNodes) {
+                    toDelete += relationLayout
+                }
+            }
+        }
+        nodeRepository.deleteAll(toDelete)
         return repository.save(project).awaitSingle()
     }
 
