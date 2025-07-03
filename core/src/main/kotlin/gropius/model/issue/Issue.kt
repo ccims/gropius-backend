@@ -67,6 +67,7 @@ class Issue(
         const val ASSIGNMENT = "ASSIGNMENT"
         const val PINNED_ON = "PINNED_ON"
         const val AFFECTS = "AFFECTS"
+        const val ISSUE_BOARD_ITEM = "ISSUE_BOARD_ITEM"
     }
 
     @NodeRelationship(BaseTemplate.USED_IN, Direction.INCOMING)

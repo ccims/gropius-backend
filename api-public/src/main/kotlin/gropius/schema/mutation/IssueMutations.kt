@@ -9,13 +9,9 @@ import gropius.dto.input.issue.*
 import gropius.dto.payload.DeleteNodePayload
 import gropius.graphql.AutoPayloadType
 import gropius.model.architecture.Trackable
-import gropius.model.issue.Artefact
-import gropius.model.issue.Issue
-import gropius.model.issue.Label
+import gropius.model.issue.*
 import gropius.model.issue.timeline.*
-import gropius.service.issue.ArtefactService
-import gropius.service.issue.IssueService
-import gropius.service.issue.LabelService
+import gropius.service.issue.*
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -29,10 +25,13 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Component
 @Transactional(propagation = Propagation.REQUIRES_NEW)
-class IssueMutations(
+class         IssueMutations(
     private val issueService: IssueService,
     private val labelService: LabelService,
-    private val artefactService: ArtefactService
+    private val artefactService: ArtefactService,
+    private val issueBoardService: IssueBoardService,
+    private val issueBoardColumnService: IssueBoardColumnService,
+    private val issueBoardItemService: IssueBoardItemService
 ) : Mutation {
 
     @GraphQLDescription(
@@ -522,6 +521,137 @@ class IssueMutations(
         input: DeleteNodeInput, dfe: DataFetchingEnvironment
     ): IssueComment {
         return issueService.deleteIssueComment(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription(
+        """Creates a new Issue Board on one trackable. Requires MANAGE_ISSUE_BOARDS on the provided trackable.
+        """
+    )
+    @AutoPayloadType("The created Issue Board")
+    suspend fun createIssueBoard(
+        @GraphQLDescription("Defines the created Issue Board")
+        input: CreateIssueBoardInput, dfe: DataFetchingEnvironment
+    ): IssueBoard {
+        return issueBoardService.createIssueBoard(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates the specified Issue Board, Requires MANAGE_ISSUE_BOARDS on the provided trackable.")
+    @AutoPayloadType("The updated Issue Board")
+    suspend fun updateIssueBoard(
+        @GraphQLDescription("Defines which Issue Board to update and how to update it")
+        input: UpdateIssueBoardInput, dfe: DataFetchingEnvironment
+    ): IssueBoard {
+        return issueBoardService.updateIssueBoard(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription(
+        """Deletes the Issue Board, requires MANAGE_ISSUE_BOARDS on the provided trackable.
+        """
+    )
+    suspend fun deleteIssueBoard(
+        @GraphQLDescription("Defines which Issue Board to delete")
+        input: DeleteNodeInput, dfe: DataFetchingEnvironment
+    ): DeleteNodePayload {
+        issueBoardService.deleteIssueBoard(dfe.gropiusAuthorizationContext, input)
+        return DeleteNodePayload(input.id)
+    }
+
+    @GraphQLDescription(
+        """Creates a new Issue Board Column on one trackable. Requires MANAGE_ISSUE_BOARDS on the parent trackable.
+        """
+    )
+    @AutoPayloadType("The created Issue Board Column")
+    suspend fun createIssueBoardColumn(
+        @GraphQLDescription("Defines the created Issue Board Column")
+        input: CreateIssueBoardColumnInput, dfe: DataFetchingEnvironment
+    ): IssueBoardColumn{
+        return issueBoardColumnService.createIssueBoardColumn(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates the specified Issue Board Column, Requires MANAGE_ISSUE_BOARDS on the parent trackable.")
+    @AutoPayloadType("The updated Issue Board Column")
+    suspend fun updateIssueBoardColumn(
+        @GraphQLDescription("Defines which Issue Board Column to update and how to update it")
+        input: UpdateIssueBoardColumnInput, dfe: DataFetchingEnvironment
+    ): IssueBoardColumn {
+        return issueBoardColumnService.updateIssueBoardColumn(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription(
+        """Deletes the Issue Board Column, requires MANAGE_ISSUE_BOARDS on the parent trackable.
+        """
+    )
+    suspend fun deleteIssueBoardColumn(
+        @GraphQLDescription("Defines which Issue Board Column to delete")
+        input: DeleteNodeInput, dfe: DataFetchingEnvironment
+    ): DeleteNodePayload {
+        issueBoardColumnService.deleteIssueBoardColumn(dfe.gropiusAuthorizationContext, input)
+        return DeleteNodePayload(input.id)
+    }
+
+    @GraphQLDescription(
+        """Adds an Issue State to a Board Column, requires MANAGE_ISSUE_BOARDS on the parent Trackable 
+        of the column the Issue State should be added to, and READ on the Issue State.
+        Returns the updated column (unchanged if the state was already assigned).
+        """
+    )
+    suspend fun addIssueStateToBoardColumn(
+        @GraphQLDescription("Defines the board column ID and the issue state ID to add")
+        input: AddIssueStateToBoardColumnInput,
+        dfe: DataFetchingEnvironment
+    ): IssueBoardColumn {
+        return issueBoardColumnService.addIssueStateToBoardColumn(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription(
+        """Removes an Issue State from a Board Column, requires MANAGE_ISSUE_BOARDS on the parent Trackable 
+           of the column the Issue State should be removed from, and READ on the Issue State.
+           Returns the updated column.
+        """
+    )
+    suspend fun removeIssueStateFromBoardColumn(
+        @GraphQLDescription("Defines the board column ID and the issue state ID to remove")
+        input: RemoveIssueStateFromBoardColumnInput,
+        dfe: DataFetchingEnvironment
+    ): IssueBoardColumn {
+        return issueBoardColumnService.removeIssueStateFromBoardColumn(
+            dfe.gropiusAuthorizationContext,
+            input
+        )
+    }
+
+    @GraphQLDescription(
+        """Creates a new Issue Board Item on an Issue Board. Requires MANAGE_ISSUE_BOARDS on the parent trackable.
+        """
+    )
+    @AutoPayloadType("The created Issue Board Item")
+    suspend fun createIssueBoardItem(
+        @GraphQLDescription("Defines the created Issue Board Item")
+        input: CreateIssueBoardItemInput, dfe: DataFetchingEnvironment
+    ): IssueBoardItem{
+        return issueBoardItemService.createIssueBoardItem(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates the specified Issue Board Item, Requires MANAGE_ISSUE_BOARDS on the parent trackable.")
+    @AutoPayloadType("The updated Issue Board Item")
+    suspend fun updateIssueBoardItem(
+        @GraphQLDescription("Defines which Issue Board Item to update and how to update it")
+        input: UpdateIssueBoardItemInput, dfe: DataFetchingEnvironment
+    ): IssueBoardItem {
+        return issueBoardItemService.updateIssueBoardItem(dfe.gropiusAuthorizationContext, input)
+    }
+
+
+    @GraphQLDescription(
+        """Deletes the Issue Board Item, requires MANAGE_ISSUE_BOARDS on the parent trackable.
+        """
+    )
+    suspend fun deleteIssueBoardItem(
+        @GraphQLDescription("Defines which Issue Board Item to delete")
+        input: DeleteNodeInput, dfe: DataFetchingEnvironment
+    ): DeleteNodePayload {
+        issueBoardItemService.deleteIssueBoardItem(dfe.gropiusAuthorizationContext, input)
+        return DeleteNodePayload(input.id)
     }
 
 }

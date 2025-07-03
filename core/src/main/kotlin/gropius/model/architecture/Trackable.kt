@@ -4,6 +4,7 @@ import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import gropius.authorization.RELATED_TO_NODE_PERMISSION_RULE
 import gropius.model.issue.Artefact
 import gropius.model.issue.Issue
+import gropius.model.issue.IssueBoard
 import gropius.model.issue.Label
 import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.TrackablePermission
@@ -12,7 +13,7 @@ import java.net.URI
 
 @DomainNode("trackables", searchQueryName = "searchTrackables")
 @GraphQLDescription(
-    """An entity which can have Issues, Labels and Artefacts.
+    """An entity which can have Issues,Issue Boards, Labels and Artefacts.
     Has pinned issues.
     Can be synced to an IMS by creating an IMSProject.
     Can be affected by Issues.
@@ -40,6 +41,9 @@ import java.net.URI
 )
 @Authorization(
     TrackablePermission.MANAGE_LABELS, allow = [Rule(RELATED_TO_NODE_PERMISSION_RULE, options = [NodePermission.ADMIN])]
+)
+@Authorization(
+    TrackablePermission.MANAGE_ISSUE_BOARDS, allow = [Rule(RELATED_TO_NODE_PERMISSION_RULE, options = [NodePermission.ADMIN])]
 )
 @Authorization(
     TrackablePermission.MANAGE_ARTEFACTS,
@@ -71,6 +75,7 @@ abstract class Trackable(
         const val LABEL = "LABEL"
         const val ARTEFACT = "ARTEFACT"
         const val SYNCS_TO = "SYNCS_TO"
+        const val ISSUE_BOARD = "ISSUE_BOARD"
     }
 
     @NodeRelationship(ISSUE, Direction.OUTGOING)
@@ -81,6 +86,13 @@ abstract class Trackable(
     )
     @FilterProperty
     val issues by NodeSetProperty<Issue>()
+
+    @NodeRelationship(ISSUE_BOARD, Direction.OUTGOING)
+    @GraphQLDescription(
+        """The set of Issue Boards which are part of this Trackable. """
+    )
+    @FilterProperty
+    val issueBoards by NodeSetProperty<IssueBoard>()
 
     @NodeRelationship(LABEL, Direction.OUTGOING)
     @GraphQLDescription("The set of Labels which can be added to issues of this trackable.")
