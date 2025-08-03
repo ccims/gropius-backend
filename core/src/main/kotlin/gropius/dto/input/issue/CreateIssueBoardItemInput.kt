@@ -6,7 +6,7 @@ import gropius.dto.input.common.Input
 
 @GraphQLDescription("Input for the createIssueBoardItem mutation")
 class CreateIssueBoardItemInput(
-    @GraphQLDescription("ID of the IssueBoardColumn to add this item to")
+    @GraphQLDescription("ID of the IssueBoard to add this item to")
     val issueBoard: ID,
     @GraphQLDescription("ID of the Issue to represent in this board item")
     val issue: ID,

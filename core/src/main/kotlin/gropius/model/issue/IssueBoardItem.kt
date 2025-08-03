@@ -19,8 +19,8 @@ import java.time.OffsetDateTime
     READ is granted if READ is granted on the parent Trackable on the Issue Board.
     """
 )
-@Authorization(TrackablePermission.MANAGE_ISSUE_BOARDS, allowFromRelated = ["column"])
-@Authorization(NodePermission.READ, allowFromRelated = ["column"])
+@Authorization(TrackablePermission.MANAGE_ISSUE_BOARDS, allowFromRelated = ["issueBoard"])
+@Authorization(NodePermission.READ, allowFromRelated = ["issueBoard"])
 class IssueBoardItem(
     @GraphQLDescription("Order of this item in its column")
     @FilterProperty

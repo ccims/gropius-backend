@@ -11,7 +11,6 @@ import io.github.graphglue.model.*
 @GraphQLDescription(
     """Issue Boards used to assign Issues to.
     An Issue Board consists of a name and a description.
-    Issue Boards may be synced to  IMSProjects of the Trackable they are part of.
     READ is granted if READ is granted on any Trackable in `trackable`.
     """
 )

@@ -144,10 +144,9 @@ class IssueBoardColumnService(
         input.validate()
         val column = repository.findById(input.column)
         val state  = issueStateRepository.findById(input.state)
-
-        val trackable = column.issueBoard().value.trackable().value
+        val issueBoard = column.issueBoard().value
         checkPermission(
-            trackable,
+            issueBoard,
             Permission(TrackablePermission.MANAGE_ISSUE_BOARDS, authorizationContext),
             "manage Issue Boards in a Trackable"
         )
