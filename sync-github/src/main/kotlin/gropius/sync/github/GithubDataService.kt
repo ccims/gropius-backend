@@ -1,10 +1,10 @@
 package gropius.sync.github
 
-import com.apollographql.apollo3.ApolloClient
-import com.apollographql.apollo3.api.ApolloResponse
-import com.apollographql.apollo3.api.Mutation
-import com.apollographql.apollo3.api.Query
-import com.apollographql.apollo3.network.http.HttpInfo
+import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.ApolloResponse
+import com.apollographql.apollo.api.Mutation
+import com.apollographql.apollo.api.Query
+import com.apollographql.apollo.network.http.HttpInfo
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import gropius.model.architecture.IMS
@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Exception for GitHub response errors
  * @param errors the errors GitHub sent us
  */
-class GitHubResponseException(val errors: List<com.apollographql.apollo3.api.Error>) : Exception(errors.toString())
+class GitHubResponseException(val errors: List<com.apollographql.apollo.api.Error>) : Exception(errors.toString())
 
 /**
  * Service to handle data from GitHub
@@ -284,6 +284,9 @@ class GithubDataService(
             val apolloClient = ApolloClient.Builder().serverUrl(imsConfig.graphQLUrl.toString())
                 .addHttpHeader("Authorization", "Bearer ${token.token}").build()
             val res = apolloClient.mutation(body).execute()
+            if (res.exception != null) {
+                throw res.exception!!
+            }
             logger.info("Response Code for request with token $token is ${res.data} ${res.errors}")
             val headers = res.executionContext[HttpInfo]?.headers
             if ((headers?.firstOrNull { it.name == "x-ratelimit-remaining" }?.value?.toInt() ?: 0) < 100) {
@@ -334,6 +337,9 @@ class GithubDataService(
             val apolloClient = ApolloClient.Builder().serverUrl(imsConfig.graphQLUrl.toString())
                 .addHttpHeader("Authorization", "Bearer ${token.token}").build()
             val res = apolloClient.query(body).execute()
+            if (res.exception != null) {
+                throw res.exception!!
+            }
             logger.info("Response Code for request with token $token is ${res.data} ${res.errors}")
             val headers = res.executionContext[HttpInfo]?.headers
             if ((headers?.firstOrNull { it.name == "x-ratelimit-remaining" }?.value?.toInt() ?: 0) < 100) {
