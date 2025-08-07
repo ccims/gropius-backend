@@ -19,7 +19,7 @@ interface LoadBalancedDataFetcherImplementation {
      * @param generalBudget the budget to use
      * @return the walkers to execute
      */
-    open suspend fun balancedFetchData(
+    suspend fun balancedFetchData(
         imsProject: IMSProject, generalBudget: GeneralResourceWalkerBudget
     ): List<ResourceWalker>;
 }

@@ -18,6 +18,42 @@ import java.net.URI
     Can be affected by Issues.
     """
 )
+@AggregatedNodeRelationship(
+    "assignedUsers",
+    "The set of Users assigned to any issue",
+    "issues",
+    [AggregationEntry("assignments"), AggregationEntry("user")]
+)
+@AggregatedNodeRelationship(
+    "usedIssueTemplates",
+    "The set of IssueTemplates used by any issue",
+    "issues",
+    [AggregationEntry("template")]
+)
+@AggregatedNodeRelationship(
+    "usedIssueTypes",
+    "The set of IssueTypes used by any issue",
+    "issues",
+    [AggregationEntry("type")]
+)
+@AggregatedNodeRelationship(
+    "usedIssueStates",
+    "The set of IssueStates used by any issue",
+    "issues",
+    [AggregationEntry("state")]
+)
+@AggregatedNodeRelationship(
+    "usedIssuePriorities",
+    "The set of IssuePriorities used by any issue",
+    "issues",
+    [AggregationEntry("priority")]
+)
+@AggregatedNodeRelationship(
+    "usedLabels",
+    "The set of Labels used by any issue (including Labels not on this Trackable)",
+    "issues",
+    [AggregationEntry("labels")]
+)
 @Authorization(NodePermission.READ, allow = [Rule(RELATED_TO_NODE_PERMISSION_RULE)])
 @Authorization(NodePermission.ADMIN, allow = [Rule(RELATED_TO_NODE_PERMISSION_RULE)])
 @Authorization(

@@ -1,21 +1,21 @@
 val graphglueVersion: String by project
 val apolloVersion: String by project
+val apolloAdaptersVersion: String by project
 val kosonVersion: String by project
 
 plugins {
     id("org.springframework.boot")
     kotlin("plugin.spring")
-    id("com.apollographql.apollo3")
+    id("com.apollographql.apollo")
     kotlin("plugin.serialization")
 }
 
 dependencies {
     implementation(project(path = ":sync"))
-    implementation("com.apollographql.apollo3", "apollo-runtime", apolloVersion)
-    implementation("com.apollographql.apollo3", "apollo-adapters", apolloVersion)
+    implementation("com.apollographql.apollo", "apollo-runtime", apolloVersion)
+    implementation("com.apollographql.adapters", "apollo-adapters-core", apolloAdaptersVersion)
     implementation("com.lectra", "koson", kosonVersion)
 }
-
 
 apollo {
     service("github") {
@@ -26,7 +26,7 @@ apollo {
             mapScalar(
                 "DateTime",
                 "java.time.OffsetDateTime",
-                "com.apollographql.apollo3.adapter.JavaOffsetDateTimeAdapter"
+                "com.apollographql.adapter.core.JavaOffsetDateTimeAdapter"
             )
         }
         generateOptionalOperationVariables.set(false)

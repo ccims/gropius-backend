@@ -9,7 +9,7 @@ pluginManagement {
         kotlin("jvm") version kotlinVersion
         kotlin("plugin.spring") version kotlinVersion
         id("org.jetbrains.dokka") version dokkaVersion
-        id("com.apollographql.apollo3") version apolloVersion
+        id("com.apollographql.apollo") version apolloVersion
         kotlin("plugin.serialization") version kotlinVersion
     }
 }
