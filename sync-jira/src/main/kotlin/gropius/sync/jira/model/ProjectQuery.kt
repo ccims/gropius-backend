@@ -1,7 +1,6 @@
 package gropius.sync.jira.model
 
 import gropius.model.architecture.IMSProject
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import org.springframework.data.mongodb.core.mapping.Document

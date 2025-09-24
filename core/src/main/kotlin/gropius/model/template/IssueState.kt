@@ -3,6 +3,7 @@ package gropius.model.template
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import gropius.model.common.NamedNode
 import gropius.model.issue.Issue
+import gropius.model.issue.IssueBoardColumn
 import gropius.model.user.permission.NodePermission
 import io.github.graphglue.model.*
 
@@ -35,5 +36,10 @@ class IssueState(
     @GraphQLDescription("IssueTemplates this is a part of.")
     @FilterProperty
     val partOf by NodeSetProperty<IssueTemplate>()
+
+    @NodeRelationship(IssueBoardColumn.ISSUE_STATE, Direction.INCOMING)
+    @GraphQLDescription("The Issue Board Column with this state.")
+    @FilterProperty
+    val issueBoardColumn by NodeProperty<IssueBoardColumn>()
 
 }
