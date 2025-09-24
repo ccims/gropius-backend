@@ -1,6 +1,6 @@
 package gropius.sync.github
 
-import com.apollographql.apollo3.exception.ApolloException
+import com.apollographql.apollo.exception.ApolloException
 import gropius.model.architecture.IMSProject
 import gropius.sync.CursorResourceWalker
 import gropius.sync.CursorResourceWalkerDataService

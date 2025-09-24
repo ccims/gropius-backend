@@ -23,6 +23,7 @@ class RelationLayout(
 
     @NodeRelationship(Relation.LAYOUT, Direction.INCOMING)
     @GraphQLDescription("The Relation this layout is for.")
+    @GraphQLNullable
     @FilterProperty
     val relation by NodeProperty<Relation>()
 
