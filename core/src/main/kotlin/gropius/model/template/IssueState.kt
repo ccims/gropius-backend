@@ -25,7 +25,6 @@ class IssueState(
 
     companion object {
         const val PART_OF = "PART_OF"
-        const val ISSUE_BOARD_COLUMN = "ISSUE_BOARD_COLUMN"
     }
 
     @NodeRelationship(Issue.STATE, Direction.INCOMING)

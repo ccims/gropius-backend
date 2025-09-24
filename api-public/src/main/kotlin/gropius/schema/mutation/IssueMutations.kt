@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Component
 @Transactional(propagation = Propagation.REQUIRES_NEW)
-class         IssueMutations(
+class IssueMutations(
     private val issueService: IssueService,
     private val labelService: LabelService,
     private val artefactService: ArtefactService,
@@ -564,7 +564,7 @@ class         IssueMutations(
     suspend fun createIssueBoardColumn(
         @GraphQLDescription("Defines the created Issue Board Column")
         input: CreateIssueBoardColumnInput, dfe: DataFetchingEnvironment
-    ): IssueBoardColumn{
+    ): IssueBoardColumn {
         return issueBoardColumnService.createIssueBoardColumn(dfe.gropiusAuthorizationContext, input)
     }
 
@@ -628,7 +628,7 @@ class         IssueMutations(
     suspend fun createIssueBoardItem(
         @GraphQLDescription("Defines the created Issue Board Item")
         input: CreateIssueBoardItemInput, dfe: DataFetchingEnvironment
-    ): IssueBoardItem{
+    ): IssueBoardItem {
         return issueBoardItemService.createIssueBoardItem(dfe.gropiusAuthorizationContext, input)
     }
 

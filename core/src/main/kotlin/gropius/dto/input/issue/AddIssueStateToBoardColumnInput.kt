@@ -8,6 +8,6 @@ import gropius.dto.input.common.Input
 class AddIssueStateToBoardColumnInput(
     @GraphQLDescription("The id of the Issue Board Column where to add the Issue State")
     val column: ID,
-    @GraphQLDescription("The id of the Issue State to add" )
+    @GraphQLDescription("The id of the Issue State to add")
     val state: ID
-):Input()
+) : Input()

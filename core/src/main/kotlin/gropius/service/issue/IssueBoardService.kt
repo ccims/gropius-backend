@@ -24,7 +24,7 @@ class IssueBoardService(
     private val nodeRepository: NodeRepository
 
 
-):NamedNodeService<IssueBoard,IssueBoardRepository>(repository){
+) : NamedNodeService<IssueBoard, IssueBoardRepository>(repository) {
 
 
     /**
@@ -35,18 +35,21 @@ class IssueBoardService(
      * @param input defines the [IssueBoard]
      * @return the saved created [IssueBoard]
      */
-    suspend fun createIssueBoard(authorizationContext: GropiusAuthorizationContext, input: CreateIssueBoardInput): IssueBoard {
+    suspend fun createIssueBoard(
+        authorizationContext: GropiusAuthorizationContext,
+        input: CreateIssueBoardInput
+    ): IssueBoard {
         input.validate()
         val trackable = trackableRepository.findById(input.trackable)
 
-            checkPermission(
-                trackable,
-                Permission(TrackablePermission.MANAGE_ISSUE_BOARDS, authorizationContext),
-                "create Issue Boards on ${trackable.rawId}"
-            )
+        checkPermission(
+            trackable,
+            Permission(TrackablePermission.MANAGE_ISSUE_BOARDS, authorizationContext),
+            "create Issue Boards on ${trackable.rawId}"
+        )
 
         val issueBoard = IssueBoard(input.name, input.description)
-        issueBoard.trackable().value=trackable
+        issueBoard.trackable().value = trackable
         return repository.save(issueBoard).awaitSingle()
     }
 
@@ -59,7 +62,10 @@ class IssueBoardService(
      * @param input defines which [IssueBoard] to update and how
      * @return the updated [IssueBoard]
      */
-    suspend fun updateIssueBoard(authorizationContext: GropiusAuthorizationContext, input: UpdateIssueBoardInput): IssueBoard {
+    suspend fun updateIssueBoard(
+        authorizationContext: GropiusAuthorizationContext,
+        input: UpdateIssueBoardInput
+    ): IssueBoard {
         input.validate()
         val issueBoard = repository.findById(input.id)
         checkPermission(
@@ -85,19 +91,18 @@ class IssueBoardService(
         val issueBoard = repository.findById(input.id)
         val trackable = issueBoard.trackable().value
 
-            checkPermission(
-                trackable,
-                Permission(TrackablePermission.MANAGE_ISSUE_BOARDS, authorizationContext),
-                "manage Issue Boards in a Trackable"
-            )
+        checkPermission(
+            trackable,
+            Permission(TrackablePermission.MANAGE_ISSUE_BOARDS, authorizationContext),
+            "manage Issue Boards in a Trackable"
+        )
 
         val toDelete = mutableSetOf<Node>()
-        toDelete+= issueBoard.issueBoardColumns()
-        toDelete+= issueBoard.issueBoardItems()
-        toDelete+= issueBoard
-       nodeRepository.deleteAll(toDelete).awaitSingleOrNull()
+        toDelete += issueBoard.issueBoardColumns()
+        toDelete += issueBoard.issueBoardItems()
+        toDelete += issueBoard
+        nodeRepository.deleteAll(toDelete).awaitSingleOrNull()
     }
-
 
 
 }

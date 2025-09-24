@@ -1,15 +1,10 @@
 package gropius.model.issue
 
+import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import gropius.model.common.BaseNode
-import gropius.model.common.NamedNode
 import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.TrackablePermission
-import com.expediagroup.graphql.generator.annotations.GraphQLDescription
-import gropius.model.common.AuditedNode
-import io.github.graphglue.model.Authorization
-import io.github.graphglue.model.DomainNode
 import io.github.graphglue.model.*
-import java.time.OffsetDateTime
 
 @DomainNode()
 @GraphQLDescription(
@@ -25,18 +20,13 @@ class IssueBoardItem(
     @GraphQLDescription("Order of this item in its column")
     @FilterProperty
     var position: Double
-):BaseNode() {
+) : BaseNode() {
 
-    companion object {
-        const val ISSUE_BOARD = "ISSUE_BOARD"
-        const val ISSUE_BOARD_COLUMN = "ISSUE_BOARD_COLUMN"
-        const val ISSUE = "ISSUE"
-    }
 
-    @NodeRelationship(ISSUE_BOARD, Direction.OUTGOING)
-    @GraphQLDescription("The Issue Board  this board item belongs to")
+    @NodeRelationship(IssueBoard.ISSUE_BOARD_ITEM, Direction.INCOMING)
+    @GraphQLDescription("The Issue Board this board item belongs to")
     @FilterProperty
-   val issueBoard by NodeProperty<IssueBoard>()
+    val issueBoard by NodeProperty<IssueBoard>()
 
     @NodeRelationship(Issue.ISSUE_BOARD_ITEM, Direction.INCOMING)
     @GraphQLDescription("The Issue represented by this board item")

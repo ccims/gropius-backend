@@ -16,9 +16,10 @@ import io.github.graphglue.model.*
 )
 @Authorization(TrackablePermission.MANAGE_ISSUE_BOARDS, allowFromRelated = ["trackable"])
 @Authorization(NodePermission.READ, allowFromRelated = ["trackable"])
-class IssueBoard(name:String, description:String):NamedNode(name,description) {
+class IssueBoard(name: String, description: String) : NamedNode(name, description) {
     companion object {
         const val ISSUE_BOARD_COLUMN = "ISSUE_BOARD_COLUMN"
+        const val ISSUE_BOARD_ITEM = "ISSUE_BOARD_ITEM"
     }
 
     @NodeRelationship(Trackable.ISSUE_BOARD, Direction.INCOMING)
@@ -27,12 +28,12 @@ class IssueBoard(name:String, description:String):NamedNode(name,description) {
     val trackable by NodeProperty<Trackable>()
 
 
-    @NodeRelationship(IssueBoardColumn.ISSUE_BOARD, Direction.INCOMING)
+    @NodeRelationship(ISSUE_BOARD_COLUMN, Direction.OUTGOING)
     @GraphQLDescription("Columns on this IssueBoard")
     @FilterProperty
     val issueBoardColumns by NodeSetProperty<IssueBoardColumn>()
 
-    @NodeRelationship(IssueBoardItem.ISSUE_BOARD, Direction.INCOMING)
+    @NodeRelationship(ISSUE_BOARD_ITEM, Direction.OUTGOING)
     @GraphQLDescription("Items on this IssueBoard")
     @FilterProperty
     val issueBoardItems by NodeSetProperty<IssueBoardItem>()

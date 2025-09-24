@@ -8,6 +8,6 @@ import gropius.dto.input.common.Input
 class RemoveIssueStateFromBoardColumnInput(
     @GraphQLDescription("The id of the Issue Board Column where to remove the Issue State")
     val column: ID,
-    @GraphQLDescription("The id of the Issue State to remove" )
+    @GraphQLDescription("The id of the Issue State to remove")
     val state: ID
-):Input()
+) : Input()

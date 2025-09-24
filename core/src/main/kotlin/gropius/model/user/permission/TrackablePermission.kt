@@ -8,7 +8,6 @@ import gropius.model.architecture.Trackable
 import gropius.model.issue.Artefact
 import gropius.model.issue.Issue
 import gropius.model.issue.IssueBoard
-import gropius.model.issue.IssueBoardColumn
 import gropius.model.issue.Label
 import gropius.model.issue.timeline.Comment
 import io.github.graphglue.model.DomainNode

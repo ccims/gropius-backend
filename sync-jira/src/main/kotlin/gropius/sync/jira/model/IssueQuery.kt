@@ -1,6 +1,5 @@
 package gropius.sync.jira.model
 
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
 /**

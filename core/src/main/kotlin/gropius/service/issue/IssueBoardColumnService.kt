@@ -2,10 +2,12 @@ package gropius.service.issue
 
 import gropius.authorization.GropiusAuthorizationContext
 import gropius.dto.input.common.DeleteNodeInput
-import gropius.dto.input.issue.*
-import gropius.model.issue.*
+import gropius.dto.input.issue.AddIssueStateToBoardColumnInput
+import gropius.dto.input.issue.CreateIssueBoardColumnInput
+import gropius.dto.input.issue.RemoveIssueStateFromBoardColumnInput
+import gropius.dto.input.issue.UpdateIssueBoardColumnInput
+import gropius.model.issue.IssueBoardColumn
 import gropius.model.template.IssueState
-import gropius.model.user.permission.NodePermission
 import gropius.model.user.permission.TrackablePermission
 import gropius.repository.findById
 import gropius.repository.issue.IssueBoardColumnRepository
@@ -23,7 +25,7 @@ class IssueBoardColumnService(
     private val issueStateRepository: IssueStateRepository,
     private val issueBoardRepository: IssueBoardRepository
 
-):NamedNodeService<IssueBoardColumn,IssueBoardColumnRepository>(repository){
+) : NamedNodeService<IssueBoardColumn, IssueBoardColumnRepository>(repository) {
 
 
     /**
@@ -34,7 +36,10 @@ class IssueBoardColumnService(
      * @param input defines the [IssueBoardColumn]
      * @return the saved created [IssueBoardColumn]
      */
-    suspend fun createIssueBoardColumn(authorizationContext: GropiusAuthorizationContext, input: CreateIssueBoardColumnInput): IssueBoardColumn {
+    suspend fun createIssueBoardColumn(
+        authorizationContext: GropiusAuthorizationContext,
+        input: CreateIssueBoardColumnInput
+    ): IssueBoardColumn {
         input.validate()
         val issueBoard = issueBoardRepository.findById(input.issueBoard)
         val trackable = issueBoard.trackable().value
@@ -46,7 +51,7 @@ class IssueBoardColumnService(
         )
 
         val issueBoardColumn = IssueBoardColumn(input.name, input.description)
-        issueBoardColumn.issueBoard().value= issueBoard
+        issueBoardColumn.issueBoard().value = issueBoard
         return repository.save(issueBoardColumn).awaitSingle()
     }
 
@@ -58,7 +63,10 @@ class IssueBoardColumnService(
      * @param input defines which [IssueBoardColumn] to update and how
      * @return the updated [IssueBoardColumn]
      */
-    suspend fun updateIssueBoardColumn(authorizationContext: GropiusAuthorizationContext, input: UpdateIssueBoardColumnInput): IssueBoardColumn {
+    suspend fun updateIssueBoardColumn(
+        authorizationContext: GropiusAuthorizationContext,
+        input: UpdateIssueBoardColumnInput
+    ): IssueBoardColumn {
         input.validate()
         val issueBoardColumn = repository.findById(input.id)
         val issueBoard = issueBoardColumn.issueBoard().value
@@ -105,7 +113,7 @@ class IssueBoardColumnService(
     ): IssueBoardColumn {
         input.validate()
         val column = repository.findById(input.column)
-        val state  = issueStateRepository.findById(input.state)
+        val state = issueStateRepository.findById(input.state)
         val issueBoard = column.issueBoard().value
 
         checkPermission(
@@ -114,16 +122,9 @@ class IssueBoardColumnService(
             "manage Issue Boards in a Trackable"
         )
 
-
-        checkPermission(
-            state,
-            Permission(NodePermission.READ, authorizationContext),
-            "use the IssueState"
-        )
-
-        val isAssigned = issueBoard.issueBoardColumns().any{column ->state in column.issueStates()}
+        val isAssigned = issueBoard.issueBoardColumns().any { column -> state in column.issueStates() }
         if (state !in column.issueStates()) {
-            if( isAssigned){
+            if (isAssigned) {
                 throw IllegalStateException("Issue State already exists  in another board column")
             }
             column.issueStates().add(state)
@@ -143,17 +144,12 @@ class IssueBoardColumnService(
     ): IssueBoardColumn {
         input.validate()
         val column = repository.findById(input.column)
-        val state  = issueStateRepository.findById(input.state)
+        val state = issueStateRepository.findById(input.state)
         val issueBoard = column.issueBoard().value
         checkPermission(
             issueBoard,
             Permission(TrackablePermission.MANAGE_ISSUE_BOARDS, authorizationContext),
             "manage Issue Boards in a Trackable"
-        )
-        checkPermission(
-            state,
-            Permission(NodePermission.READ, authorizationContext),
-            "use the IssueState"
         )
 
         if (state in column.issueStates()) {
@@ -162,7 +158,6 @@ class IssueBoardColumnService(
         }
         return column
     }
-
 
 
 }

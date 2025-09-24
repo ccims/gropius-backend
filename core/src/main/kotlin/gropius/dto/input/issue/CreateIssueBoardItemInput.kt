@@ -12,5 +12,5 @@ class CreateIssueBoardItemInput(
     val issue: ID,
     @GraphQLDescription("Initial position of the new board item")
     val position: Double
-):Input() {
+) : Input() {
 }
