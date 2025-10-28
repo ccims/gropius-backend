@@ -5,6 +5,7 @@ import gropius.sync.SyncConfigurationProperties
 import gropius.sync.TokenManager
 import io.ktor.client.call.*
 import io.ktor.client.statement.*
+import kotlinx.serialization.Serializable
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.neo4j.core.ReactiveNeo4jOperations
 import org.springframework.stereotype.Component
