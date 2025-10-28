@@ -12,8 +12,6 @@ import io.github.graphglue.authorization.AuthorizationContext
 import io.github.graphglue.authorization.Permission
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.io.Decoders
-import io.jsonwebtoken.security.Keys
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
