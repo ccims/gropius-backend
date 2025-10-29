@@ -54,6 +54,12 @@ import java.net.URI
     "issues",
     [AggregationEntry("labels")]
 )
+@AggregatedNodeRelationship(
+    "affectedEntities",
+    "The set of entities affected by any Issue",
+    "issues",
+    [AggregationEntry("affects")]
+)
 @Authorization(NodePermission.READ, allow = [Rule(RELATED_TO_NODE_PERMISSION_RULE)])
 @Authorization(NodePermission.ADMIN, allow = [Rule(RELATED_TO_NODE_PERMISSION_RULE)])
 @Authorization(
