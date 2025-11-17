@@ -14,9 +14,9 @@ abstract class RelationPartnerTemplate<T, S : RelationPartnerTemplate<T, S>>(
     templateFieldSpecifications: MutableMap<String, String>,
     isDeprecated: Boolean,
     @GraphQLDescription("The corner radius of the shape, ignored for circle/ellipse.")
-    val shapeRadius: Double?,
+    var shapeRadius: Double?,
     @GraphQLDescription("The type of the shape.")
-    val shapeType: ShapeType,
+    var shapeType: ShapeType,
 ) : Template<T, S>(name, description, templateFieldSpecifications, isDeprecated) where T : Node, T : TemplatedNode {
 
     companion object {

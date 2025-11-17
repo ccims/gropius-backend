@@ -19,7 +19,7 @@ class IssuePriority(
     @property:GraphQLDescription("The value of the IssuePriority, used to compare/order different IssuePriorities.")
     @FilterProperty
     @OrderProperty
-    val value: Double
+    var value: Double
 ) : NamedNode(name, description) {
 
     companion object {

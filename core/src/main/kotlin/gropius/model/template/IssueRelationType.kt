@@ -19,7 +19,7 @@ class IssueRelationType(
     @property:GraphQLDescription("The name of the relation from the inverse (incoming) perspective")
     @FilterProperty
     @OrderProperty
-    val inverseName: String
+    var inverseName: String
 ) : NamedNode(name, description) {
 
     companion object {

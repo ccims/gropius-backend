@@ -5,8 +5,10 @@ import gropius.dto.input.ifPresent
 import gropius.dto.input.orElse
 import gropius.dto.input.template.CreateRelationTemplateInput
 import gropius.dto.input.template.RelationConditionInput
+import gropius.dto.input.template.UpdateRelationTemplateInput
 import gropius.model.template.*
 import gropius.model.template.style.StrokeStyle
+import gropius.repository.findById
 import gropius.repository.template.RelationTemplateRepository
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service
@@ -76,6 +78,27 @@ class RelationTemplateService(
         relationCondition.from() += relationPartnerTemplateService.findAllByIdWithExtending(input.from)
         relationCondition.to() += relationPartnerTemplateService.findAllByIdWithExtending(input.to)
         return relationCondition
+    }
+
+    /**
+     * Updates a [RelationTemplate] based on the provided [input]
+     * Checks the authorization status
+     *
+     * @param authorizationContext used to check for the required permission
+     * @param input defines which [RelationTemplate] to update and how
+     * @return the updated [RelationTemplate]
+     */
+    suspend fun updateRelationTemplate(
+        authorizationContext: GropiusAuthorizationContext, input: UpdateRelationTemplateInput
+    ): RelationTemplate {
+        input.validate()
+        checkCreateTemplatePermission(authorizationContext)
+        val template = repository.findById(input.id)
+        updateNamedNode(template, input)
+        input.markerType.ifPresent {
+            template.markerType = it
+        }
+        return repository.save(template).awaitSingle()
     }
 
 }

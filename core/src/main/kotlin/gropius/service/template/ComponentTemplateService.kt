@@ -1,13 +1,18 @@
 package gropius.service.template
 
 import gropius.authorization.GropiusAuthorizationContext
+import gropius.dto.input.ifPresent
 import gropius.dto.input.orElse
 import gropius.dto.input.template.CreateComponentTemplateInput
+import gropius.dto.input.template.UpdateComponentTemplateInput
+import gropius.dto.input.template.UpdateComponentVersionTemplateInput
 import gropius.model.template.ComponentTemplate
 import gropius.model.template.ComponentVersionTemplate
 import gropius.model.template.IntraComponentDependencySpecificationType
 import gropius.model.template.SubTemplate
+import gropius.repository.findById
 import gropius.repository.template.ComponentTemplateRepository
+import gropius.repository.template.SubTemplateRepository
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service
 
@@ -22,7 +27,8 @@ import org.springframework.stereotype.Service
 class ComponentTemplateService(
     repository: ComponentTemplateRepository,
     private val componentTemplateRepository: ComponentTemplateRepository,
-    private val subTemplateService: SubTemplateService
+    private val subTemplateService: SubTemplateService,
+    private val subTemplateRepository: SubTemplateRepository
 ) : AbstractRelationPartnerTemplateService<ComponentTemplate, ComponentTemplateRepository>(repository) {
 
     /**
@@ -58,6 +64,48 @@ class ComponentTemplateService(
             it.intraComponentDependencySpecificationTypes()
         }
         return repository.save(template).awaitSingle()
+    }
+
+    /**
+     * Updates a [ComponentTemplate] based on the provided [input]
+     * Checks the authorization status
+     *
+     * @param authorizationContext used to check for the required permission
+     * @param input defines which [ComponentTemplate] to update and how
+     * @return the updated [ComponentTemplate]
+     */
+    suspend fun updateComponentTemplate(
+        authorizationContext: GropiusAuthorizationContext, input: UpdateComponentTemplateInput
+    ): ComponentTemplate {
+        input.validate()
+        checkCreateTemplatePermission(authorizationContext)
+        val template = repository.findById(input.id)
+        updateNamedNode(template, input)
+        input.shapeRadius.ifPresent {
+            template.shapeRadius = it
+        }
+        input.shapeType.ifPresent {
+            template.shapeType = it
+        }
+        return repository.save(template).awaitSingle()
+    }
+
+    /**
+     * Updates a [ComponentVersionTemplate] based on the provided [input]
+     * Checks the authorization status
+     *
+     * @param authorizationContext used to check for the required permission
+     * @param input defines which [ComponentVersionTemplate] to update and how
+     * @return the updated [ComponentVersionTemplate]
+     */
+    suspend fun updateComponentVersionTemplate(
+        authorizationContext: GropiusAuthorizationContext, input: UpdateComponentVersionTemplateInput
+    ): ComponentVersionTemplate {
+        input.validate()
+        checkCreateTemplatePermission(authorizationContext)
+        val template = subTemplateRepository.findById(input.id) as ComponentVersionTemplate
+        updateNamedNode(template, input)
+        return subTemplateRepository.save(template).awaitSingle() as ComponentVersionTemplate
     }
 
 }
