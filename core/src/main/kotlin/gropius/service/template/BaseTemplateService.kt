@@ -48,9 +48,12 @@ abstract class BaseTemplateService<T : BaseTemplate<*, *>, R : GropiusRepository
         val derivedFields =
             extendedTemplates.flatMap { it.templateFieldSpecifications.entries }.map { it.toPair() }.toSet()
         val allFields = derivedFields + additionalFields
-        val duplicates = allFields.groupingBy { it.first }.eachCount().filter { it.value > 1 }.keys
-        if (duplicates.isNotEmpty()) {
-            throw IllegalArgumentException("Duplicate names found: $duplicates")
+        val groupedByName = allFields.groupBy { it.first }
+        val duplicatesWithDifferentValues = groupedByName.filter { (_, values) ->
+            values.map { it.second }.toSet().size > 1
+        }.keys
+        if (duplicatesWithDifferentValues.isNotEmpty()) {
+            throw IllegalArgumentException("Duplicate names with different values found: $duplicatesWithDifferentValues")
         }
         for ((name, value) in allFields) {
             template.templateFieldSpecifications[name] = value
