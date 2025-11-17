@@ -164,19 +164,6 @@ class TemplateMutations : Mutation {
         return templateService.updateRelationTemplate(dfe.gropiusAuthorizationContext, input)
     }
 
-    @GraphQLDescription("Updates an IMSTemplate, requires CAN_CREATE_TEMPLATES")
-    @AutoPayloadType("The updated IMSTemplate")
-    suspend fun updateIMSTemplate(
-        @GraphQLDescription("Defines which IMSTemplate to update and how to update it")
-        input: UpdateIMSTemplateInput,
-        dfe: DataFetchingEnvironment,
-        @GraphQLIgnore
-        @Autowired
-        templateService: IMSTemplateService
-    ): IMSTemplate {
-        return templateService.updateIMSTemplate(dfe.gropiusAuthorizationContext, input)
-    }
-
     @GraphQLDescription("Updates a ComponentVersionTemplate, requires CAN_CREATE_TEMPLATES")
     @AutoPayloadType("The updated ComponentVersionTemplate")
     suspend fun updateComponentVersionTemplate(
@@ -214,45 +201,6 @@ class TemplateMutations : Mutation {
         templateService: InterfacePartTemplateService
     ): InterfacePartTemplate {
         return templateService.updateInterfacePartTemplate(dfe.gropiusAuthorizationContext, input)
-    }
-
-    @GraphQLDescription("Updates an IMSProjectTemplate, requires CAN_CREATE_TEMPLATES")
-    @AutoPayloadType("The updated IMSProjectTemplate")
-    suspend fun updateIMSProjectTemplate(
-        @GraphQLDescription("Defines which IMSProjectTemplate to update and how to update it")
-        input: UpdateIMSProjectTemplateInput,
-        dfe: DataFetchingEnvironment,
-        @GraphQLIgnore
-        @Autowired
-        templateService: IMSProjectTemplateService
-    ): IMSProjectTemplate {
-        return templateService.updateIMSProjectTemplate(dfe.gropiusAuthorizationContext, input)
-    }
-
-    @GraphQLDescription("Updates an IMSIssueTemplate, requires CAN_CREATE_TEMPLATES")
-    @AutoPayloadType("The updated IMSIssueTemplate")
-    suspend fun updateIMSIssueTemplate(
-        @GraphQLDescription("Defines which IMSIssueTemplate to update and how to update it")
-        input: UpdateIMSIssueTemplateInput,
-        dfe: DataFetchingEnvironment,
-        @GraphQLIgnore
-        @Autowired
-        templateService: IMSIssueTemplateService
-    ): IMSIssueTemplate {
-        return templateService.updateIMSIssueTemplate(dfe.gropiusAuthorizationContext, input)
-    }
-
-    @GraphQLDescription("Updates an IMSUserTemplate, requires CAN_CREATE_TEMPLATES")
-    @AutoPayloadType("The updated IMSUserTemplate")
-    suspend fun updateIMSUserTemplate(
-        @GraphQLDescription("Defines which IMSUserTemplate to update and how to update it")
-        input: UpdateIMSUserTemplateInput,
-        dfe: DataFetchingEnvironment,
-        @GraphQLIgnore
-        @Autowired
-        templateService: IMSUserTemplateService
-    ): IMSUserTemplate {
-        return templateService.updateIMSUserTemplate(dfe.gropiusAuthorizationContext, input)
     }
 
     @GraphQLDescription("Updates an IssueType, requires CAN_CREATE_TEMPLATES")
