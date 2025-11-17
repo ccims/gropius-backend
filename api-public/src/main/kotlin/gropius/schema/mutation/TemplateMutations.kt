@@ -185,7 +185,7 @@ class TemplateMutations : Mutation {
         dfe: DataFetchingEnvironment,
         @GraphQLIgnore
         @Autowired
-        templateService: ComponentTemplateService
+        templateService: ComponentVersionTemplateService
     ): ComponentVersionTemplate {
         return templateService.updateComponentVersionTemplate(dfe.gropiusAuthorizationContext, input)
     }
@@ -198,7 +198,7 @@ class TemplateMutations : Mutation {
         dfe: DataFetchingEnvironment,
         @GraphQLIgnore
         @Autowired
-        templateService: InterfaceSpecificationTemplateService
+        templateService: InterfaceSpecificationVersionTemplateService
     ): InterfaceSpecificationVersionTemplate {
         return templateService.updateInterfaceSpecificationVersionTemplate(dfe.gropiusAuthorizationContext, input)
     }
@@ -211,7 +211,7 @@ class TemplateMutations : Mutation {
         dfe: DataFetchingEnvironment,
         @GraphQLIgnore
         @Autowired
-        templateService: InterfaceSpecificationTemplateService
+        templateService: InterfacePartTemplateService
     ): InterfacePartTemplate {
         return templateService.updateInterfacePartTemplate(dfe.gropiusAuthorizationContext, input)
     }
@@ -224,7 +224,7 @@ class TemplateMutations : Mutation {
         dfe: DataFetchingEnvironment,
         @GraphQLIgnore
         @Autowired
-        templateService: IMSTemplateService
+        templateService: IMSProjectTemplateService
     ): IMSProjectTemplate {
         return templateService.updateIMSProjectTemplate(dfe.gropiusAuthorizationContext, input)
     }
@@ -237,7 +237,7 @@ class TemplateMutations : Mutation {
         dfe: DataFetchingEnvironment,
         @GraphQLIgnore
         @Autowired
-        templateService: IMSTemplateService
+        templateService: IMSIssueTemplateService
     ): IMSIssueTemplate {
         return templateService.updateIMSIssueTemplate(dfe.gropiusAuthorizationContext, input)
     }
@@ -250,7 +250,7 @@ class TemplateMutations : Mutation {
         dfe: DataFetchingEnvironment,
         @GraphQLIgnore
         @Autowired
-        templateService: IMSTemplateService
+        templateService: IMSUserTemplateService
     ): IMSUserTemplate {
         return templateService.updateIMSUserTemplate(dfe.gropiusAuthorizationContext, input)
     }

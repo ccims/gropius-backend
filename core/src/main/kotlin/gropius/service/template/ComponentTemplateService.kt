@@ -5,14 +5,12 @@ import gropius.dto.input.ifPresent
 import gropius.dto.input.orElse
 import gropius.dto.input.template.CreateComponentTemplateInput
 import gropius.dto.input.template.UpdateComponentTemplateInput
-import gropius.dto.input.template.UpdateComponentVersionTemplateInput
 import gropius.model.template.ComponentTemplate
 import gropius.model.template.ComponentVersionTemplate
 import gropius.model.template.IntraComponentDependencySpecificationType
 import gropius.model.template.SubTemplate
 import gropius.repository.findById
 import gropius.repository.template.ComponentTemplateRepository
-import gropius.repository.template.SubTemplateRepository
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service
 
@@ -27,8 +25,7 @@ import org.springframework.stereotype.Service
 class ComponentTemplateService(
     repository: ComponentTemplateRepository,
     private val componentTemplateRepository: ComponentTemplateRepository,
-    private val subTemplateService: SubTemplateService,
-    private val subTemplateRepository: SubTemplateRepository
+    private val subTemplateService: SubTemplateService
 ) : AbstractRelationPartnerTemplateService<ComponentTemplate, ComponentTemplateRepository>(repository) {
 
     /**
@@ -88,24 +85,6 @@ class ComponentTemplateService(
             template.shapeType = it
         }
         return repository.save(template).awaitSingle()
-    }
-
-    /**
-     * Updates a [ComponentVersionTemplate] based on the provided [input]
-     * Checks the authorization status
-     *
-     * @param authorizationContext used to check for the required permission
-     * @param input defines which [ComponentVersionTemplate] to update and how
-     * @return the updated [ComponentVersionTemplate]
-     */
-    suspend fun updateComponentVersionTemplate(
-        authorizationContext: GropiusAuthorizationContext, input: UpdateComponentVersionTemplateInput
-    ): ComponentVersionTemplate {
-        input.validate()
-        checkCreateTemplatePermission(authorizationContext)
-        val template = subTemplateRepository.findById(input.id) as ComponentVersionTemplate
-        updateNamedNode(template, input)
-        return subTemplateRepository.save(template).awaitSingle() as ComponentVersionTemplate
     }
 
 }

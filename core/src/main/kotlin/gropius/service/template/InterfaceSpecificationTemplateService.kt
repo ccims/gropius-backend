@@ -4,13 +4,10 @@ import gropius.authorization.GropiusAuthorizationContext
 import gropius.dto.input.ifPresent
 import gropius.dto.input.orElse
 import gropius.dto.input.template.CreateInterfaceSpecificationTemplateInput
-import gropius.dto.input.template.UpdateInterfacePartTemplateInput
 import gropius.dto.input.template.UpdateInterfaceSpecificationTemplateInput
-import gropius.dto.input.template.UpdateInterfaceSpecificationVersionTemplateInput
 import gropius.model.template.*
 import gropius.repository.findById
 import gropius.repository.template.InterfaceSpecificationTemplateRepository
-import gropius.repository.template.SubTemplateRepository
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service
 
@@ -25,8 +22,7 @@ import org.springframework.stereotype.Service
 class InterfaceSpecificationTemplateService(
     repository: InterfaceSpecificationTemplateRepository,
     private val componentTemplateService: ComponentTemplateService,
-    private val subTemplateService: SubTemplateService,
-    private val subTemplateRepository: SubTemplateRepository
+    private val subTemplateService: SubTemplateService
 ) : AbstractRelationPartnerTemplateService<InterfaceSpecificationTemplate, InterfaceSpecificationTemplateRepository>(repository) {
 
     /**
@@ -96,42 +92,6 @@ class InterfaceSpecificationTemplateService(
             template.shapeType = it
         }
         return repository.save(template).awaitSingle()
-    }
-
-    /**
-     * Updates an [InterfaceSpecificationVersionTemplate] based on the provided [input]
-     * Checks the authorization status
-     *
-     * @param authorizationContext used to check for the required permission
-     * @param input defines which [InterfaceSpecificationVersionTemplate] to update and how
-     * @return the updated [InterfaceSpecificationVersionTemplate]
-     */
-    suspend fun updateInterfaceSpecificationVersionTemplate(
-        authorizationContext: GropiusAuthorizationContext, input: UpdateInterfaceSpecificationVersionTemplateInput
-    ): InterfaceSpecificationVersionTemplate {
-        input.validate()
-        checkCreateTemplatePermission(authorizationContext)
-        val template = subTemplateRepository.findById(input.id) as InterfaceSpecificationVersionTemplate
-        updateNamedNode(template, input)
-        return subTemplateRepository.save(template).awaitSingle() as InterfaceSpecificationVersionTemplate
-    }
-
-    /**
-     * Updates an [InterfacePartTemplate] based on the provided [input]
-     * Checks the authorization status
-     *
-     * @param authorizationContext used to check for the required permission
-     * @param input defines which [InterfacePartTemplate] to update and how
-     * @return the updated [InterfacePartTemplate]
-     */
-    suspend fun updateInterfacePartTemplate(
-        authorizationContext: GropiusAuthorizationContext, input: UpdateInterfacePartTemplateInput
-    ): InterfacePartTemplate {
-        input.validate()
-        checkCreateTemplatePermission(authorizationContext)
-        val template = subTemplateRepository.findById(input.id) as InterfacePartTemplate
-        updateNamedNode(template, input)
-        return subTemplateRepository.save(template).awaitSingle() as InterfacePartTemplate
     }
 
 }
