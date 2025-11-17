@@ -11,8 +11,10 @@ import org.springframework.stereotype.Service
 
 /**
  * Service for [AssignmentType]s. Provides functions to create, update and delete
+ * [AssignmentType] entities.
  *
  * @param repository the associated repository used for CRUD functionality
+ * @param baseTemplateService service used for permission checks
  */
 @Service
 class AssignmentTypeService(
