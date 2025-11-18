@@ -1,12 +1,15 @@
 package gropius.service.template
 
 import gropius.authorization.GropiusAuthorizationContext
+import gropius.dto.input.ifPresent
 import gropius.dto.input.orElse
 import gropius.dto.input.template.CreateComponentTemplateInput
+import gropius.dto.input.template.UpdateComponentTemplateInput
 import gropius.model.template.ComponentTemplate
 import gropius.model.template.ComponentVersionTemplate
 import gropius.model.template.IntraComponentDependencySpecificationType
 import gropius.model.template.SubTemplate
+import gropius.repository.findById
 import gropius.repository.template.ComponentTemplateRepository
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service
@@ -56,6 +59,30 @@ class ComponentTemplateService(
         }
         template.intraComponentDependencySpecificationTypes() += template.extends().flatMap {
             it.intraComponentDependencySpecificationTypes()
+        }
+        return repository.save(template).awaitSingle()
+    }
+
+    /**
+     * Updates a [ComponentTemplate] based on the provided [input]
+     * Checks the authorization status
+     *
+     * @param authorizationContext used to check for the required permission
+     * @param input defines which [ComponentTemplate] to update and how
+     * @return the updated [ComponentTemplate]
+     */
+    suspend fun updateComponentTemplate(
+        authorizationContext: GropiusAuthorizationContext, input: UpdateComponentTemplateInput
+    ): ComponentTemplate {
+        input.validate()
+        checkCreateTemplatePermission(authorizationContext)
+        val template = repository.findById(input.id)
+        updateNamedNode(template, input)
+        input.shapeRadius.ifPresent {
+            template.shapeRadius = it
+        }
+        input.shapeType.ifPresent {
+            template.shapeType = it
         }
         return repository.save(template).awaitSingle()
     }

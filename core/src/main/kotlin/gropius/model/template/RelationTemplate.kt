@@ -23,7 +23,7 @@ class RelationTemplate(
     templateFieldSpecifications: MutableMap<String, String>,
     isDeprecated: Boolean,
     @GraphQLDescription("The type of the marker at the end of the relation.")
-    val markerType: MarkerType,
+    var markerType: MarkerType,
 ) : Template<Relation, RelationTemplate>(name, description, templateFieldSpecifications, isDeprecated) {
 
     companion object {

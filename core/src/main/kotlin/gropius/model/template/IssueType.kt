@@ -17,7 +17,7 @@ class IssueType(
     name: String,
     description: String,
     @GraphQLDescription("A path that is used as the icon for issues. Used with a 0 0 100 100 viewBox. No stroke, only fill.")
-    val iconPath: String
+    var iconPath: String
 ) : NamedNode(name, description) {
 
     companion object {

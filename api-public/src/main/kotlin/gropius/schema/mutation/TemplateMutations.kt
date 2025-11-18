@@ -99,4 +99,186 @@ class TemplateMutations : Mutation {
         return templateService.createRelationTemplate(dfe.gropiusAuthorizationContext, input)
     }
 
+    @GraphQLDescription("Updates an ArtefactTemplate, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated ArtefactTemplate")
+    suspend fun updateArtefactTemplate(
+        @GraphQLDescription("Defines which ArtefactTemplate to update and how to update it")
+        input: UpdateArtefactTemplateInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        templateService: ArtefactTemplateService
+    ): ArtefactTemplate {
+        return templateService.updateArtefactTemplate(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates a ComponentTemplate, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated ComponentTemplate")
+    suspend fun updateComponentTemplate(
+        @GraphQLDescription("Defines which ComponentTemplate to update and how to update it")
+        input: UpdateComponentTemplateInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        templateService: ComponentTemplateService
+    ): ComponentTemplate {
+        return templateService.updateComponentTemplate(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates an InterfaceSpecificationTemplate, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated InterfaceSpecificationTemplate")
+    suspend fun updateInterfaceSpecificationTemplate(
+        @GraphQLDescription("Defines which InterfaceSpecificationTemplate to update and how to update it")
+        input: UpdateInterfaceSpecificationTemplateInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        templateService: InterfaceSpecificationTemplateService
+    ): InterfaceSpecificationTemplate {
+        return templateService.updateInterfaceSpecificationTemplate(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates an IssueTemplate, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated IssueTemplate")
+    suspend fun updateIssueTemplate(
+        @GraphQLDescription("Defines which IssueTemplate to update and how to update it")
+        input: UpdateIssueTemplateInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        templateService: IssueTemplateService
+    ): IssueTemplate {
+        return templateService.updateIssueTemplate(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates a RelationTemplate, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated RelationTemplate")
+    suspend fun updateRelationTemplate(
+        @GraphQLDescription("Defines which RelationTemplate to update and how to update it")
+        input: UpdateRelationTemplateInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        templateService: RelationTemplateService
+    ): RelationTemplate {
+        return templateService.updateRelationTemplate(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates a ComponentVersionTemplate, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated ComponentVersionTemplate")
+    suspend fun updateComponentVersionTemplate(
+        @GraphQLDescription("Defines which ComponentVersionTemplate to update and how to update it")
+        input: UpdateComponentVersionTemplateInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        templateService: ComponentVersionTemplateService
+    ): ComponentVersionTemplate {
+        return templateService.updateComponentVersionTemplate(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates an InterfaceSpecificationVersionTemplate, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated InterfaceSpecificationVersionTemplate")
+    suspend fun updateInterfaceSpecificationVersionTemplate(
+        @GraphQLDescription("Defines which InterfaceSpecificationVersionTemplate to update and how to update it")
+        input: UpdateInterfaceSpecificationVersionTemplateInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        templateService: InterfaceSpecificationVersionTemplateService
+    ): InterfaceSpecificationVersionTemplate {
+        return templateService.updateInterfaceSpecificationVersionTemplate(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates an InterfacePartTemplate, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated InterfacePartTemplate")
+    suspend fun updateInterfacePartTemplate(
+        @GraphQLDescription("Defines which InterfacePartTemplate to update and how to update it")
+        input: UpdateInterfacePartTemplateInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        templateService: InterfacePartTemplateService
+    ): InterfacePartTemplate {
+        return templateService.updateInterfacePartTemplate(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates an IssueType, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated IssueType")
+    suspend fun updateIssueType(
+        @GraphQLDescription("Defines which IssueType to update and how to update it")
+        input: UpdateIssueTypeInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        issueTypeService: IssueTypeService
+    ): IssueType {
+        return issueTypeService.updateIssueType(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates an IssueState, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated IssueState")
+    suspend fun updateIssueState(
+        @GraphQLDescription("Defines which IssueState to update and how to update it")
+        input: UpdateIssueStateInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        issueStateService: IssueStateService
+    ): IssueState {
+        return issueStateService.updateIssueState(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates an IssuePriority, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated IssuePriority")
+    suspend fun updateIssuePriority(
+        @GraphQLDescription("Defines which IssuePriority to update and how to update it")
+        input: UpdateIssuePriorityInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        issuePriorityService: IssuePriorityService
+    ): IssuePriority {
+        return issuePriorityService.updateIssuePriority(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates an AssignmentType, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated AssignmentType")
+    suspend fun updateAssignmentType(
+        @GraphQLDescription("Defines which AssignmentType to update and how to update it")
+        input: UpdateAssignmentTypeInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        assignmentTypeService: AssignmentTypeService
+    ): AssignmentType {
+        return assignmentTypeService.updateAssignmentType(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates an IssueRelationType, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated IssueRelationType")
+    suspend fun updateIssueRelationType(
+        @GraphQLDescription("Defines which IssueRelationType to update and how to update it")
+        input: UpdateIssueRelationTypeInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        issueRelationTypeService: IssueRelationTypeService
+    ): IssueRelationType {
+        return issueRelationTypeService.updateIssueRelationType(dfe.gropiusAuthorizationContext, input)
+    }
+
+    @GraphQLDescription("Updates an IntraComponentDependencySpecificationType, requires CAN_CREATE_TEMPLATES")
+    @AutoPayloadType("The updated IntraComponentDependencySpecificationType")
+    suspend fun updateIntraComponentDependencySpecificationType(
+        @GraphQLDescription("Defines which IntraComponentDependencySpecificationType to update and how to update it")
+        input: UpdateIntraComponentDependencySpecificationTypeInput,
+        dfe: DataFetchingEnvironment,
+        @GraphQLIgnore
+        @Autowired
+        intraComponentDependencySpecificationTypeService: IntraComponentDependencySpecificationTypeService
+    ): IntraComponentDependencySpecificationType {
+        return intraComponentDependencySpecificationTypeService.updateIntraComponentDependencySpecificationType(dfe.gropiusAuthorizationContext, input)
+    }
+
 }
