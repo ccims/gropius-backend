@@ -5,7 +5,6 @@ import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
 import gropius.model.architecture.layout.RelationPartnerLayout
 import gropius.model.issue.AggregatedIssue
 import gropius.model.template.RelationPartnerTemplate
-import gropius.model.template.TemplatedNode
 import io.github.graphglue.model.*
 import io.github.graphglue.model.property.NodeCache
 
