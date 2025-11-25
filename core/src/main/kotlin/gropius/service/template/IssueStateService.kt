@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service
 @Service
 class IssueStateService(
     repository: IssueStateRepository,
-    private val baseTemplateService: BaseTemplateService<*, *>
+    private val issueTemplateService: IssueTemplateService
 ) : NamedNodeService<IssueState, IssueStateRepository>(repository) {
 
     /**
@@ -32,7 +32,7 @@ class IssueStateService(
         authorizationContext: GropiusAuthorizationContext, input: UpdateIssueStateInput
     ): IssueState {
         input.validate()
-        baseTemplateService.checkCreateTemplatePermission(authorizationContext)
+        issueTemplateService.checkCreateTemplatePermission(authorizationContext)
         val issueState = repository.findById(input.id)
         updateNamedNode(issueState, input)
         return repository.save(issueState).awaitSingle()

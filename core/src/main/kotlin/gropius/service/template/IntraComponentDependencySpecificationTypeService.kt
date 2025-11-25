@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service
 @Service
 class IntraComponentDependencySpecificationTypeService(
     repository: IntraComponentDependencySpecificationTypeRepository,
-    private val baseTemplateService: BaseTemplateService<*, *>
+    private val componentTemplateService: ComponentTemplateService
 ) : NamedNodeService<IntraComponentDependencySpecificationType, IntraComponentDependencySpecificationTypeRepository>(repository) {
 
     /**
@@ -32,7 +32,7 @@ class IntraComponentDependencySpecificationTypeService(
         authorizationContext: GropiusAuthorizationContext, input: UpdateIntraComponentDependencySpecificationTypeInput
     ): IntraComponentDependencySpecificationType {
         input.validate()
-        baseTemplateService.checkCreateTemplatePermission(authorizationContext)
+        componentTemplateService.checkCreateTemplatePermission(authorizationContext)
         val type = repository.findById(input.id)
         updateNamedNode(type, input)
         return repository.save(type).awaitSingle()

@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service
 @Service
 class IssueRelationTypeService(
     repository: IssueRelationTypeRepository,
-    private val baseTemplateService: BaseTemplateService<*, *>
+    private val issueTemplateService: IssueTemplateService
 ) : NamedNodeService<IssueRelationType, IssueRelationTypeRepository>(repository) {
 
     /**
@@ -33,7 +33,7 @@ class IssueRelationTypeService(
         authorizationContext: GropiusAuthorizationContext, input: UpdateIssueRelationTypeInput
     ): IssueRelationType {
         input.validate()
-        baseTemplateService.checkCreateTemplatePermission(authorizationContext)
+        issueTemplateService.checkCreateTemplatePermission(authorizationContext)
         val issueRelationType = repository.findById(input.id)
         updateNamedNode(issueRelationType, input)
         input.inverseName.ifPresent {

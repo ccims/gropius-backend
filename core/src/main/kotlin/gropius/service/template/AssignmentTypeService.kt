@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service
 @Service
 class AssignmentTypeService(
     repository: AssignmentTypeRepository,
-    private val baseTemplateService: BaseTemplateService<*, *>
+    private val issueTemplateService: IssueTemplateService
 ) : NamedNodeService<AssignmentType, AssignmentTypeRepository>(repository) {
 
     /**
@@ -34,7 +34,7 @@ class AssignmentTypeService(
         authorizationContext: GropiusAuthorizationContext, input: UpdateAssignmentTypeInput
     ): AssignmentType {
         input.validate()
-        baseTemplateService.checkCreateTemplatePermission(authorizationContext)
+        issueTemplateService.checkCreateTemplatePermission(authorizationContext)
         val assignmentType = repository.findById(input.id)
         updateNamedNode(assignmentType, input)
         return repository.save(assignmentType).awaitSingle()

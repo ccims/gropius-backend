@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service
 @Service
 class IssueTypeService(
     repository: IssueTypeRepository,
-    private val baseTemplateService: BaseTemplateService<*, *>
+    private val issueTemplateService: IssueTemplateService
 ) : NamedNodeService<IssueType, IssueTypeRepository>(repository) {
 
     /**
@@ -33,7 +33,7 @@ class IssueTypeService(
         authorizationContext: GropiusAuthorizationContext, input: UpdateIssueTypeInput
     ): IssueType {
         input.validate()
-        baseTemplateService.checkCreateTemplatePermission(authorizationContext)
+        issueTemplateService.checkCreateTemplatePermission(authorizationContext)
         val issueType = repository.findById(input.id)
         updateNamedNode(issueType, input)
         input.iconPath.ifPresent {

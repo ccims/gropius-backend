@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service
 @Service
 class IssuePriorityService(
     repository: IssuePriorityRepository,
-    private val baseTemplateService: BaseTemplateService<*, *>
+    private val issueTemplateService: IssueTemplateService
 ) : NamedNodeService<IssuePriority, IssuePriorityRepository>(repository) {
 
     /**
@@ -33,7 +33,7 @@ class IssuePriorityService(
         authorizationContext: GropiusAuthorizationContext, input: UpdateIssuePriorityInput
     ): IssuePriority {
         input.validate()
-        baseTemplateService.checkCreateTemplatePermission(authorizationContext)
+        issueTemplateService.checkCreateTemplatePermission(authorizationContext)
         val issuePriority = repository.findById(input.id)
         updateNamedNode(issuePriority, input)
         input.value.ifPresent {
