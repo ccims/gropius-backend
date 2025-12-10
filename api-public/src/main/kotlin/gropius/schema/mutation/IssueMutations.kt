@@ -621,7 +621,7 @@ class IssueMutations(
     }
 
     @GraphQLDescription(
-        """Creates a new Issue Board Item on an Issue Board. Requires MANAGE_ISSUE_BOARDS on the parent trackable.
+        """Creates a new Issue Board Item on an Issue Board. Requires MANAGE_ISSUE_BOARDS on the target Issue Board.
         """
     )
     @AutoPayloadType("The created Issue Board Item")

@@ -4,10 +4,10 @@ import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.scalars.ID
 import gropius.dto.input.common.Input
 
-@GraphQLDescription("Input for the removeIssueStateToBoardColumn mutation")
+@GraphQLDescription("Input for the removeIssueStateFromBoardColumn mutation")
 class RemoveIssueStateFromBoardColumnInput(
-    @GraphQLDescription("The id of the Issue Board Column where to remove the Issue State")
+    @GraphQLDescription("The id of the Issue Board Column from which the Issue State should be removed")
     val column: ID,
-    @GraphQLDescription("The id of the Issue State to remove")
+    @GraphQLDescription("The id of the Issue State to remove from the board column")
     val state: ID
 ) : Input()
