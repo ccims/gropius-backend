@@ -6,6 +6,8 @@ import gropius.dto.input.ifPresent
 import gropius.dto.input.issue.CreateIssueBoardItemInput
 import gropius.dto.input.issue.UpdateIssueBoardItemInput
 import gropius.model.issue.IssueBoardItem
+import gropius.model.issue.IssueBoard
+import gropius.model.issue.Issue
 import gropius.model.user.permission.TrackablePermission
 import gropius.repository.findById
 import gropius.repository.issue.IssueBoardItemRepository
@@ -17,6 +19,14 @@ import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
 
+
+/**
+ * Service for [IssueBoardItem]s. Provides functions to create, update and delete
+ *
+ * @param repository the associated repository used for CRUD functionality
+ * @param issueBoardRepository used to find [IssueBoard]s by id
+ * @param issueRepository used to find [Issue]s by id
+ */
 @Service
 class IssueBoardItemService(
     repository: IssueBoardItemRepository,
