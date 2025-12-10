@@ -7,6 +7,7 @@ import gropius.dto.input.issue.CreateIssueBoardColumnInput
 import gropius.dto.input.issue.RemoveIssueStateFromBoardColumnInput
 import gropius.dto.input.issue.UpdateIssueBoardColumnInput
 import gropius.model.issue.IssueBoardColumn
+import gropius.model.issue.IssueBoard
 import gropius.model.template.IssueState
 import gropius.model.user.permission.TrackablePermission
 import gropius.repository.findById
@@ -19,6 +20,13 @@ import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
 
+/**
+ * Service for [IssueBoardColumn]s. Provides functions to create, update and delete
+ *
+ * @param repository the associated repository used for CRUD functionality
+ * @param issueStateRepository used to find [IssueState]s by id
+ * @param issueBoardRepository used to find [IssueBoard]s by id
+ */
 @Service
 class IssueBoardColumnService(
     repository: IssueBoardColumnRepository,
@@ -81,13 +89,12 @@ class IssueBoardColumnService(
     }
 
     /**
-     *
      * Deletes an [IssueBoardColumn]
      * removes it from its parent IssueBoard’s columns
      * checks MANAGE_ISSUE_BOARDS on the parent trackable
      *
      * @param authorizationContext used to check for the required permission
-     * @param input defines which IssueBoardColumn to delete
+     * @param input defines which [IssueBoardColumn] to delete
      */
     suspend fun deleteIssueBoardColumn(authorizationContext: GropiusAuthorizationContext, input: DeleteNodeInput) {
         input.validate()
@@ -103,9 +110,12 @@ class IssueBoardColumnService(
     }
 
     /**
-     * Adds an [IssueState] to an [IssueBoardColumn].
+     * Adds an [IssueState] to a [IssueBoardColumn].
      * Checks MANAGE_ISSUE_BOARDS on the parent trackable and READ on the state.
-     * Returns the updated column.
+     *
+     * @param authorizationContext used to check for the required permission
+     * @param input defines which [IssueState] to add to which [IssueBoardColumn]
+     * @return the saved updated [IssueBoardColumn]
      */
     suspend fun addIssueStateToBoardColumn(
         authorizationContext: GropiusAuthorizationContext,
@@ -136,7 +146,10 @@ class IssueBoardColumnService(
     /**
      * Removes an [IssueState] from an [IssueBoardColumn].
      * Checks MANAGE_ISSUE_BOARDS on the parent trackable and READ on the state.
-     * Returns the updated column.
+     *
+     *@param authorizationContext used to check for the required permission
+     *@param input defines which [IssueState] to remove from which [IssueBoardColumn]
+     *@return the saved updated [IssueBoardColumn].
      */
     suspend fun removeIssueStateFromBoardColumn(
         authorizationContext: GropiusAuthorizationContext,
