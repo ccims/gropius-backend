@@ -8,5 +8,7 @@ import kotlin.properties.Delegates
 @GraphQLDescription("Input for the updateIssuePriority mutation")
 class UpdateIssuePriorityInput(
     @GraphQLDescription("The value of the IssuePriority, used to compare/order different IssuePriorities")
-    val value: OptionalInput<Double>
+    val value: OptionalInput<Double>,
+    @GraphQLDescription("A path that is used as the icon for issues")
+    val iconPath: OptionalInput<String>
 ) : UpdateNamedNodeInput()
