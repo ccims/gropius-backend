@@ -7,6 +7,6 @@ import gropius.dto.input.common.CreateNamedNodeInput
 class IssuePriorityInput(
     @GraphQLDescription("The value of the created IssuePriority, used to compare/order different IssuePriorities")
     val value: Double,
-    @GraphQLDescription("A path that is used as the icon for issues. Used with a 0 0 100 100 viewBox. No stroke, only fill.")
+    @GraphQLDescription("A path that is used as the icon for issues. Used with a 0 0 24 24 viewBox. No stroke, only fill.")
     val iconPath: String
 ) : CreateNamedNodeInput()
