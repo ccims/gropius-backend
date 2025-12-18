@@ -16,7 +16,7 @@ import io.github.graphglue.model.*
 class IssueType(
     name: String,
     description: String,
-    @GraphQLDescription("A path that is used as the icon for issues. Used with a 0 0 100 100 viewBox. No stroke, only fill.")
+    @GraphQLDescription("A path that is used as the icon for issues. Used with a 0 0 24 24 viewBox. No stroke, only fill.")
     var iconPath: String
 ) : NamedNode(name, description) {
 

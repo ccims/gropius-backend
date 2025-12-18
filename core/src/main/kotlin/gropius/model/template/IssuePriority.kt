@@ -19,7 +19,9 @@ class IssuePriority(
     @property:GraphQLDescription("The value of the IssuePriority, used to compare/order different IssuePriorities.")
     @FilterProperty
     @OrderProperty
-    var value: Double
+    var value: Double,
+    @GraphQLDescription("A path that is used as the icon for issues. Used with a 0 0 24 24 viewBox. No stroke, only fill.")
+    var iconPath: String
 ) : NamedNode(name, description) {
 
     companion object {

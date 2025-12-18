@@ -39,6 +39,9 @@ class IssuePriorityService(
         input.value.ifPresent {
             issuePriority.value = it
         }
+        input.iconPath.ifPresent {
+            issuePriority.iconPath = it
+        }
         return repository.save(issuePriority).awaitSingle()
     }
 

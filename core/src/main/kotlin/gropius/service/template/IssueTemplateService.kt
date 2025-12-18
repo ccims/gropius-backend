@@ -40,7 +40,7 @@ class IssueTemplateService(
         template.issueStates() += template.extends().flatMap { it.issueStates() }
         template.assignmentTypes() += input.assignmentTypes.map { AssignmentType(it.name, it.description) }
         template.assignmentTypes() += template.extends().flatMap { it.assignmentTypes() }
-        template.issuePriorities() += input.issuePriorities.map { IssuePriority(it.name, it.description, it.value) }
+        template.issuePriorities() += input.issuePriorities.map { IssuePriority(it.name, it.description, it.value, it.iconPath) }
         template.issuePriorities() += template.extends().flatMap { it.issuePriorities() }
         template.relationTypes() += input.relationTypes.map { IssueRelationType(it.name, it.description, it.inverseName) }
         template.relationTypes() += template.extends().flatMap { it.relationTypes() }
