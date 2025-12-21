@@ -621,7 +621,7 @@ class IssueMutations(
     }
 
     @GraphQLDescription(
-        """Creates a new Issue Board Item on an Issue Board. Requires MANAGE_ISSUE_BOARDS on the target Issue Board.
+        """Creates a new Issue Board Item on an Issue Board. Requires MANAGE_ISSUES on the parent Trackable.
         """
     )
     @AutoPayloadType("The created Issue Board Item")
@@ -632,7 +632,7 @@ class IssueMutations(
         return issueBoardItemService.createIssueBoardItem(dfe.gropiusAuthorizationContext, input)
     }
 
-    @GraphQLDescription("Updates the specified Issue Board Item, Requires MANAGE_ISSUE_BOARDS on the parent trackable.")
+    @GraphQLDescription("Updates the specified Issue Board Item, Requires MANAGE_ISSUES on the parent Trackable.")
     @AutoPayloadType("The updated Issue Board Item")
     suspend fun updateIssueBoardItem(
         @GraphQLDescription("Defines which Issue Board Item to update and how to update it")
@@ -643,7 +643,7 @@ class IssueMutations(
 
 
     @GraphQLDescription(
-        """Deletes the Issue Board Item, requires MANAGE_ISSUE_BOARDS on the parent trackable.
+        """Deletes the Issue Board Item, requires MANAGE_ISSUES on the parent Trackable.
         """
     )
     suspend fun deleteIssueBoardItem(
