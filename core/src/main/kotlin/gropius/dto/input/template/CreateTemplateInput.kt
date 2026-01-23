@@ -14,4 +14,7 @@ abstract class CreateTemplateInput : CreateBaseTemplateInput() {
     @GraphQLDescription("IDs of Templates the created template extends. Must be templates of the same type.")
     var extends: OptionalInput<List<ID>> by Delegates.notNull()
 
+    @GraphQLDescription("If true, this template is abstract and cannot be used for new entities.")
+    var isAbstract: Boolean by Delegates.notNull()
+
 }

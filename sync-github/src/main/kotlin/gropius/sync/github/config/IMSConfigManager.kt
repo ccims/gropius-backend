@@ -178,7 +178,7 @@ class IMSConfigManager(
         }.toSet().toMutableSet()
         if (identicalTemplates.isEmpty()) {
             val imsTemplate =
-                IMSTemplate(IMSConfig.IMS_TEMPLATE_NAME, "", IMSConfig.IMS_TEMPLATE_FIELDS.toMutableMap(), false)
+                IMSTemplate(IMSConfig.IMS_TEMPLATE_NAME, "", IMSConfig.IMS_TEMPLATE_FIELDS.toMutableMap(), false, false)
             imsTemplate.imsProjectTemplate().value = IMSProjectTemplate(
                 IMSProjectConfig.IMS_PROJECT_TEMPLATE_NAME,
                 "",

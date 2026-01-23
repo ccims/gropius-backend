@@ -19,6 +19,7 @@ import gropius.repository.common.NodeRepository
 import gropius.repository.findById
 import gropius.repository.template.InterfaceSpecificationTemplateRepository
 import gropius.service.NodeBatchUpdateContext
+import gropius.service.template.TemplateService
 import gropius.service.template.TemplatedNodeService
 import io.github.graphglue.authorization.Permission
 import io.github.graphglue.model.Node
@@ -45,6 +46,7 @@ class InterfaceSpecificationService(
     private val templatedNodeService: TemplatedNodeService,
     private val interfaceSpecificationTemplateRepository: InterfaceSpecificationTemplateRepository,
     private val nodeRepository: NodeRepository,
+    private val templateService: TemplateService
 ) : NamedAffectedByIssueService<InterfaceSpecification, InterfaceSpecificationRepository>(repository) {
 
     /**
@@ -85,6 +87,7 @@ class InterfaceSpecificationService(
         val template = interfaceSpecificationTemplateRepository.findById(input.template)
         val templatedFields = templatedNodeService.validateInitialTemplatedFields(template, input)
         val interfaceSpecification = InterfaceSpecification(input.name, input.description, templatedFields)
+        templateService.validateTemplateUsage(template)
         interfaceSpecification.template().value = template
         interfaceSpecification.component().value = component
         input.versions.ifPresent { inputs ->
@@ -136,6 +139,7 @@ class InterfaceSpecificationService(
     ): Set<Node> {
         input.template.ifPresent { templateId ->
             val template = interfaceSpecificationTemplateRepository.findById(templateId)
+            templateService.validateTemplateUsage(template)
             interfaceSpecification.template().value = template
             updateInterfaceSpecificationVersionTemplate(interfaceSpecification, input, template)
             val graphUpdater = ComponentGraphUpdater(updateContext)

@@ -18,8 +18,8 @@ import io.github.graphglue.model.NodeRelationship
     """
 )
 class IssueTemplate(
-    name: String, description: String, templateFieldSpecifications: MutableMap<String, String>, isDeprecated: Boolean
-) : Template<Issue, IssueTemplate>(name, description, templateFieldSpecifications, isDeprecated) {
+    name: String, description: String, templateFieldSpecifications: MutableMap<String, String>, isDeprecated: Boolean, isAbstract: Boolean
+) : Template<Issue, IssueTemplate>(name, description, templateFieldSpecifications, isDeprecated, isAbstract) {
 
     @NodeRelationship(IssueType.PART_OF, Direction.INCOMING)
     @GraphQLDescription("Set of all types Issues with this Template can have.")

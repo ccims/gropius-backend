@@ -40,7 +40,7 @@ class RelationTemplateService(
     ): RelationTemplate {
         input.validate()
         checkCreateTemplatePermission(authorizationContext)
-        val template = RelationTemplate(input.name, input.description, mutableMapOf(), false, input.markerType)
+        val template = RelationTemplate(input.name, input.description, mutableMapOf(), false, input.isAbstract, input.markerType)
         input.stroke.ifPresent {
             template.stroke().value = StrokeStyle(it.color.orElse(null), it.dash.orElse(null))
         }

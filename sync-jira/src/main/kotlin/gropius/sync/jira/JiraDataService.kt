@@ -104,7 +104,7 @@ class JiraDataService(
             }
         }
         return neoOperations.findAll(IssueTemplate::class.java).awaitFirstOrNull() ?: neoOperations.save(
-            IssueTemplate("noissue", "", mutableMapOf(), false)
+            IssueTemplate("noissue", "", mutableMapOf(), false, false)
         ).awaitSingle()
     }
 

@@ -42,7 +42,7 @@ class ComponentTemplateService(
         input.validate()
         checkCreateTemplatePermission(authorizationContext)
         val template = ComponentTemplate(
-            input.name, input.description, mutableMapOf(), false, input.shapeRadius.orElse(null), input.shapeType
+            input.name, input.description, mutableMapOf(), false, input.isAbstract, input.shapeRadius.orElse(null), input.shapeType
         )
         createdRelationPartnerTemplate(template, input)
         template.componentVersionTemplate().value = subTemplateService.createSubTemplate(::ComponentVersionTemplate,

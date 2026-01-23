@@ -20,10 +20,11 @@ class ComponentTemplate(
     description: String,
     templateFieldSpecifications: MutableMap<String, String>,
     isDeprecated: Boolean,
+    isAbstract: Boolean,
     shapeRadius: Double?,
     shapeType: ShapeType,
 ) : RelationPartnerTemplate<Component, ComponentTemplate>(
-    name, description, templateFieldSpecifications, isDeprecated, shapeRadius, shapeType
+    name, description, templateFieldSpecifications, isDeprecated, isAbstract, shapeRadius, shapeType
 ) {
 
     companion object {

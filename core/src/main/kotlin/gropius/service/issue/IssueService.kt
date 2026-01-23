@@ -31,6 +31,7 @@ import gropius.repository.template.*
 import gropius.repository.user.UserRepository
 import gropius.service.NodeBatchUpdateContext
 import gropius.service.common.AuditedNodeService
+import gropius.service.template.TemplateService
 import gropius.service.template.TemplatedNodeService
 import gropius.util.JsonNodeMapper
 import io.github.graphglue.authorization.Permission
@@ -88,7 +89,8 @@ class IssueService(
     private val bodyRepository: BodyRepository,
     private val commentRepository: CommentRepository,
     private val issueTemplateRepository: IssueTemplateRepository,
-    private val nodeRepository: NodeRepository
+    private val nodeRepository: NodeRepository,
+    private val templateService: TemplateService
 ) : AuditedNodeService<Issue, IssueRepository>(repository) {
 
     /**
@@ -163,6 +165,7 @@ class IssueService(
         }
         val fields = templatedNodeService.validateInitialTemplatedFields(template, templatedFields)
         val issue = Issue(atTime, atTime, fields, title, body, atTime)
+        templateService.validateTemplateUsage(template)
         issue.template().value = template
         checkIssueTypeCompatibility(issue, type)
         checkIssueStateCompatibility(issue, state)
@@ -263,6 +266,7 @@ class IssueService(
         event.newTemplate().value = newTemplate
         createdTimelineItem(issue, event, atTime, byUser)
         if (!existsNewerTimelineItem<TemplateChangedEvent>(issue, atTime) && issue.template().value != newTemplate) {
+            templateService.validateTemplateUsage(newTemplate)
             issue.template().value = newTemplate
             var timeOffset = 1L
             updateTemplatedFieldsAfterTemplateUpdate(

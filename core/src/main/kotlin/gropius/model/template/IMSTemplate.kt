@@ -13,8 +13,8 @@ import io.github.graphglue.model.NodeRelationship
     """
 )
 class IMSTemplate(
-    name: String, description: String, templateFieldSpecifications: MutableMap<String, String>, isDeprecated: Boolean
-) : Template<IMS, IMSTemplate>(name, description, templateFieldSpecifications, isDeprecated) {
+    name: String, description: String, templateFieldSpecifications: MutableMap<String, String>, isDeprecated: Boolean, isAbstract: Boolean
+) : Template<IMS, IMSTemplate>(name, description, templateFieldSpecifications, isDeprecated, isAbstract) {
 
     @NodeRelationship(SubTemplate.PART_OF, Direction.INCOMING)
     @GraphQLDescription("SubTemplate applied to all IMSProjects with this Template")

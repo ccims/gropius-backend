@@ -32,7 +32,7 @@ class ArtefactTemplateService(
     ): ArtefactTemplate {
         input.validate()
         checkCreateTemplatePermission(authorizationContext)
-        val template = ArtefactTemplate(input.name, input.description, mutableMapOf(), false)
+        val template = ArtefactTemplate(input.name, input.description, mutableMapOf(), false, input.isAbstract)
         createdTemplate(template, input)
         return repository.save(template).awaitSingle()
     }
