@@ -32,7 +32,7 @@ class IssueTemplateService(
     ): IssueTemplate {
         input.validate()
         checkCreateTemplatePermission(authorizationContext)
-        val template = IssueTemplate(input.name, input.description, mutableMapOf(), false)
+        val template = IssueTemplate(input.name, input.description, mutableMapOf(), false, input.isAbstract)
         createdTemplate(template, input)
         template.issueTypes() += input.issueTypes.map { IssueType(it.name, it.description, it.iconPath) }
         template.issueTypes() += template.extends().flatMap { it.issueTypes() }

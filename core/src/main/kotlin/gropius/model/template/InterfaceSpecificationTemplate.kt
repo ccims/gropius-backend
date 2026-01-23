@@ -21,10 +21,11 @@ class InterfaceSpecificationTemplate(
     description: String,
     templateFieldSpecifications: MutableMap<String, String>,
     isDeprecated: Boolean,
+    isAbstract: Boolean,
     shapeRadius: Double?,
     shapeType: ShapeType,
 ) : RelationPartnerTemplate<InterfaceSpecification, InterfaceSpecificationTemplate>(
-    name, description, templateFieldSpecifications, isDeprecated, shapeRadius, shapeType
+    name, description, templateFieldSpecifications, isDeprecated, isAbstract, shapeRadius, shapeType
 ) {
 
     @NodeRelationship(ComponentTemplate.VISIBLE_INTERFACE_SPECIFICATION, Direction.INCOMING)

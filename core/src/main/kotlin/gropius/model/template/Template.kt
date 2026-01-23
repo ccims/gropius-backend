@@ -16,7 +16,10 @@ abstract class Template<T, S : Template<T, S>>(
     templateFieldSpecifications: MutableMap<String, String>,
     @property:GraphQLDescription("If true, this template is deprecated and cannot be used for new entities any more.")
     @FilterProperty
-    var isDeprecated: Boolean
+    var isDeprecated: Boolean,
+    @property:GraphQLDescription("If true, this template is abstract and cannot be used for new entities.")
+    @FilterProperty
+    var isAbstract: Boolean
 ) : BaseTemplate<T, S>(name, description, templateFieldSpecifications) where T : Node, T : TemplatedNode {
 
     companion object {

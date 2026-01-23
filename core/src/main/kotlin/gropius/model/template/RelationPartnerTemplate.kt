@@ -13,11 +13,12 @@ abstract class RelationPartnerTemplate<T, S : RelationPartnerTemplate<T, S>>(
     description: String,
     templateFieldSpecifications: MutableMap<String, String>,
     isDeprecated: Boolean,
+    isAbstract: Boolean,
     @GraphQLDescription("The corner radius of the shape, ignored for circle/ellipse.")
     var shapeRadius: Double?,
     @GraphQLDescription("The type of the shape.")
     var shapeType: ShapeType,
-) : Template<T, S>(name, description, templateFieldSpecifications, isDeprecated) where T : Node, T : TemplatedNode {
+) : Template<T, S>(name, description, templateFieldSpecifications, isDeprecated, isAbstract) where T : Node, T : TemplatedNode {
 
     companion object {
         const val FILL_STYLE = "FILL_STYLE"

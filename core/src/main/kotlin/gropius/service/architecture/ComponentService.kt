@@ -21,6 +21,7 @@ import gropius.repository.findById
 import gropius.repository.template.ComponentTemplateRepository
 import gropius.repository.template.IntraComponentDependencySpecificationTypeRepository
 import gropius.service.NodeBatchUpdateContext
+import gropius.service.template.TemplateService
 import gropius.service.template.TemplatedNodeService
 import gropius.service.user.permission.ComponentPermissionService
 import io.github.graphglue.authorization.Permission
@@ -46,7 +47,8 @@ class ComponentService(
     private val componentPermissionService: ComponentPermissionService,
     private val interfaceSpecificationService: InterfaceSpecificationService,
     private val componentVersionService: ComponentVersionService,
-    private val intraComponentDependencySpecificationTypeRepository: IntraComponentDependencySpecificationTypeRepository
+    private val intraComponentDependencySpecificationTypeRepository: IntraComponentDependencySpecificationTypeRepository,
+    private val templateService: TemplateService
 ) : TrackableService<Component, ComponentRepository>(repository) {
 
     /**
@@ -99,6 +101,7 @@ class ComponentService(
         val template = componentTemplateRepository.findById(input.template)
         val templatedFields = templatedNodeService.validateInitialTemplatedFields(template, input)
         val component = Component(input.name, input.description, input.repositoryURL, templatedFields)
+        templateService.validateTemplateUsage(template)
         component.template().value = template
         input.interfaceSpecifications.ifPresent { inputs ->
             component.interfaceSpecifications() += inputs.map {
@@ -155,7 +158,9 @@ class ComponentService(
         input: UpdateComponentInput, component: Component, updateContext: NodeBatchUpdateContext
     ) {
         input.template.ifPresent { templateId ->
-            component.template().value = componentTemplateRepository.findById(templateId)
+            val template = componentTemplateRepository.findById(templateId)
+            templateService.validateTemplateUsage(template)
+            component.template().value = template
             val componentVersionTemplate = component.template().value.componentVersionTemplate().value
             component.versions().forEach {
                 it.template().value = componentVersionTemplate

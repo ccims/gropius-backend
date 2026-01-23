@@ -16,6 +16,7 @@ import gropius.repository.findById
 import gropius.repository.issue.ArtefactRepository
 import gropius.repository.template.ArtefactTemplateRepository
 import gropius.service.common.AuditedNodeService
+import gropius.service.template.TemplateService
 import gropius.service.template.TemplatedNodeService
 import io.github.graphglue.authorization.Permission
 import kotlinx.coroutines.reactor.awaitSingle
@@ -38,7 +39,8 @@ class ArtefactService(
     private val templatedNodeService: TemplatedNodeService,
     private val trackableRepository: TrackableRepository,
     private val artefactTemplateRepository: ArtefactTemplateRepository,
-    private val issueService: IssueService
+    private val issueService: IssueService,
+    private val templateService: TemplateService
 ) : AuditedNodeService<Artefact, ArtefactRepository>(repository) {
 
     /**
@@ -61,6 +63,7 @@ class ArtefactService(
         val template = artefactTemplateRepository.findById(input.template)
         val templatedFields = templatedNodeService.validateInitialTemplatedFields(template, input)
         val artefact = Artefact(now, now, templatedFields, input.file, input.from, input.to, input.version)
+        templateService.validateTemplateUsage(template)
         artefact.template().value = template
         artefact.trackable().value = trackable
         createdAuditedNode(artefact, getUser(authorizationContext))
@@ -84,7 +87,9 @@ class ArtefactService(
             artefact, Permission(TrackablePermission.MANAGE_ARTEFACTS, authorizationContext), "manage Artefacts"
         )
         input.template.ifPresent {
-            artefact.template().value = artefactTemplateRepository.findById(it)
+            val template = artefactTemplateRepository.findById(it)
+            templateService.validateTemplateUsage(template)
+            artefact.template().value = template
         }
         templatedNodeService.updateTemplatedFields(artefact, input, input.template.isPresent)
         input.file.ifPresent { artefact.file = it }

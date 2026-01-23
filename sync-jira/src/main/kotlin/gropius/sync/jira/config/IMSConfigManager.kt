@@ -111,7 +111,7 @@ class IMSConfigManager(
      */
     suspend fun findTemplates(): Set<IMSTemplate> {
         val acceptableTemplates = neoOperations.findAll<IMSTemplate>().filter {
-            (!it.isDeprecated) && isContentCompatible(
+            (!it.isDeprecated && !it.isAbstract) && isContentCompatible(
                 it, IMSConfig.IMS_TEMPLATE_NAME, IMSConfig.IMS_TEMPLATE_FIELDS
             ) && isContentCompatible(
                 it.imsProjectTemplate().value,
@@ -125,7 +125,7 @@ class IMSConfigManager(
         }.toSet().toMutableSet()
         if (acceptableTemplates.isEmpty()) {
             val imsTemplate =
-                IMSTemplate(IMSConfig.IMS_TEMPLATE_NAME, "", IMSConfig.IMS_TEMPLATE_FIELDS.toMutableMap(), false)
+                IMSTemplate(IMSConfig.IMS_TEMPLATE_NAME, "", IMSConfig.IMS_TEMPLATE_FIELDS.toMutableMap(), false, false)
             imsTemplate.imsProjectTemplate().value = IMSProjectTemplate(
                 IMSProjectConfig.IMS_PROJECT_TEMPLATE_NAME,
                 "",

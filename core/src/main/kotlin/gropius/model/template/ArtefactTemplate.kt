@@ -11,5 +11,5 @@ import io.github.graphglue.model.DomainNode
     """
 )
 class ArtefactTemplate(
-    name: String, description: String, templateFieldSpecifications: MutableMap<String, String>, isDeprecated: Boolean
-) : Template<Artefact, ArtefactTemplate>(name, description, templateFieldSpecifications, isDeprecated)
+    name: String, description: String, templateFieldSpecifications: MutableMap<String, String>, isDeprecated: Boolean, isAbstract: Boolean
+) : Template<Artefact, ArtefactTemplate>(name, description, templateFieldSpecifications, isDeprecated, isAbstract)
