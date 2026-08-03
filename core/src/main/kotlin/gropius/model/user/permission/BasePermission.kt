@@ -21,6 +21,11 @@ const val ENTRIES_DESCRIPTION = "All permissions this Permission grants"
 abstract class BasePermission(
     name: String,
     description: String,
+    // Ignored so that the BasePermission interface does not pin `entries` to [String!]!; every
+    // concrete Permission exposes it as its own entry enum instead. Those must declare that field
+    // under a different Kotlin name (see e.g. [GlobalPermission.graphQLEntries]): graphql-kotlin
+    // drops any property a supertype declares with the same name and type and marks @GraphQLIgnore,
+    // and a @TypeGraphQLType type annotation does not make the two KTypes differ.
     @GraphQLIgnore
     @SearchProperty
     open val entries: MutableList<String>,
