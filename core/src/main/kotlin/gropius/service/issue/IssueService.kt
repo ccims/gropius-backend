@@ -1,6 +1,6 @@
 package gropius.service.issue
 
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import gropius.authorization.GropiusAuthorizationContext
 import gropius.dto.input.common.DeleteNodeInput
 import gropius.dto.input.common.JSONFieldInput

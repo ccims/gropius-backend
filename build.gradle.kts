@@ -1,41 +1,13 @@
-import org.jetbrains.dokka.gradle.DokkaTaskPartial
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 description = "A Cross-Component Issue Management System for Component-based Architectures"
 
+// The version comes from the version catalog via `buildSrc`, which already puts Dokka
+// on the build classpath, so it is applied here without a version.
 plugins {
-    kotlin("jvm")
     id("org.jetbrains.dokka")
 }
 
-allprojects {
-    repositories {
-        mavenCentral()
-    }
-
-    tasks.withType<KotlinCompile> {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_21)
-        }
-    }
-}
-
-subprojects {
-    val dokkaGraphQLDescriptionPluginVersion: String by project
-
-    apply(plugin = "kotlin")
-    apply(plugin = "org.jetbrains.dokka")
-
+dokka {
     dependencies {
-        dokkaPlugin("io.github.graphglue", "dokka-graphql-description-plugin", dokkaGraphQLDescriptionPluginVersion)
-    }
-
-    tasks.withType<DokkaTaskPartial>().configureEach {
-        dokkaSourceSets {
-            configureEach {
-                includeNonPublic.set(true)
-            }
-        }
+        subprojects.forEach { dokka(it) }
     }
 }

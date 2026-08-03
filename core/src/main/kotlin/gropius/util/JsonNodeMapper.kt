@@ -1,9 +1,10 @@
 package gropius.util
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.SerializationFeature
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.node.JsonNodeFactory
 import org.springframework.stereotype.Component
 
 /**
@@ -15,7 +16,8 @@ class JsonNodeMapper {
     /**
      * Used [ObjectMapper]
      */
-    private val objectMapper = ObjectMapper().configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+    private val objectMapper: ObjectMapper =
+        JsonMapper.builder().configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true).build()
 
     /**
      * Helper which converts a [JsonNode] to a deterministic [String]

@@ -1,6 +1,6 @@
 package gropius.graphql.filter
 
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import gropius.dto.input.common.JSONFieldInput
 import gropius.model.template.TemplatedNode
 import gropius.util.JsonNodeMapper

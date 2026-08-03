@@ -1,6 +1,6 @@
 package gropius.util.schema
 
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import org.springframework.stereotype.Component
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -157,9 +157,9 @@ class Validator {
                     state.pushSchemaToken("properties")
                     for ((key, value) in schema.properties) {
                         state.pushSchemaToken(key)
-                        if (instance.asObject().containsKey(key)) {
+                        if (instance.asPropertyMap().containsKey(key)) {
                             state.pushInstanceToken(key)
-                            validate(state, value, instance.asObject()[key]!!, null)
+                            validate(state, value, instance.asPropertyMap()[key]!!, null)
                             state.popInstanceToken()
                         } else {
                             state.pushError()
@@ -173,16 +173,16 @@ class Validator {
                     state.pushSchemaToken("optionalProperties")
                     for ((key, value) in schema.optionalProperties) {
                         state.pushSchemaToken(key)
-                        if (instance.asObject().containsKey(key)) {
+                        if (instance.asPropertyMap().containsKey(key)) {
                             state.pushInstanceToken(key)
-                            validate(state, value, instance.asObject()[key]!!, null)
+                            validate(state, value, instance.asPropertyMap()[key]!!, null)
                             state.popInstanceToken()
                         }
                         state.popSchemaToken()
                     }
                     state.popSchemaToken()
                 }
-                for (key in instance.asObject().keys) {
+                for (key in instance.asPropertyMap().keys) {
                     val inProperties = schema.properties != null && schema.properties.containsKey(key)
                     val inOptionalProperties = (schema.optionalProperties != null
                             && schema.optionalProperties.containsKey(key))
@@ -208,7 +208,7 @@ class Validator {
             Form.VALUES -> {
                 state.pushSchemaToken("values")
                 if (instance.isObject) {
-                    for ((key, value) in instance.asObject().entries) {
+                    for ((key, value) in instance.asPropertyMap().entries) {
                         state.pushInstanceToken(key)
                         validate(state, schema.values!!, value, null)
                         state.popInstanceToken()
@@ -220,7 +220,7 @@ class Validator {
             }
 
             Form.DISCRIMINATOR -> if (instance.isObject) {
-                val instanceObj: Map<String, JsonNode> = instance.asObject()
+                val instanceObj: Map<String, JsonNode> = instance.asPropertyMap()
 
                 if (instanceObj.containsKey(schema.discriminator)) {
                     val instanceTag: JsonNode = instanceObj[schema.discriminator]!!
@@ -329,10 +329,10 @@ class Validator {
 private class MaxErrorsReachedException : Exception()
 
 /**
- * Gets the object representation of a [JsonNode].
+ * Gets the properties of a [JsonNode] as a map.
  *
- * @return the object representation
+ * @return the properties by name
  */
-private fun JsonNode.asObject(): Map<String, JsonNode> {
-    return this.fields().asSequence().associate { it.key to it.value }
+private fun JsonNode.asPropertyMap(): Map<String, JsonNode> {
+    return this.properties().associate { it.key to it.value }
 }

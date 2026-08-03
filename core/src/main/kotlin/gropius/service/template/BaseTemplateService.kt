@@ -1,6 +1,6 @@
 package gropius.service.template
 
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import gropius.authorization.GropiusAuthorizationContext
 import gropius.dto.input.orElse
 import gropius.dto.input.template.CreateBaseTemplateInput

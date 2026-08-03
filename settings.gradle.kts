@@ -1,18 +1,24 @@
-pluginManagement {
-    val springBootVersion: String by settings
-    val kotlinVersion: String by settings
-    val dokkaVersion: String by settings
-    val apolloVersion: String by settings
+// Provisions the JDK the toolchain asks for when it is not already installed.
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
 
-    plugins {
-        id("org.springframework.boot") version springBootVersion
-        kotlin("jvm") version kotlinVersion
-        kotlin("plugin.spring") version kotlinVersion
-        id("org.jetbrains.dokka") version dokkaVersion
-        id("com.apollographql.apollo") version apolloVersion
-        kotlin("plugin.serialization") version kotlinVersion
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        mavenCentral()
+        // graph-glue snapshots, until 7.2.5 is released. A locally built graph-glue
+        // (`./gradlew publishToMavenLocal` in the graph-glue repo) takes precedence.
+        mavenLocal {
+            content { includeGroup("io.github.graphglue") }
+        }
+        maven("https://central.sonatype.com/repository/maven-snapshots/") {
+            content { includeGroup("io.github.graphglue") }
+        }
     }
 }
+
+rootProject.name = "gropius-backend"
 
 include(":core")
 include(":api-common")

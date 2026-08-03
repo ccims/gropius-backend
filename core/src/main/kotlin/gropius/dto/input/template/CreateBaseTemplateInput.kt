@@ -2,8 +2,8 @@ package gropius.dto.input.template
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.execution.OptionalInput
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
 import gropius.dto.input.common.CreateNamedNodeInput
 import gropius.dto.input.common.JSONFieldInput
 import gropius.dto.input.common.validateAndEnsureNoDuplicates

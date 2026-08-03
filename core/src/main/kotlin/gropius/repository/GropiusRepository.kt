@@ -11,4 +11,4 @@ import org.springframework.data.repository.NoRepositoryBean
  * @param ID the type of id used
  */
 @NoRepositoryBean
-interface GropiusRepository<T, ID> : ReactiveNeo4jRepository<T, ID>, ReactiveCypherdslConditionExecutor<T>
+interface GropiusRepository<T : Any, ID : Any> : ReactiveNeo4jRepository<T, ID>, ReactiveCypherdslConditionExecutor<T>
