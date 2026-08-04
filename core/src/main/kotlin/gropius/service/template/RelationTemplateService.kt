@@ -7,9 +7,12 @@ import gropius.dto.input.template.CreateRelationTemplateInput
 import gropius.dto.input.template.RelationConditionInput
 import gropius.dto.input.template.UpdateRelationTemplateInput
 import gropius.model.template.*
+import gropius.model.template.style.BaseStyle
 import gropius.model.template.style.StrokeStyle
+import gropius.repository.common.NodeRepository
 import gropius.repository.findById
 import gropius.repository.template.RelationTemplateRepository
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service
 
@@ -19,12 +22,14 @@ import org.springframework.stereotype.Service
  * @param repository the associated repository used for CRUD functionality
  * @param interfaceSpecificationTemplateService used to find extending [InterfaceSpecificationTemplate]s
  * @param relationPartnerTemplateService used to find extending [RelationPartnerTemplate]s
+ * @param nodeRepository used to delete replaced [BaseStyle]s
  */
 @Service
 class RelationTemplateService(
     repository: RelationTemplateRepository,
     private val interfaceSpecificationTemplateService: InterfaceSpecificationTemplateService,
-    private val relationPartnerTemplateService: RelationPartnerTemplateService
+    private val relationPartnerTemplateService: RelationPartnerTemplateService,
+    private val nodeRepository: NodeRepository
 ) : AbstractTemplateService<RelationTemplate, RelationTemplateRepository>(repository) {
 
     /**
@@ -98,7 +103,18 @@ class RelationTemplateService(
         input.markerType.ifPresent {
             template.markerType = it
         }
-        return repository.save(template).awaitSingle()
+        val replacedStroke = mutableListOf<BaseStyle>()
+        input.stroke.ifPresent { stroke ->
+            template.stroke().value?.let { replacedStroke += it }
+            template.stroke().value = stroke?.let { StrokeStyle(it.color.orElse(null), it.dash.orElse(null)) }
+        }
+        val savedTemplate = repository.save(template).awaitSingle()
+        // a replaced style is only reachable via the template, so it can only be deleted once the saved template
+        // no longer references it
+        if (replacedStroke.isNotEmpty()) {
+            nodeRepository.deleteAll(replacedStroke).awaitSingleOrNull()
+        }
+        return savedTemplate
     }
 
 }

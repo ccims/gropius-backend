@@ -1,7 +1,6 @@
 package gropius.service.template
 
 import gropius.authorization.GropiusAuthorizationContext
-import gropius.dto.input.ifPresent
 import gropius.dto.input.orElse
 import gropius.dto.input.template.CreateInterfaceSpecificationTemplateInput
 import gropius.dto.input.template.UpdateInterfaceSpecificationTemplateInput
@@ -84,14 +83,7 @@ class InterfaceSpecificationTemplateService(
         input.validate()
         checkCreateTemplatePermission(authorizationContext)
         val template = repository.findById(input.id)
-        updateNamedNode(template, input)
-        input.shapeRadius.ifPresent {
-            template.shapeRadius = it
-        }
-        input.shapeType.ifPresent {
-            template.shapeType = it
-        }
-        return repository.save(template).awaitSingle()
+        return updateRelationPartnerTemplate(template, input)
     }
 
 }
