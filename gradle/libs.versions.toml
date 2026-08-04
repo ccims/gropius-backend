@@ -1,8 +1,7 @@
 [versions]
 kotlin = "2.4.10"
 springBoot = "4.1.0"
-# graph-glue 7.2.5 is the first release built against Spring Boot 4 / GraphQL Kotlin 10.
-graphglue = "7.2.5-SNAPSHOT"
+graphglue = "8.0.0"
 graphqlJavaExtendedScalars = "24.0"
 apollo = "5.0.1"
 apolloAdapters = "0.7.0"
@@ -11,8 +10,7 @@ ktor = "3.5.2"
 jjwt = "0.13.0"
 kotlinxSerialization = "1.11.0"
 dokka = "2.2.0"
-# 1.1.2 is the first release built against Dokka 2.
-dokkaGraphqlDescriptionPlugin = "1.1.2-SNAPSHOT"
+dokkaGraphqlDescriptionPlugin = "2.0.0"
 
 [libraries]
 springBoot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "springBoot" }

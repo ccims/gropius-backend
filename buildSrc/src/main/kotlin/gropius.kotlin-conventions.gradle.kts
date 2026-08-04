@@ -15,11 +15,7 @@ kotlin {
 }
 
 dependencies {
-    // Aligns every Spring Boot managed dependency (including the ones graph-glue pulls in)
-    // on a single Boot version, so modules never have to spell out those versions.
     "api"(platform(libs.findLibrary("springBoot-dependencies").get()))
-
-    // Falls back to the contents of @GraphQLDescription where no KDoc exists.
     "dokkaPlugin"(libs.findLibrary("dokka-graphqlDescriptionPlugin").get())
 }
 
