@@ -3,7 +3,7 @@ package gropius.model.issue.timeline
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
 import com.expediagroup.graphql.generator.annotations.GraphQLType
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import io.github.graphglue.model.DomainNode
 import io.github.graphglue.model.FilterProperty
 import org.springframework.beans.factory.annotation.Autowired

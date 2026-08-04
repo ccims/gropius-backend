@@ -1,8 +1,8 @@
 package gropius.graphql
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.node.JsonNodeFactory
 import graphql.GraphQLContext
 import graphql.execution.CoercedVariables
 import graphql.language.*
@@ -54,7 +54,7 @@ class JSONCoercing(private val objectMapper: ObjectMapper) : Coercing<JsonNode, 
             }
 
             is ObjectValue -> JsonNodeFactory.instance.objectNode().also { objectNode ->
-                objectNode.setAll<JsonNode>(input.objectFields.associate {
+                objectNode.setAll(input.objectFields.associate {
                     it.name to if (it.value is NullValue) {
                         JsonNodeFactory.instance.nullNode()
                     } else {

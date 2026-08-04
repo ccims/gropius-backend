@@ -11,7 +11,7 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository
  * @param id the id of the node to find
  * @return the found node
  */
-suspend fun <T> GropiusRepository<T, String>.findById(id: ID): T {
+suspend fun <T : Any> GropiusRepository<T, String>.findById(id: ID): T {
     return findById(id.value).awaitSingle()
 }
 
@@ -22,6 +22,6 @@ suspend fun <T> GropiusRepository<T, String>.findById(id: ID): T {
  * @param ids the ids of the nodes to find
  * @return the found nodes
  */
-suspend fun <T> GropiusRepository<T, String>.findAllById(ids: Iterable<ID>): List<T> {
+suspend fun <T : Any> GropiusRepository<T, String>.findAllById(ids: Iterable<ID>): List<T> {
     return findAllById(ids.map { it.value }).collectList().awaitSingle()
 }

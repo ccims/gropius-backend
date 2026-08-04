@@ -1,20 +1,14 @@
-val graphglueVersion: String by project
-val apolloVersion: String by project
-val apolloAdaptersVersion: String by project
-val kosonVersion: String by project
-
 plugins {
-    id("org.springframework.boot")
-    kotlin("plugin.spring")
-    id("com.apollographql.apollo")
-    kotlin("plugin.serialization")
+    id("gropius.application-conventions")
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.apollo)
 }
 
 dependencies {
-    implementation(project(path = ":sync"))
-    implementation("com.apollographql.apollo", "apollo-runtime", apolloVersion)
-    implementation("com.apollographql.adapters", "apollo-adapters-core", apolloAdaptersVersion)
-    implementation("com.lectra", "koson", kosonVersion)
+    implementation(project(":sync"))
+    implementation(libs.apollo.runtime)
+    implementation(libs.apollo.adapters.core)
+    implementation(libs.koson)
 }
 
 apollo {

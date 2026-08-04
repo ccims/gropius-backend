@@ -9,8 +9,8 @@ import com.expediagroup.graphql.server.spring.execution.SpringGraphQLServer
 import com.expediagroup.graphql.server.types.GraphQLResponse
 import com.expediagroup.graphql.server.types.GraphQLServerError
 import com.expediagroup.graphql.server.types.GraphQLServerResponse
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
 import graphql.Scalars
 import graphql.scalars.regex.RegexScalar
 import graphql.schema.*
@@ -97,9 +97,10 @@ class GraphQLConfiguration {
      * @return the provided Color scalar
      */
     @Bean
-    fun colorScalar() = RegexScalar.Builder().name("Color")
+    fun colorScalar(): GraphQLScalarType = RegexScalar.Builder().name("Color")
         .description("A color string with the format #[0-9a-fA-F]{6} with the semantics #RRGGBB")
         .addPattern("#[0-9a-fA-F]{6}".toRegex().toPattern())
+        .build()
 
     /**
      * SchemaGeneratorHooks which support the [TypeGraphQLType] annotation

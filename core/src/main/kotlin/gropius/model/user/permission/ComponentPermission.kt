@@ -1,6 +1,7 @@
 package gropius.model.user.permission
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
+import com.expediagroup.graphql.generator.annotations.GraphQLName
 import gropius.graphql.TypeGraphQLType
 import gropius.model.architecture.Component
 import gropius.model.architecture.Interface
@@ -33,7 +34,12 @@ class ComponentPermission(
         const val ADD_TO_PROJECTS = "ADD_TO_PROJECTS"
     }
 
+    /**
+     * [entries], but typed as [COMPONENT_PERMISSION_ENTRY_NAME].
+     * Must not be named `entries` itself, see [BasePermission].
+     */
     @GraphQLDescription(ENTRIES_DESCRIPTION)
-    override val entries: MutableList<@TypeGraphQLType(COMPONENT_PERMISSION_ENTRY_NAME) String>
-        get() = super.entries
+    @GraphQLName("entries")
+    val graphQLEntries: List<@TypeGraphQLType(COMPONENT_PERMISSION_ENTRY_NAME) String>
+        get() = entries
 }

@@ -2,9 +2,11 @@ graphql:
   packages:
     - "gropius"
 spring:
+  mongodb:
+    # Connection properties moved out of spring.data.mongodb in Spring Boot 4.
+    "authentication-database": admin
   data:
     mongodb:
-      "authentication-database": admin
       "auto-index-creation": true
 management:
   endpoints:

@@ -1,13 +1,10 @@
-val jjwtVersion: String by project
-
 plugins {
-    id("org.springframework.boot")
-    kotlin("plugin.spring")
+    id("gropius.application-conventions")
 }
 
 dependencies {
-    implementation(project(path = ":api-common"))
-    implementation("io.jsonwebtoken", "jjwt-api", jjwtVersion)
-    implementation("io.jsonwebtoken", "jjwt-impl", jjwtVersion)
-    implementation("io.jsonwebtoken", "jjwt-jackson", jjwtVersion)
+    implementation(project(":api-common"))
+    implementation(libs.jjwt.api)
+    runtimeOnly(libs.jjwt.impl)
+    runtimeOnly(libs.jjwt.jackson)
 }

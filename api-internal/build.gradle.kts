@@ -1,8 +1,7 @@
 plugins {
-    id("org.springframework.boot")
-    kotlin("plugin.spring")
+    id("gropius.application-conventions")
 }
 
 dependencies {
-    implementation(project(path = ":api-common"))
+    implementation(project(":api-common"))
 }

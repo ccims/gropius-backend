@@ -1,0 +1,50 @@
+[versions]
+kotlin = "2.4.10"
+springBoot = "4.1.0"
+graphglue = "8.0.0"
+graphqlJavaExtendedScalars = "24.0"
+apollo = "5.0.1"
+apolloAdapters = "0.7.0"
+koson = "1.2.9"
+ktor = "3.5.2"
+jjwt = "0.13.0"
+kotlinxSerialization = "1.11.0"
+dokka = "2.2.0"
+dokkaGraphqlDescriptionPlugin = "2.0.0"
+
+[libraries]
+springBoot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "springBoot" }
+springBoot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+springBoot-starter-data-mongodb-reactive = { module = "org.springframework.boot:spring-boot-starter-data-mongodb-reactive" }
+springBoot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
+
+graphglue = { module = "io.github.graphglue:graphglue", version.ref = "graphglue" }
+graphglue-core = { module = "io.github.graphglue:graphglue-core", version.ref = "graphglue" }
+graphqlJava-extendedScalars = { module = "com.graphql-java:graphql-java-extended-scalars", version.ref = "graphqlJavaExtendedScalars" }
+
+apollo-runtime = { module = "com.apollographql.apollo:apollo-runtime", version.ref = "apollo" }
+apollo-adapters-core = { module = "com.apollographql.adapters:apollo-adapters-core", version.ref = "apolloAdapters" }
+
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-serialization-kotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt" }
+jjwt-impl = { module = "io.jsonwebtoken:jjwt-impl", version.ref = "jjwt" }
+jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt" }
+
+koson = { module = "com.lectra:koson", version.ref = "koson" }
+
+dokka-graphqlDescriptionPlugin = { module = "io.github.graphglue:dokka-graphql-description-plugin", version.ref = "dokkaGraphqlDescriptionPlugin" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+springBoot = { id = "org.springframework.boot", version.ref = "springBoot" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+apollo = { id = "com.apollographql.apollo", version.ref = "apollo" }
