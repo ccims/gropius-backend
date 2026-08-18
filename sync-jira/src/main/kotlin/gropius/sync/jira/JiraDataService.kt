@@ -1,7 +1,7 @@
 package gropius.sync.jira
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
 import gropius.model.architecture.IMSProject
 import gropius.model.issue.Issue
 import gropius.model.issue.Label
@@ -104,7 +104,7 @@ class JiraDataService(
             }
         }
         return neoOperations.findAll(IssueTemplate::class.java).awaitFirstOrNull() ?: neoOperations.save(
-            IssueTemplate("noissue", "", mutableMapOf(), false)
+            IssueTemplate("noissue", "", mutableMapOf(), false, false)
         ).awaitSingle()
     }
 

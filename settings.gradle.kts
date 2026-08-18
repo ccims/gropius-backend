@@ -1,18 +1,15 @@
-pluginManagement {
-    val springBootVersion: String by settings
-    val kotlinVersion: String by settings
-    val dokkaVersion: String by settings
-    val apolloVersion: String by settings
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
 
-    plugins {
-        id("org.springframework.boot") version springBootVersion
-        kotlin("jvm") version kotlinVersion
-        kotlin("plugin.spring") version kotlinVersion
-        id("org.jetbrains.dokka") version dokkaVersion
-        id("com.apollographql.apollo") version apolloVersion
-        kotlin("plugin.serialization") version kotlinVersion
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        mavenCentral()
     }
 }
+
+rootProject.name = "gropius-backend"
 
 include(":core")
 include(":api-common")

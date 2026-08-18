@@ -5,8 +5,8 @@ import com.apollographql.apollo.api.ApolloResponse
 import com.apollographql.apollo.api.Mutation
 import com.apollographql.apollo.api.Query
 import com.apollographql.apollo.network.http.HttpInfo
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
 import gropius.model.architecture.IMS
 import gropius.model.architecture.IMSProject
 import gropius.model.issue.Label
@@ -102,7 +102,7 @@ class GithubDataService(
             }
         }
         return neoOperations.findAll(IssueTemplate::class.java).awaitFirstOrNull() ?: neoOperations.save(
-            IssueTemplate("noissue", "", mutableMapOf(), false)
+            IssueTemplate("noissue", "", mutableMapOf(), false, false)
         ).awaitSingle()
     }
 

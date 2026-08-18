@@ -12,6 +12,7 @@ import gropius.repository.architecture.IMSRepository
 import gropius.repository.findById
 import gropius.repository.template.IMSTemplateRepository
 import gropius.service.common.NamedNodeService
+import gropius.service.template.TemplateService
 import gropius.service.template.TemplatedNodeService
 import gropius.service.user.permission.IMSPermissionService
 import io.github.graphglue.authorization.Permission
@@ -32,7 +33,8 @@ class IMSService(
     repository: IMSRepository,
     private val imsPermissionService: IMSPermissionService,
     private val imsTemplateRepository: IMSTemplateRepository,
-    private val templatedNodeService: TemplatedNodeService
+    private val templatedNodeService: TemplatedNodeService,
+    private val templateService: TemplateService
 ) : NamedNodeService<IMS, IMSRepository>(repository) {
 
     /**
@@ -54,6 +56,7 @@ class IMSService(
         val template = imsTemplateRepository.findById(input.template)
         val templatedFields = templatedNodeService.validateInitialTemplatedFields(template, input)
         val ims = IMS(input.name, input.description, templatedFields)
+        templateService.validateTemplateUsage(template)
         ims.template().value = template
         imsPermissionService.createDefaultPermission(user, ims)
         return repository.save(ims).awaitSingle()

@@ -1,6 +1,7 @@
 package gropius.model.user.permission
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
+import com.expediagroup.graphql.generator.annotations.GraphQLName
 import gropius.graphql.TypeGraphQLType
 import gropius.model.architecture.Component
 import gropius.model.architecture.IMS
@@ -46,7 +47,12 @@ class GlobalPermission(
         const val CAN_CREATE_TEMPLATES = "CAN_CREATE_TEMPLATES"
     }
 
+    /**
+     * [entries], but typed as [GLOBAL_PERMISSION_ENTRY_NAME].
+     * Must not be named `entries` itself, see [BasePermission].
+     */
     @GraphQLDescription(ENTRIES_DESCRIPTION)
-    override val entries: MutableList<@TypeGraphQLType(GLOBAL_PERMISSION_ENTRY_NAME) String>
-        get() = super.entries
+    @GraphQLName("entries")
+    val graphQLEntries: List<@TypeGraphQLType(GLOBAL_PERMISSION_ENTRY_NAME) String>
+        get() = entries
 }

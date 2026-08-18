@@ -1,9 +1,9 @@
 package gropius.service.template
 
 import com.expediagroup.graphql.generator.execution.OptionalInput
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.node.JsonNodeFactory
 import gropius.dto.input.common.JSONFieldInput
 import gropius.dto.input.ifPresent
 import gropius.dto.input.orElse

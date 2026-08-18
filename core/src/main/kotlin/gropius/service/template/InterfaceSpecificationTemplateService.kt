@@ -3,7 +3,9 @@ package gropius.service.template
 import gropius.authorization.GropiusAuthorizationContext
 import gropius.dto.input.orElse
 import gropius.dto.input.template.CreateInterfaceSpecificationTemplateInput
+import gropius.dto.input.template.UpdateInterfaceSpecificationTemplateInput
 import gropius.model.template.*
+import gropius.repository.findById
 import gropius.repository.template.InterfaceSpecificationTemplateRepository
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service
@@ -36,7 +38,7 @@ class InterfaceSpecificationTemplateService(
         input.validate()
         checkCreateTemplatePermission(authorizationContext)
         val template = InterfaceSpecificationTemplate(
-            input.name, input.description, mutableMapOf(), false, input.shapeRadius.orElse(null), input.shapeType
+            input.name, input.description, mutableMapOf(), false, input.isAbstract, input.shapeRadius.orElse(null), input.shapeType
         )
         createdRelationPartnerTemplate(template, input)
         template.canBeVisibleOnComponents() += componentTemplateService.findAllByIdWithExtending(input.canBeVisibleOnComponents)
@@ -65,6 +67,23 @@ class InterfaceSpecificationTemplateService(
         template.interfacePartTemplate().value = subTemplateService.createSubTemplate(::InterfacePartTemplate,
             input.interfacePartTemplate,
             extendedTemplates.map { it.interfacePartTemplate().value })
+    }
+
+    /**
+     * Updates an [InterfaceSpecificationTemplate] based on the provided [input]
+     * Checks the authorization status
+     *
+     * @param authorizationContext used to check for the required permission
+     * @param input defines which [InterfaceSpecificationTemplate] to update and how
+     * @return the updated [InterfaceSpecificationTemplate]
+     */
+    suspend fun updateInterfaceSpecificationTemplate(
+        authorizationContext: GropiusAuthorizationContext, input: UpdateInterfaceSpecificationTemplateInput
+    ): InterfaceSpecificationTemplate {
+        input.validate()
+        checkCreateTemplatePermission(authorizationContext)
+        val template = repository.findById(input.id)
+        return updateRelationPartnerTemplate(template, input)
     }
 
 }

@@ -20,6 +20,7 @@ import gropius.repository.findById
 import gropius.repository.template.RelationTemplateRepository
 import gropius.service.NodeBatchUpdateContext
 import gropius.service.common.NodeService
+import gropius.service.template.TemplateService
 import gropius.service.template.TemplatedNodeService
 import io.github.graphglue.authorization.Permission
 import org.springframework.stereotype.Service
@@ -41,7 +42,8 @@ class RelationService(
     private val relationTemplateRepository: RelationTemplateRepository,
     private val templatedNodeService: TemplatedNodeService,
     private val interfacePartRepository: InterfacePartRepository,
-    private val nodeRepository: NodeRepository
+    private val nodeRepository: NodeRepository,
+    private val templateService: TemplateService
 ) : NodeService<Relation, RelationRepository>(repository) {
 
     /**
@@ -67,6 +69,7 @@ class RelationService(
         relation.end().value = end
         input.startParts.ifPresent { relation.startParts() += getInterfaceParts(start, it) }
         input.endParts.ifPresent { relation.endParts() += getInterfaceParts(end, it) }
+        templateService.validateTemplateUsage(template)
         relation.template().value = template
         val graphUpdater = ComponentGraphUpdater()
         graphUpdater.createRelation(relation)
@@ -213,6 +216,7 @@ class RelationService(
         input.template.ifPresent { templateId ->
             val template = relationTemplateRepository.findById(templateId)
             validateRelationStartAndEnd(relation.start().value, relation.end().value, template)
+            templateService.validateTemplateUsage(template)
             relation.template().value = template
             val graphUpdater = ComponentGraphUpdater(updateContext)
             graphUpdater.updateRelationTemplate(relation)

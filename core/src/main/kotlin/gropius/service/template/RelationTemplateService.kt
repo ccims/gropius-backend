@@ -5,9 +5,14 @@ import gropius.dto.input.ifPresent
 import gropius.dto.input.orElse
 import gropius.dto.input.template.CreateRelationTemplateInput
 import gropius.dto.input.template.RelationConditionInput
+import gropius.dto.input.template.UpdateRelationTemplateInput
 import gropius.model.template.*
+import gropius.model.template.style.BaseStyle
 import gropius.model.template.style.StrokeStyle
+import gropius.repository.common.NodeRepository
+import gropius.repository.findById
 import gropius.repository.template.RelationTemplateRepository
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.stereotype.Service
 
@@ -17,12 +22,14 @@ import org.springframework.stereotype.Service
  * @param repository the associated repository used for CRUD functionality
  * @param interfaceSpecificationTemplateService used to find extending [InterfaceSpecificationTemplate]s
  * @param relationPartnerTemplateService used to find extending [RelationPartnerTemplate]s
+ * @param nodeRepository used to delete replaced [BaseStyle]s
  */
 @Service
 class RelationTemplateService(
     repository: RelationTemplateRepository,
     private val interfaceSpecificationTemplateService: InterfaceSpecificationTemplateService,
-    private val relationPartnerTemplateService: RelationPartnerTemplateService
+    private val relationPartnerTemplateService: RelationPartnerTemplateService,
+    private val nodeRepository: NodeRepository
 ) : AbstractTemplateService<RelationTemplate, RelationTemplateRepository>(repository) {
 
     /**
@@ -38,7 +45,7 @@ class RelationTemplateService(
     ): RelationTemplate {
         input.validate()
         checkCreateTemplatePermission(authorizationContext)
-        val template = RelationTemplate(input.name, input.description, mutableMapOf(), false, input.markerType)
+        val template = RelationTemplate(input.name, input.description, mutableMapOf(), false, input.isAbstract, input.markerType)
         input.stroke.ifPresent {
             template.stroke().value = StrokeStyle(it.color.orElse(null), it.dash.orElse(null))
         }
@@ -76,6 +83,38 @@ class RelationTemplateService(
         relationCondition.from() += relationPartnerTemplateService.findAllByIdWithExtending(input.from)
         relationCondition.to() += relationPartnerTemplateService.findAllByIdWithExtending(input.to)
         return relationCondition
+    }
+
+    /**
+     * Updates a [RelationTemplate] based on the provided [input]
+     * Checks the authorization status
+     *
+     * @param authorizationContext used to check for the required permission
+     * @param input defines which [RelationTemplate] to update and how
+     * @return the updated [RelationTemplate]
+     */
+    suspend fun updateRelationTemplate(
+        authorizationContext: GropiusAuthorizationContext, input: UpdateRelationTemplateInput
+    ): RelationTemplate {
+        input.validate()
+        checkCreateTemplatePermission(authorizationContext)
+        val template = repository.findById(input.id)
+        updateNamedNode(template, input)
+        input.markerType.ifPresent {
+            template.markerType = it
+        }
+        val replacedStroke = mutableListOf<BaseStyle>()
+        input.stroke.ifPresent { stroke ->
+            template.stroke().value?.let { replacedStroke += it }
+            template.stroke().value = stroke?.let { StrokeStyle(it.color.orElse(null), it.dash.orElse(null)) }
+        }
+        val savedTemplate = repository.save(template).awaitSingle()
+        // a replaced style is only reachable via the template, so it can only be deleted once the saved template
+        // no longer references it
+        if (replacedStroke.isNotEmpty()) {
+            nodeRepository.deleteAll(replacedStroke).awaitSingleOrNull()
+        }
+        return savedTemplate
     }
 
 }

@@ -14,7 +14,10 @@ const val ENTRIES_DESCRIPTION = "All permissions this Permission grants"
 /**
  * Base class for all permissions
  *
- * @param entries the granted permission entries as Strings
+ * @param entries the granted permission entries as Strings, ignored in GraphQL so that concrete
+ *   Permissions can expose them as their own entry enum. Those must use a different Kotlin name
+ *   (e.g. [GlobalPermission.graphQLEntries]), as graphql-kotlin drops a property redeclared with
+ *   the same name and type as an ignored supertype property.
  * @param allUsers if true, the permission is granted to all users
  */
 @DomainNode

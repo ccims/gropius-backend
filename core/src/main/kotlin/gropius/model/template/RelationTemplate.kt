@@ -22,9 +22,10 @@ class RelationTemplate(
     description: String,
     templateFieldSpecifications: MutableMap<String, String>,
     isDeprecated: Boolean,
+    isAbstract: Boolean,
     @GraphQLDescription("The type of the marker at the end of the relation.")
-    val markerType: MarkerType,
-) : Template<Relation, RelationTemplate>(name, description, templateFieldSpecifications, isDeprecated) {
+    var markerType: MarkerType,
+) : Template<Relation, RelationTemplate>(name, description, templateFieldSpecifications, isDeprecated, isAbstract) {
 
     companion object {
         const val STROKE_STYLE = "STROKE_STYLE"
