@@ -590,8 +590,8 @@ class IssueMutations(
     }
 
     @GraphQLDescription(
-        """Adds an Issue State to a Board Column, requires MANAGE_ISSUE_BOARDS on the parent Trackable 
-        of the column the Issue State should be added to, and READ on the Issue State.
+        """Adds an Issue State to a Board Column, requires MANAGE_ISSUE_BOARDS on the parent Trackable
+        of the column the Issue State should be added to.
         Returns the updated column (unchanged if the state was already assigned).
         """
     )
@@ -604,9 +604,9 @@ class IssueMutations(
     }
 
     @GraphQLDescription(
-        """Removes an Issue State from a Board Column, requires MANAGE_ISSUE_BOARDS on the parent Trackable 
-           of the column the Issue State should be removed from, and READ on the Issue State.
-           Returns the updated column.
+        """Removes an Issue State from a Board Column, requires MANAGE_ISSUE_BOARDS on the parent Trackable
+        of the column the Issue State should be removed from.
+        Returns the updated column (unchanged if the state was not assigned).
         """
     )
     suspend fun removeIssueStateFromBoardColumn(
@@ -640,7 +640,6 @@ class IssueMutations(
     ): IssueBoardItem {
         return issueBoardItemService.updateIssueBoardItem(dfe.gropiusAuthorizationContext, input)
     }
-
 
     @GraphQLDescription(
         """Deletes the Issue Board Item, requires MANAGE_ISSUES on the parent Trackable.

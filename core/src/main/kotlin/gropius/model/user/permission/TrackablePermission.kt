@@ -64,9 +64,8 @@ abstract class TrackablePermission<T : Trackable>(
         const val MANAGE_LABELS = "MANAGE_LABELS"
 
         /**
-         * Permission to check if the user can manage (add, remove, update) [IssueBoard]s on the [Trackable].
-         * Note: to delete an [IssueBoard], the user has to be able to remove it from all [Trackable]s
-         * which currently use the [IssueBoard]
+         * Permission to check if the user can manage (add, remove, update) [IssueBoard]s on the [Trackable],
+         * including their columns
          */
         const val MANAGE_ISSUE_BOARDS = "MANAGE_ISSUE_BOARDS"
 

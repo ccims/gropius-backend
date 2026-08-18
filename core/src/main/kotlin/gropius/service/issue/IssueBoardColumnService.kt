@@ -2,6 +2,7 @@ package gropius.service.issue
 
 import gropius.authorization.GropiusAuthorizationContext
 import gropius.dto.input.common.DeleteNodeInput
+import gropius.dto.input.ifPresent
 import gropius.dto.input.issue.AddIssueStateToBoardColumnInput
 import gropius.dto.input.issue.CreateIssueBoardColumnInput
 import gropius.dto.input.issue.RemoveIssueStateFromBoardColumnInput
@@ -32,10 +33,7 @@ class IssueBoardColumnService(
     repository: IssueBoardColumnRepository,
     private val issueStateRepository: IssueStateRepository,
     private val issueBoardRepository: IssueBoardRepository
-
 ) : NamedNodeService<IssueBoardColumn, IssueBoardColumnRepository>(repository) {
-
-
     /**
      * Creates a new [IssueBoardColumn] based on the provided [input]
      * Checks the authorization status
@@ -58,7 +56,7 @@ class IssueBoardColumnService(
             "create Issue Board Columns on ${trackable.rawId}"
         )
 
-        val issueBoardColumn = IssueBoardColumn(input.name, input.description)
+        val issueBoardColumn = IssueBoardColumn(input.name, input.description, input.position)
         issueBoardColumn.issueBoard().value = issueBoard
         return repository.save(issueBoardColumn).awaitSingle()
     }
@@ -85,6 +83,7 @@ class IssueBoardColumnService(
         )
 
         updateNamedNode(issueBoardColumn, input)
+        input.position.ifPresent { issueBoardColumn.position = it }
         return repository.save(issueBoardColumn).awaitSingle()
     }
 
@@ -110,8 +109,8 @@ class IssueBoardColumnService(
     }
 
     /**
-     * Adds an [IssueState] to a [IssueBoardColumn].
-     * Checks MANAGE_ISSUE_BOARDS on the parent trackable and READ on the state.
+     * Adds an [IssueState] to an [IssueBoardColumn].
+     * Checks MANAGE_ISSUE_BOARDS on the parent trackable.
      *
      * @param authorizationContext used to check for the required permission
      * @param input defines which [IssueState] to add to which [IssueBoardColumn]
@@ -135,7 +134,7 @@ class IssueBoardColumnService(
         val isAssigned = issueBoard.issueBoardColumns().any { column -> state in column.issueStates() }
         if (state !in column.issueStates()) {
             if (isAssigned) {
-                throw IllegalStateException("Issue State already exists  in another board column")
+                throw IllegalStateException("Issue State is already assigned to another column of this Issue Board")
             }
             column.issueStates().add(state)
             return repository.save(column).awaitSingle()
@@ -145,11 +144,11 @@ class IssueBoardColumnService(
 
     /**
      * Removes an [IssueState] from an [IssueBoardColumn].
-     * Checks MANAGE_ISSUE_BOARDS on the parent trackable and READ on the state.
+     * Checks MANAGE_ISSUE_BOARDS on the parent trackable.
      *
-     *@param authorizationContext used to check for the required permission
-     *@param input defines which [IssueState] to remove from which [IssueBoardColumn]
-     *@return the saved updated [IssueBoardColumn].
+     * @param authorizationContext used to check for the required permission
+     * @param input defines which [IssueState] to remove from which [IssueBoardColumn]
+     * @return the saved updated [IssueBoardColumn]
      */
     suspend fun removeIssueStateFromBoardColumn(
         authorizationContext: GropiusAuthorizationContext,
@@ -171,6 +170,4 @@ class IssueBoardColumnService(
         }
         return column
     }
-
-
 }

@@ -27,7 +27,6 @@ class IssueBoard(name: String, description: String) : NamedNode(name, descriptio
     @FilterProperty
     val trackable by NodeProperty<Trackable>()
 
-
     @NodeRelationship(ISSUE_BOARD_COLUMN, Direction.OUTGOING)
     @GraphQLDescription("Columns on this IssueBoard")
     @FilterProperty
@@ -37,6 +36,4 @@ class IssueBoard(name: String, description: String) : NamedNode(name, descriptio
     @GraphQLDescription("Items on this IssueBoard")
     @FilterProperty
     val issueBoardItems by NodeSetProperty<IssueBoardItem>()
-
-
 }

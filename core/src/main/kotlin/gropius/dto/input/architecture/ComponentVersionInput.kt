@@ -1,6 +1,7 @@
 package gropius.dto.input.architecture
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
+import gropius.dto.input.common.CreateNamedNodeInput
 import gropius.dto.input.common.Input
 import gropius.dto.input.common.JSONFieldInput
 import gropius.dto.input.common.validateAndEnsureNoDuplicates

@@ -30,11 +30,7 @@ class IssueBoardService(
     repository: IssueBoardRepository,
     private val trackableRepository: TrackableRepository,
     private val nodeRepository: NodeRepository
-
-
 ) : NamedNodeService<IssueBoard, IssueBoardRepository>(repository) {
-
-
     /**
      * Creates a new [IssueBoard] based on the provided [input]
      * Checks the authorization status
@@ -61,7 +57,6 @@ class IssueBoardService(
         return repository.save(issueBoard).awaitSingle()
     }
 
-
     /**
      * Updates an [IssueBoard] based on the provided [input]
      * Checks the authorization status
@@ -85,7 +80,6 @@ class IssueBoardService(
         updateNamedNode(issueBoard, input)
         return repository.save(issueBoard).awaitSingle()
     }
-
 
     /**
      * Removes an [IssueBoard] from [repository]
@@ -111,7 +105,4 @@ class IssueBoardService(
         toDelete += issueBoard
         nodeRepository.deleteAll(toDelete).awaitSingleOrNull()
     }
-
-
 }
-

@@ -1,6 +1,7 @@
 package gropius.schema.mutation
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
+import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
 import com.expediagroup.graphql.server.operations.Mutation
 import graphql.schema.DataFetchingEnvironment
 import gropius.authorization.gropiusAuthorizationContext
@@ -14,6 +15,7 @@ import gropius.graphql.AutoPayloadType
 import gropius.model.architecture.*
 import gropius.model.architecture.layout.View
 import gropius.service.architecture.*
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 

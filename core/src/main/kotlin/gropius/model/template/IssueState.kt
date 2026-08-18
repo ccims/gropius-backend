@@ -38,8 +38,8 @@ class IssueState(
     val partOf by NodeSetProperty<IssueTemplate>()
 
     @NodeRelationship(IssueBoardColumn.ISSUE_STATE, Direction.INCOMING)
-    @GraphQLDescription("The Issue Board Column with this state.")
+    @GraphQLDescription("The Issue Board Columns with this state.")
     @FilterProperty
-    val issueBoardColumn by NodeProperty<IssueBoardColumn>()
+    val issueBoardColumns by NodeSetProperty<IssueBoardColumn>()
 
 }

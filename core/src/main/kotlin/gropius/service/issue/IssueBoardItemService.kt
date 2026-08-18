@@ -19,7 +19,6 @@ import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
 
-
 /**
  * Service for [IssueBoardItem]s. Provides functions to create, update and delete
  *
@@ -32,9 +31,7 @@ class IssueBoardItemService(
     repository: IssueBoardItemRepository,
     private val issueBoardRepository: IssueBoardRepository,
     private val issueRepository: IssueRepository
-
 ) : NodeService<IssueBoardItem, IssueBoardItemRepository>(repository) {
-
     /**
      * Creates a new [IssueBoardItem] based on the provided [input]
      * Checks the authorization status
@@ -70,7 +67,6 @@ class IssueBoardItemService(
         return repository.save(item).awaitSingle()
     }
 
-
     /**
      * Updates an [IssueBoardItem] based on the provided [input]
      * Checks the authorization status
@@ -97,7 +93,6 @@ class IssueBoardItemService(
         return repository.save(item).awaitSingle()
     }
 
-
     /**
      * Removes an [IssueBoardItem] from [repository]
      * Checks the authorization status
@@ -119,6 +114,4 @@ class IssueBoardItemService(
 
         repository.delete(item).awaitSingleOrNull()
     }
-
-
 }

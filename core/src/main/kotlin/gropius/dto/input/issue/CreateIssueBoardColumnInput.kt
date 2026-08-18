@@ -7,5 +7,7 @@ import gropius.dto.input.common.CreateNamedNodeInput
 @GraphQLDescription("Input for the createIssueBoardColumn mutation")
 class CreateIssueBoardColumnInput(
     @GraphQLDescription("ID of issue board the column is added to")
-    val issueBoard: ID
+    val issueBoard: ID,
+    @GraphQLDescription("Initial position (order) of the new column on the Issue Board")
+    val position: Double
 ) : CreateNamedNodeInput()

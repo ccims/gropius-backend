@@ -13,7 +13,7 @@ import java.net.URI
 
 @DomainNode("trackables", searchQueryName = "searchTrackables")
 @GraphQLDescription(
-    """An entity which can have Issues,Issue Boards, Labels and Artefacts.
+    """An entity which can have Issues, Issue Boards, Labels and Artefacts.
     Has pinned issues.
     Can be synced to an IMS by creating an IMSProject.
     Can be affected by Issues.
@@ -130,9 +130,7 @@ abstract class Trackable(
     val issues by NodeSetProperty<Issue>()
 
     @NodeRelationship(ISSUE_BOARD, Direction.OUTGOING)
-    @GraphQLDescription(
-        """The set of Issue Boards which are part of this Trackable. """
-    )
+    @GraphQLDescription("The set of Issue Boards which are part of this Trackable.")
     @FilterProperty
     val issueBoards by NodeSetProperty<IssueBoard>()
 

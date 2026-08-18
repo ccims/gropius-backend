@@ -17,12 +17,11 @@ import io.github.graphglue.model.*
 @Authorization(TrackablePermission.MANAGE_ISSUE_BOARDS, allowFromRelated = ["issueBoard"])
 @Authorization(NodePermission.READ, allowFromRelated = ["issueBoard"])
 class IssueBoardItem(
-    @GraphQLDescription("Order of this item in its column")
+    @property:GraphQLDescription("Order of this item in its column")
     @FilterProperty
+    @OrderProperty
     var position: Double
 ) : BaseNode() {
-
-
     @NodeRelationship(IssueBoard.ISSUE_BOARD_ITEM, Direction.INCOMING)
     @GraphQLDescription("The Issue Board this board item belongs to")
     @FilterProperty
