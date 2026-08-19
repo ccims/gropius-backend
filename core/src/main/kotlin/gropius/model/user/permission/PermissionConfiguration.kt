@@ -62,6 +62,10 @@ class PermissionConfiguration {
                 Also allows to delete a Label, but only if it is allowed on all Trackable the Label is on.
             """.trimIndent()
         ), PermissionEntry(
+            TrackablePermission.MANAGE_ISSUE_BOARDS, """
+                Allows to add, remove, and update Issue Boards on this Trackable.
+            """.trimIndent()
+        ), PermissionEntry(
             TrackablePermission.MANAGE_ARTEFACTS, """
                 Allows to add, remove, and update Artefacts on this Trackable.
             """.trimIndent()

@@ -7,6 +7,7 @@ import gropius.model.architecture.InterfaceSpecification
 import gropius.model.architecture.Trackable
 import gropius.model.issue.Artefact
 import gropius.model.issue.Issue
+import gropius.model.issue.IssueBoard
 import gropius.model.issue.Label
 import gropius.model.issue.timeline.Comment
 import io.github.graphglue.model.DomainNode
@@ -61,6 +62,12 @@ abstract class TrackablePermission<T : Trackable>(
          * which currently use the [Label]
          */
         const val MANAGE_LABELS = "MANAGE_LABELS"
+
+        /**
+         * Permission to check if the user can manage (add, remove, update) [IssueBoard]s on the [Trackable],
+         * including their columns
+         */
+        const val MANAGE_ISSUE_BOARDS = "MANAGE_ISSUE_BOARDS"
 
         /**
          * Permission to check if the user can manage (add, remove, update) [Artefact]s on the [Trackable]
