@@ -402,21 +402,17 @@ class RenamedTitleEventTimelineItem(
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
         val githubService = service as GithubDataService
-        if ((createdBy != null)) {
-            val gropiusId = convInfo.gropiusId
-            val event = if (gropiusId != null) githubService.neoOperations.findById<TitleChangedEvent>(
-                gropiusId
-            ) else TitleChangedEvent(createdAt, createdAt, oldTitle, newTitle)
-            if (event == null) {
-                return listOf<TimelineItem>() to convInfo;
-            }
-            event.createdBy().value = githubService.mapUser(imsProject, createdBy)
-            event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
-            return listOf<TimelineItem>(event) to convInfo;
+        val gropiusId = convInfo.gropiusId
+        val event = if (gropiusId != null) githubService.neoOperations.findById<TitleChangedEvent>(
+            gropiusId
+        ) else TitleChangedEvent(createdAt, createdAt, oldTitle, newTitle)
+        if (event == null) {
+            return listOf<TimelineItem>() to convInfo;
         }
-        return listOf<TimelineItem>() to convInfo;
+        event.createdBy().value = githubService.mapUser(imsProject, createdBy)
+        event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
+        return listOf<TimelineItem>(event) to convInfo;
     }
-
 }
 
 /**
@@ -445,20 +441,17 @@ class UnlabeledEventTimelineItem(
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
         val githubService = service as GithubDataService
-        if ((createdBy != null)) {
-            val gropiusId = convInfo.gropiusId
-            val event = if (gropiusId != null) githubService.neoOperations.findById<RemovedLabelEvent>(
-                gropiusId
-            ) else RemovedLabelEvent(createdAt, createdAt)
-            if (event == null) {
-                return listOf<TimelineItem>() to convInfo;
-            }
-            event.createdBy().value = githubService.mapUser(imsProject, createdBy)
-            event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
-            event.removedLabel().value = githubService.mapLabel(imsProject, label)
-            return listOf<TimelineItem>(event) to convInfo;
+        val gropiusId = convInfo.gropiusId
+        val event = if (gropiusId != null) githubService.neoOperations.findById<RemovedLabelEvent>(
+            gropiusId
+        ) else RemovedLabelEvent(createdAt, createdAt)
+        if (event == null) {
+            return listOf<TimelineItem>() to convInfo;
         }
-        return listOf<TimelineItem>() to convInfo;
+        event.createdBy().value = githubService.mapUser(imsProject, createdBy)
+        event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
+        event.removedLabel().value = githubService.mapLabel(imsProject, label)
+        return listOf<TimelineItem>(event) to convInfo;
     }
 }
 
@@ -482,20 +475,17 @@ class LabeledEventTimelineItem(
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
         val githubService = service as GithubDataService
-        if ((createdBy != null)) {
-            val gropiusId = convInfo.gropiusId
-            val event = if (gropiusId != null) githubService.neoOperations.findById<AddedLabelEvent>(
-                gropiusId
-            ) else AddedLabelEvent(createdAt, createdAt)
-            if (event == null) {
-                return listOf<TimelineItem>() to convInfo;
-            }
-            event.createdBy().value = githubService.mapUser(imsProject, createdBy)
-            event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
-            event.addedLabel().value = githubService.mapLabel(imsProject, label)
-            return listOf<TimelineItem>(event) to convInfo;
+        val gropiusId = convInfo.gropiusId
+        val event = if (gropiusId != null) githubService.neoOperations.findById<AddedLabelEvent>(
+            gropiusId
+        ) else AddedLabelEvent(createdAt, createdAt)
+        if (event == null) {
+            return listOf<TimelineItem>() to convInfo;
         }
-        return listOf<TimelineItem>() to convInfo;
+        event.createdBy().value = githubService.mapUser(imsProject, createdBy)
+        event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
+        event.addedLabel().value = githubService.mapLabel(imsProject, label)
+        return listOf<TimelineItem>(event) to convInfo;
     }
 
     /**
@@ -534,22 +524,19 @@ class UnassignedTimelineItem(
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
         val githubService = service as GithubDataService
-        if ((createdBy != null)) {
-            val gropiusId = convInfo.gropiusId
-            val event = if (gropiusId != null) githubService.neoOperations.findById<RemovedAssignmentEvent>(
-                gropiusId
-            ) else RemovedAssignmentEvent(createdAt, createdAt)
-            val opposite = issue.timelineItems().filterIsInstance<Assignment>().sortedBy { it.createdAt }
-                .lastOrNull { it.user().value.username == user } // TODO: Catch multiple
-            if ((event == null) || (opposite == null)) {
-                return listOf<TimelineItem>() to convInfo;
-            }
-            event.createdBy().value = githubService.mapUser(imsProject, createdBy)
-            event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
-            event.removedAssignment().value = opposite
-            return listOf<TimelineItem>(event) to convInfo;
+        val gropiusId = convInfo.gropiusId
+        val event = if (gropiusId != null) githubService.neoOperations.findById<RemovedAssignmentEvent>(
+            gropiusId
+        ) else RemovedAssignmentEvent(createdAt, createdAt)
+        val opposite = issue.timelineItems().filterIsInstance<Assignment>().sortedBy { it.createdAt }
+            .lastOrNull { it.user().value.username == user } // TODO: Catch multiple
+        if ((event == null) || (opposite == null)) {
+            return listOf<TimelineItem>() to convInfo;
         }
-        return listOf<TimelineItem>() to convInfo;
+        event.createdBy().value = githubService.mapUser(imsProject, createdBy)
+        event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
+        event.removedAssignment().value = opposite
+        return listOf<TimelineItem>(event) to convInfo;
     }
 }
 
@@ -582,20 +569,17 @@ class AssignedTimelineItem(
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
         val githubService = service as GithubDataService
-        if ((createdBy != null)) {
-            val gropiusId = convInfo.gropiusId
-            val event = if (gropiusId != null) githubService.neoOperations.findById<Assignment>(
-                gropiusId
-            ) else Assignment(createdAt, createdAt)
-            if (event == null) {
-                return listOf<TimelineItem>() to convInfo;
-            }
-            event.createdBy().value = githubService.mapUser(imsProject, createdBy)
-            event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
-            event.user().value = githubService.mapUser(imsProject, user)
-            return listOf<TimelineItem>(event) to convInfo;
+        val gropiusId = convInfo.gropiusId
+        val event = if (gropiusId != null) githubService.neoOperations.findById<Assignment>(
+            gropiusId
+        ) else Assignment(createdAt, createdAt)
+        if (event == null) {
+            return listOf<TimelineItem>() to convInfo;
         }
-        return listOf<TimelineItem>() to convInfo;
+        event.createdBy().value = githubService.mapUser(imsProject, createdBy)
+        event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
+        event.user().value = githubService.mapUser(imsProject, user)
+        return listOf<TimelineItem>(event) to convInfo;
     }
 }
 
@@ -623,21 +607,18 @@ class ReopenedEventTimelineItem(githubId: String, createdAt: OffsetDateTime, val
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
         val githubService = service as GithubDataService
-        if ((createdBy != null)) {
-            val gropiusId = convInfo.gropiusId
-            val event = if (gropiusId != null) githubService.neoOperations.findById<StateChangedEvent>(
-                gropiusId
-            ) else StateChangedEvent(createdAt, createdAt)
-            if (event == null) {
-                return listOf<TimelineItem>() to convInfo;
-            }
-            event.createdBy().value = githubService.mapUser(imsProject, createdBy)
-            event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
-            event.newState().value = githubService.issueState(imsProject, true)
-            event.oldState().value = githubService.issueState(imsProject, false)
-            return listOf<TimelineItem>(event) to convInfo;
+        val gropiusId = convInfo.gropiusId
+        val event = if (gropiusId != null) githubService.neoOperations.findById<StateChangedEvent>(
+            gropiusId
+        ) else StateChangedEvent(createdAt, createdAt)
+        if (event == null) {
+            return listOf<TimelineItem>() to convInfo;
         }
-        return listOf<TimelineItem>() to convInfo;
+        event.createdBy().value = githubService.mapUser(imsProject, createdBy)
+        event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
+        event.newState().value = githubService.issueState(imsProject, true)
+        event.oldState().value = githubService.issueState(imsProject, false)
+        return listOf<TimelineItem>(event) to convInfo;
     }
 }
 
@@ -665,21 +646,18 @@ class ClosedEventTimelineItem(githubId: String, createdAt: OffsetDateTime, val c
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
         val githubService = service as GithubDataService
-        if ((createdBy != null)) {
-            val gropiusId = convInfo.gropiusId
-            val event = if (gropiusId != null) githubService.neoOperations.findById<StateChangedEvent>(
-                gropiusId
-            ) else StateChangedEvent(createdAt, createdAt)
-            if (event == null) {
-                return listOf<TimelineItem>() to convInfo;
-            }
-            event.createdBy().value = githubService.mapUser(imsProject, createdBy)
-            event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
-            event.newState().value = githubService.issueState(imsProject, false)
-            event.oldState().value = githubService.issueState(imsProject, true)
-            return listOf<TimelineItem>(event) to convInfo;
+        val gropiusId = convInfo.gropiusId
+        val event = if (gropiusId != null) githubService.neoOperations.findById<StateChangedEvent>(
+            gropiusId
+        ) else StateChangedEvent(createdAt, createdAt)
+        if (event == null) {
+            return listOf<TimelineItem>() to convInfo;
         }
-        return listOf<TimelineItem>() to convInfo;
+        event.createdBy().value = githubService.mapUser(imsProject, createdBy)
+        event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
+        event.newState().value = githubService.issueState(imsProject, false)
+        event.oldState().value = githubService.issueState(imsProject, true)
+        return listOf<TimelineItem>(event) to convInfo;
     }
 }
 
@@ -717,20 +695,17 @@ class IssueCommentTimelineItem(
         val convInfo =
             timelineItemConversionInformation ?: TODOTimelineItemConversionInformation(imsProject.rawId!!, githubId);
         val githubService = service as GithubDataService
-        if ((createdBy != null)) {
-            val gropiusId = convInfo.gropiusId
-            val event = if (gropiusId != null) githubService.neoOperations.findById<IssueComment>(
-                gropiusId
-            ) else IssueComment(createdAt, createdAt, body, createdAt, false)
-            if (event == null) {
-                return listOf<TimelineItem>() to convInfo;
-            }
-            event.createdBy().value = githubService.mapUser(imsProject, createdBy)
-            event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
-            event.bodyLastEditedBy().value = githubService.mapUser(imsProject, createdBy)
-            return listOf<TimelineItem>(event) to convInfo;
+        val gropiusId = convInfo.gropiusId
+        val event = if (gropiusId != null) githubService.neoOperations.findById<IssueComment>(
+            gropiusId
+        ) else IssueComment(createdAt, createdAt, body, createdAt, false)
+        if (event == null) {
+            return listOf<TimelineItem>() to convInfo;
         }
-        return listOf<TimelineItem>() to convInfo;
+        event.createdBy().value = githubService.mapUser(imsProject, createdBy)
+        event.lastModifiedBy().value = githubService.mapUser(imsProject, createdBy)
+        event.bodyLastEditedBy().value = githubService.mapUser(imsProject, createdBy)
+        return listOf<TimelineItem>(event) to convInfo;
     }
 }
 
