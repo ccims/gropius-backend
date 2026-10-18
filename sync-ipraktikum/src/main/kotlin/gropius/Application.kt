@@ -27,4 +27,6 @@ class Application {
         TransactionalOperator.create(manager)
 }
 
-fun main(args: Array<String>) { runApplication<Application>(*args) }
+fun main(args: Array<String>) {
+    runApplication<Application>(*args)
+}

@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     implementation(project(":sync"))
-    implementation("org.snakeyaml:snakeyaml-engine:2.10")
+    implementation(libs.snakeyaml.engine)
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

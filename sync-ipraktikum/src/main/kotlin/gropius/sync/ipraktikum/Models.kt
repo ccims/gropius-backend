@@ -1,11 +1,14 @@
 package gropius.sync.ipraktikum
 
+import java.security.MessageDigest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import java.security.MessageDigest
 
-val syncJson = Json { ignoreUnknownKeys = false; encodeDefaults = true }
+val syncJson = Json {
+    ignoreUnknownKeys = false
+    encodeDefaults = true
+}
 
 @Serializable
 data class SyncProfile(
@@ -21,7 +24,7 @@ data class SyncProfile(
     val detached: Set<String> = emptySet(),
     val adoptCopies: Set<Long> = emptySet(),
     val retryCreates: Map<String, String> = emptyMap(),
-    val repairLabels: Set<String> = emptySet()
+    val repairLabels: Set<String> = emptySet(),
 )
 
 @Serializable
@@ -37,41 +40,59 @@ data class TemplatePolicy(
     val nativeAssignmentRole: String? = null,
     val genericRelationEnabled: Boolean = false,
     val genericRelationType: String? = null,
-    val requiredFields: Map<String, JsonElement> = emptyMap()
+    val requiredFields: Map<String, JsonElement> = emptyMap(),
 )
 
-@Serializable
-data class Resolution(val fingerprint: String, val side: String)
+@Serializable data class Resolution(val fingerprint: String, val side: String)
 
 @Serializable
 data class CatalogEntry(
-    val id: String, val key: String, val name: String,
-    val kind: String, val template: String? = null,
-    val open: Boolean? = null, val schema: Map<String, String> = emptyMap(),
-    val creatable: Boolean = true
+    val id: String,
+    val key: String,
+    val name: String,
+    val kind: String,
+    val template: String? = null,
+    val open: Boolean? = null,
+    val schema: Map<String, String> = emptyMap(),
+    val creatable: Boolean = true,
 )
 
 @Serializable
 data class Catalog(val revision: String = "", val entries: List<CatalogEntry> = emptyList()) {
-    fun entry(kind: String, key: String, template: String? = null): CatalogEntry = entries.singleOrNull {
-        it.kind == kind && it.key == key && (template == null || it.template == template)
-    } ?: error("Unknown or incompatible $kind: $key")
-    fun key(kind: String, id: String): String = entries.firstOrNull { it.kind == kind && it.id == id }?.key
-        ?: error("$kind no longer exists in the catalog")
+    fun entry(kind: String, key: String, template: String? = null): CatalogEntry =
+        entries.singleOrNull {
+            it.kind == kind && it.key == key && (template == null || it.template == template)
+        } ?: error("Unknown or incompatible $kind: $key")
+
+    fun key(kind: String, id: String): String =
+        entries.firstOrNull { it.kind == kind && it.id == id }?.key
+            ?: error("$kind no longer exists in the catalog")
 }
 
-@Serializable
-data class AssignmentValue(val id: String, val user: String, val role: String? = null)
-@Serializable
-data class RelationValue(val id: String, val target: String, val type: String? = null)
+@Serializable data class AssignmentValue(val id: String, val user: String, val role: String? = null)
 
-data class LabelDetails(val name: String, val color: String = "#6699cc", val description: String = "")
+@Serializable data class RelationValue(val id: String, val target: String, val type: String? = null)
 
-fun semanticLabel(name: String): Boolean = listOf("component/", "workflow/", "type/", "priority/").any { name.startsWith(it) }
+data class LabelDetails(
+    val name: String,
+    val color: String = "#6699cc",
+    val description: String = "",
+)
+
+fun semanticLabel(name: String): Boolean =
+    listOf("component/", "workflow/", "type/", "priority/").any { name.startsWith(it) }
 
 fun validateOrdinaryLabel(name: String) {
-    require(name.isNotBlank() && name == name.trim() && name.length <= 255 && ',' !in name &&
-        name.none { it.isISOControl() } && !semanticLabel(name)) { "Label cannot be represented as an ordinary GitLab label: $name" }
+    require(
+        name.isNotBlank() &&
+            name == name.trim() &&
+            name.length <= 255 &&
+            ',' !in name &&
+            name.none { it.isISOControl() } &&
+            !semanticLabel(name)
+    ) {
+        "Label cannot be represented as an ordinary GitLab label: $name"
+    }
 }
 
 @Serializable
@@ -86,7 +107,7 @@ data class IssueValue(
     val primary: String? = "auto",
     val assignments: List<AssignmentValue> = emptyList(),
     val relations: List<RelationValue> = emptyList(),
-    val labels: Set<String> = emptySet()
+    val labels: Set<String> = emptySet(),
 )
 
 @Serializable
@@ -111,68 +132,117 @@ data class IssueRecord(
     val blockedAssignee: String? = null,
     val warnings: List<String> = emptyList(),
     val detached: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )
 
 @Serializable
-data class CommentRecord(val localId: String, val remoteId: Long? = null, val body: String,
-    val operation: String, val correctionId: Long? = null, val deleted: Boolean = false,
-    val remoteBody: String = body)
+data class CommentRecord(
+    val localId: String,
+    val remoteId: Long? = null,
+    val body: String,
+    val operation: String,
+    val correctionId: Long? = null,
+    val deleted: Boolean = false,
+    val remoteBody: String = body,
+)
 
 @Serializable
 data class SyncStatus(
-    val at: String, val ready: Boolean = false, val dryRun: Boolean = true,
-    val issues: Int = 0, val writes: Int = 0,
-    val messages: List<String> = emptyList()
+    val at: String,
+    val ready: Boolean = false,
+    val dryRun: Boolean = true,
+    val issues: Int = 0,
+    val writes: Int = 0,
+    val messages: List<String> = emptyList(),
 )
 
-fun fingerprint(value: String): String = MessageDigest.getInstance("SHA-256")
-    .digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
+fun fingerprint(value: String): String =
+    MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") {
+        "%02x".format(it)
+    }
 
 /** Name only supplies readability. Identity supplies the stable, collision-resistant suffix. */
 fun stableKey(kind: String, id: String, name: String): String =
     name.lowercase().replace(Regex("[^a-z0-9-]+"), "-").trim('-').take(40).ifEmpty { kind } +
-        "-" + fingerprint("$kind:$id").take(12)
+        "-" +
+        fingerprint("$kind:$id").take(12)
 
-class SyncConflict(val fields: List<String>, val token: String) : IllegalStateException(
-    "Concurrent changes in ${fields.joinToString()}; conflict fingerprint: $token"
-)
+class SyncConflict(val fields: List<String>, val token: String) :
+    IllegalStateException(
+        "Concurrent changes in ${fields.joinToString()}; conflict fingerprint: $token"
+    )
 
 /** Three-way merge by stable entry identity, rather than last-modified timestamps. */
 object Merge {
     fun reconcile(base: IssueValue, local: IssueValue, remote: IssueValue): IssueValue {
         val conflicts = mutableListOf<String>()
-        fun <T> field(name: String, b: T, l: T, r: T): T = when {
-            l == r -> l
-            l == b -> r
-            r == b -> l
-            else -> { conflicts += name; l }
-        }
-        fun <T> entries(name: String, b: List<T>, l: List<T>, r: List<T>, id: (T) -> String): List<T> {
-            val bm = b.associateBy(id); val lm = l.associateBy(id); val rm = r.associateBy(id)
+        fun <T> field(name: String, b: T, l: T, r: T): T =
+            when {
+                l == r -> l
+                l == b -> r
+                r == b -> l
+                else -> {
+                    conflicts += name
+                    l
+                }
+            }
+        fun <T> entries(
+            name: String,
+            b: List<T>,
+            l: List<T>,
+            r: List<T>,
+            id: (T) -> String,
+        ): List<T> {
+            val bm = b.associateBy(id)
+            val lm = l.associateBy(id)
+            val rm = r.associateBy(id)
             return (bm.keys + lm.keys + rm.keys).sorted().mapNotNull { key ->
                 field("$name/$key", bm[key], lm[key], rm[key])
             }
         }
-        val components = (base.components + local.components + remote.components).filter { key ->
-            field("components/$key", key in base.components, key in local.components, key in remote.components)
-        }.toSet()
-        val labels = (base.labels + local.labels + remote.labels).filter { name ->
-            field("labels/$name", name in base.labels, name in local.labels, name in remote.labels)
-        }.toSet()
-        val result = IssueValue(
-            field("title", base.title, local.title, remote.title),
-            field("body", base.body, local.body, remote.body),
-            field("template", base.template, local.template, remote.template),
-            field("type", base.type, local.type, remote.type),
-            field("state", base.state, local.state, remote.state),
-            field("priority", base.priority, local.priority, remote.priority), components,
-            field("primary", base.primary, local.primary, remote.primary),
-            entries("assignments", base.assignments, local.assignments, remote.assignments) { it.id },
-            entries("relations", base.relations, local.relations, remote.relations) { it.id }, labels
-        )
-        if (conflicts.isNotEmpty()) throw SyncConflict(conflicts,
-            fingerprint(syncJson.encodeToString(local) + syncJson.encodeToString(remote)))
+        val components =
+            (base.components + local.components + remote.components)
+                .filter { key ->
+                    field(
+                        "components/$key",
+                        key in base.components,
+                        key in local.components,
+                        key in remote.components,
+                    )
+                }
+                .toSet()
+        val labels =
+            (base.labels + local.labels + remote.labels)
+                .filter { name ->
+                    field(
+                        "labels/$name",
+                        name in base.labels,
+                        name in local.labels,
+                        name in remote.labels,
+                    )
+                }
+                .toSet()
+        val result =
+            IssueValue(
+                field("title", base.title, local.title, remote.title),
+                field("body", base.body, local.body, remote.body),
+                field("template", base.template, local.template, remote.template),
+                field("type", base.type, local.type, remote.type),
+                field("state", base.state, local.state, remote.state),
+                field("priority", base.priority, local.priority, remote.priority),
+                components,
+                field("primary", base.primary, local.primary, remote.primary),
+                entries("assignments", base.assignments, local.assignments, remote.assignments) {
+                    it.id
+                },
+                entries("relations", base.relations, local.relations, remote.relations) { it.id },
+                labels,
+            )
+        if (conflicts.isNotEmpty())
+            throw SyncConflict(
+                conflicts,
+                fingerprint(syncJson.encodeToString(local) + syncJson.encodeToString(remote)),
+            )
         return result
     }
 }

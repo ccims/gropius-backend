@@ -54,7 +54,8 @@ class GropiusFunctionDataFetcher(
         }
     }
 
-    /** Graphglue 8 caches lazy field results in an ordinary mutable map on each node.
+    /**
+     * Graphglue 8 caches lazy field results in an ordinary mutable map on each node.
      * Mutation result fields are resolved concurrently, unlike prefetched query results.
      * Serialize lazy loads for the same instance, keeping unrelated nodes parallel.
      */
@@ -76,7 +77,8 @@ class GropiusFunctionDataFetcher(
 
     private class NodeFieldLocks {
         private val locks = IdentityHashMap<Node, Mutex>()
-        @Synchronized fun forNode(node: Node): Mutex = locks.getOrPut(node) { Mutex() }
+        @Synchronized
+        fun forNode(node: Node): Mutex = locks.getOrPut(node) { Mutex() }
     }
 
     override fun mapParameterToValue(param: KParameter, environment: DataFetchingEnvironment): Pair<KParameter, Any?>? {

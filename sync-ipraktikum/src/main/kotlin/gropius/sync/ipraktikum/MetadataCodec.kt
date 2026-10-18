@@ -16,12 +16,16 @@ data class EditableMetadata(
     val primary_assignment: String? = "auto",
     val assignments: List<AssignmentValue> = emptyList(),
     val relations: List<RelationValue> = emptyList(),
-    val fields: Map<String, JsonElement> = emptyMap()
+    val fields: Map<String, JsonElement> = emptyMap(),
 )
 
-@Serializable
-data class Identity(val schema: Int = 1, val binding: String, val syncId: String)
-data class ParsedDescription(val body: String, val identity: Identity?, val metadata: EditableMetadata?)
+@Serializable data class Identity(val schema: Int = 1, val binding: String, val syncId: String)
+
+data class ParsedDescription(
+    val body: String,
+    val identity: Identity?,
+    val metadata: EditableMetadata?,
+)
 
 object MetadataCodec {
     const val START = "<!-- ipraktikum-sync:start -->"
@@ -47,13 +51,21 @@ object MetadataCodec {
         val identities = identityPattern.findAll(section).toList()
         require(identities.size == 1) { "Missing or duplicate identity" }
         val identity = syncJson.decodeFromString<Identity>(identities.single().groupValues[1])
-        require(identity.schema == 1 && identity.syncId.matches(Regex("[a-zA-Z0-9-]{1,80}"))) { "Invalid identity" }
+        require(identity.schema == 1 && identity.syncId.matches(Regex("[a-zA-Z0-9-]{1,80}"))) {
+            "Invalid identity"
+        }
         val yamls = yamlPattern.findAll(section).toList()
         require(yamls.size == 1) { "Expected exactly one metadata YAML document" }
         val yaml = yamls.single().groupValues[1]
         require(yaml.length <= 100_000) { "Metadata is too large" }
-        val loader = Load(LoadSettings.builder().setAllowDuplicateKeys(false).setMaxAliasesForCollections(0)
-            .setCodePointLimit(100_000).build())
+        val loader =
+            Load(
+                LoadSettings.builder()
+                    .setAllowDuplicateKeys(false)
+                    .setMaxAliasesForCollections(0)
+                    .setCodePointLimit(100_000)
+                    .build()
+            )
         fun json(value: Any?, depth: Int = 0): JsonElement {
             require(depth < 20) { "Metadata nesting limit exceeded" }
             return when (value) {
@@ -61,18 +73,28 @@ object MetadataCodec {
                 is String -> JsonPrimitive(value)
                 is Boolean -> JsonPrimitive(value)
                 is Number -> JsonPrimitive(value)
-                is Map<*, *> -> JsonObject(value.entries.associate { (k, v) ->
-                    require(k is String) { "Metadata keys must be strings" }; k to json(v, depth + 1)
-                })
+                is Map<*, *> ->
+                    JsonObject(
+                        value.entries.associate { (k, v) ->
+                            require(k is String) { "Metadata keys must be strings" }
+                            k to json(v, depth + 1)
+                        }
+                    )
                 is List<*> -> JsonArray(value.map { json(it, depth + 1) })
                 else -> error("Unsupported YAML value")
             }
         }
-        val metadata = syncJson.decodeFromJsonElement<EditableMetadata>(json(loader.loadFromString(yaml)))
+        val metadata =
+            syncJson.decodeFromJsonElement<EditableMetadata>(json(loader.loadFromString(yaml)))
         require(metadata.schema == 1) { "Unsupported metadata schema" }
-        require(metadata.assignments.size <= 200 && metadata.relations.size <= 500) { "Too many metadata entries" }
+        require(metadata.assignments.size <= 200 && metadata.relations.size <= 500) {
+            "Too many metadata entries"
+        }
         for (ids in listOf(metadata.assignments.map { it.id }, metadata.relations.map { it.id })) {
-            require(ids.size == ids.toSet().size && ids.all { it.matches(Regex("[a-zA-Z0-9_-]{1,128}")) }) {
+            require(
+                ids.size == ids.toSet().size &&
+                    ids.all { it.matches(Regex("[a-zA-Z0-9_-]{1,128}")) }
+            ) {
                 "Entry IDs must be unique and contain only letters, digits, underscores or hyphens"
             }
         }
@@ -80,11 +102,27 @@ object MetadataCodec {
         return ParsedDescription(before + description.substring(end), identity, metadata)
     }
 
-    fun render(body: String, identity: Identity, metadata: EditableMetadata, summary: String = ""): String {
-        require(!body.contains("ipraktikum-sync:")) { "User text contains reserved adapter markers" }
-        return body + "\n\n" + START + "\n<!-- ipraktikum-sync:identity " +
-            syncJson.encodeToString(identity) + " -->\n" +
+    fun render(
+        body: String,
+        identity: Identity,
+        metadata: EditableMetadata,
+        summary: String = "",
+    ): String {
+        require(!body.contains("ipraktikum-sync:")) {
+            "User text contains reserved adapter markers"
+        }
+        return body +
+            "\n\n" +
+            START +
+            "\n<!-- ipraktikum-sync:identity " +
+            syncJson.encodeToString(identity) +
+            " -->\n" +
             "<details>\n<summary>iPraktikum state, relations and assignments (editable)</summary>\n\n" +
-            "```yaml\n" + pretty.encodeToString(metadata) + "\n```\n\n</details>\n" + summary + "\n" + END
+            "```yaml\n" +
+            pretty.encodeToString(metadata) +
+            "\n```\n\n</details>\n" +
+            summary +
+            "\n" +
+            END
     }
 }
