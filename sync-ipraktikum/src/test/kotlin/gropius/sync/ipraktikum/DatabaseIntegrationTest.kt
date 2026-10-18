@@ -67,6 +67,11 @@ class DatabaseIntegrationTest {
         bot.gropiusUser().value = neo.findById<GropiusUser>(botOwner.rawId!!)!!
         val savedBot = neo.save(bot).awaitSingle()
         val refreshedIms = neo.findById<IMS>(savedIms.rawId!!)!!
+        // Reusing the binding's IMS across imports must not save an already-saved user.
+        refreshedIms.users().toList()
+        val renamedBot = GitLabUser(1, "bot", "Renamed Bot")
+        domain.user(renamedBot, refreshedIms)
+        assertEquals("Renamed Bot", domain.user(renamedBot, refreshedIms).displayName)
         refreshedIms.templatedFields["read-user"] = syncJson.encodeToString(savedBot.rawId!!)
         neo.save(refreshedIms).awaitSingle()
         val template = IssueTemplate("Cohort issue", "", mutableMapOf(), false, false)

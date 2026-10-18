@@ -52,7 +52,10 @@ class DomainBridge(
     }
 
     suspend fun user(remote: GitLabUser, ims: IMS): IMSUser {
-        val existing = ims.users().filter { it.templatedFields["gitlab-user-id"] == remote.id.toString() }
+        // A binding is reused throughout a polling cycle. Its loaded user collection may
+        // contain instances already saved by an earlier assignment or comment import.
+        val freshIms = neo.findById<IMS>(ims.rawId!!) ?: error("IMS no longer exists")
+        val existing = freshIms.users().filter { it.templatedFields["gitlab-user-id"] == remote.id.toString() }
         require(existing.size <= 1) { "Duplicate GitLab user identities" }
         existing.singleOrNull()?.let {
             if (it.displayName != remote.name || it.username != remote.username) {
@@ -68,8 +71,8 @@ class DomainBridge(
             all.firstOrNull { it.templatedFields["gitlab-user-id"] == remote.id.toString() } ?: run {
                 val value = IMSUser(remote.name, null, remote.avatar_url?.let { URI(it) }, remote.username,
                     mutableMapOf("gitlab-user-id" to remote.id.toString()))
-                value.template().value = ims.template().value.imsUserTemplate().value
-                value.ims().value = ims
+                value.template().value = freshIms.template().value.imsUserTemplate().value
+                value.ims().value = freshIms
                 val saved = neo.save(value).awaitSingle()
                 neo.findById<IMSUser>(saved.rawId!!)!!
             }
