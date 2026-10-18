@@ -65,6 +65,15 @@ data class AssignmentValue(val id: String, val user: String, val role: String? =
 @Serializable
 data class RelationValue(val id: String, val target: String, val type: String? = null)
 
+data class LabelDetails(val name: String, val color: String = "#6699cc", val description: String = "")
+
+fun semanticLabel(name: String): Boolean = listOf("component/", "workflow/", "type/", "priority/").any { name.startsWith(it) }
+
+fun validateOrdinaryLabel(name: String) {
+    require(name.isNotBlank() && name == name.trim() && name.length <= 255 && ',' !in name &&
+        name.none { it.isISOControl() } && !semanticLabel(name)) { "Label cannot be represented as an ordinary GitLab label: $name" }
+}
+
 @Serializable
 data class IssueValue(
     val title: String,
@@ -76,7 +85,8 @@ data class IssueValue(
     val components: Set<String> = emptySet(),
     val primary: String? = "auto",
     val assignments: List<AssignmentValue> = emptyList(),
-    val relations: List<RelationValue> = emptyList()
+    val relations: List<RelationValue> = emptyList(),
+    val labels: Set<String> = emptySet()
 )
 
 @Serializable
@@ -147,6 +157,9 @@ object Merge {
         val components = (base.components + local.components + remote.components).filter { key ->
             field("components/$key", key in base.components, key in local.components, key in remote.components)
         }.toSet()
+        val labels = (base.labels + local.labels + remote.labels).filter { name ->
+            field("labels/$name", name in base.labels, name in local.labels, name in remote.labels)
+        }.toSet()
         val result = IssueValue(
             field("title", base.title, local.title, remote.title),
             field("body", base.body, local.body, remote.body),
@@ -156,7 +169,7 @@ object Merge {
             field("priority", base.priority, local.priority, remote.priority), components,
             field("primary", base.primary, local.primary, remote.primary),
             entries("assignments", base.assignments, local.assignments, remote.assignments) { it.id },
-            entries("relations", base.relations, local.relations, remote.relations) { it.id }
+            entries("relations", base.relations, local.relations, remote.relations) { it.id }, labels
         )
         if (conflicts.isNotEmpty()) throw SyncConflict(conflicts,
             fingerprint(syncJson.encodeToString(local) + syncJson.encodeToString(remote)))

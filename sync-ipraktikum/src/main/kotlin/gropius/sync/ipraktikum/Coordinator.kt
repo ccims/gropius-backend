@@ -232,7 +232,13 @@ class Coordinator(
                 val data = session.request("GET", "users/$id")
                 domain.user(Json { ignoreUnknownKeys = true }.decodeFromJsonElement(data), binding.ims().value)
             }
-            record = domain.apply(binding, record, local, target, catalog, records, selectedPolicy, parsed?.metadata?.fields.orEmpty())
+            val labelDetails = if ((target.labels - local?.labels.orEmpty()).isNotEmpty()) session.labels().associate {
+                val name = it.getValue("name").jsonPrimitive.content
+                name to LabelDetails(name, it["color"]?.jsonPrimitive?.content ?: "#6699cc",
+                    it["description"]?.jsonPrimitive?.contentOrNull ?: "")
+            } else emptyMap()
+            record = domain.apply(binding, record, local, target, catalog, records, selectedPolicy,
+                parsed?.metadata?.fields.orEmpty(), labelDetails)
             if (initialImport) {
                 // Preserve the original GitLab document until all endpoints exist. The second pass imports its relations.
                 registry.save(record.copy(baseline = target, pending = null, operation = null,
@@ -334,7 +340,8 @@ class Coordinator(
         }
         priority?.let { catalog.entry("priority", it, template) }
         return IssueValue(remote.title, parsed.body, template, exactType, state,
-            priority, components, primary, assignments.sortedBy { it.id }, relations.sortedBy { it.id })
+            priority, components, primary, assignments.sortedBy { it.id }, relations.sortedBy { it.id },
+            remote.labels.filter { !semanticLabel(it) }.onEach { validateOrdinaryLabel(it) }.toSet())
     }
 
     private fun selectedAssignment(value: IssueValue?, policy: TemplatePolicy, native: Long?): AssignmentValue? {
@@ -353,8 +360,17 @@ class Coordinator(
         val selected = selectedAssignment(target, policy, record.lastAssignee)
         if (policy.nativeAssignmentEnabled && target.primary != null && target.primary != "auto") require(selected != null) { "Primary assignment must reference an eligible GitLab user" }
         val componentLabels = ComponentLabels(catalog, profile)
+        target.labels.forEach { validateOrdinaryLabel(it) }
+        if (target.labels.isNotEmpty()) {
+            val existingLabels = session.labels().map { it.getValue("name").jsonPrimitive.content }.toMutableSet()
+            for (name in target.labels.sorted()) if (name !in existingLabels) {
+                val details = domain.labelDetails(record.gropiusId ?: error("Missing local label source"), name)
+                session.label(name, details.color, details.description)
+                existingLabels += name
+            }
+        }
         val labels = target.components.map { componentLabels.label(it) }.toSet() + "workflow/${Workflow.bucket(target.state, policy)}" +
-            "type/${target.type}" + target.priority?.let { setOf("priority/$it") }.orEmpty()
+            "type/${target.type}" + target.priority?.let { setOf("priority/$it") }.orEmpty() + target.labels
         val metadata = EditableMetadata(revision = profile.revision, template = target.template,
             issue_type = target.type, state = target.state, priority = target.priority, primary_assignment = target.primary,
             assignments = target.assignments, relations = target.relations.map { relation ->
@@ -413,12 +429,12 @@ class Coordinator(
                 if (Merge.reconcile(record.baseline!!, target, latest) != target) throw RemoteChanged()
             }
         }
-        val oldManaged = fresh.labels.filter { managedLabel(it) }.toSet()
+        val oldLabels = fresh.labels.toSet()
         val payload = buildJsonObject {
             if (fresh.title != target.title) put("title", target.title)
             if ((fresh.description ?: "") != description) put("description", description)
-            if (labels - oldManaged != emptySet<String>()) put("add_labels", (labels - oldManaged).joinToString(","))
-            if (oldManaged - labels != emptySet<String>()) put("remove_labels", (oldManaged - labels).joinToString(","))
+            if (labels - oldLabels != emptySet<String>()) put("add_labels", (labels - oldLabels).joinToString(","))
+            if (oldLabels - labels != emptySet<String>()) put("remove_labels", (oldLabels - labels).joinToString(","))
             if ((fresh.state == "opened") != state.open) put("state_event", if (state.open == true) "reopen" else "close")
         }
         if (payload.isNotEmpty()) session.update(fresh.iid, payload)
@@ -467,7 +483,7 @@ class Coordinator(
         registry.save(record) // Keep link receipts before verifying and acknowledging the final projection.
         val verified = session.issue(fresh.iid)
         check(verified.title == target.title && verified.description == description &&
-            verified.labels.filter { managedLabel(it) }.toSet() == labels && (verified.state == "opened") == state.open) {
+            verified.labels.toSet() == labels && (verified.state == "opened") == state.open) {
             "GitLab changed during export; pending operation retained"
         }
         record = record.copy(baseline = target, pending = null, expectedRemote = null, operation = null,
@@ -477,7 +493,6 @@ class Coordinator(
         return record
     }
 
-    private fun managedLabel(label: String) = listOf("component/", "workflow/", "type/", "priority/").any { label.startsWith(it) }
 
     private suspend fun syncComments(binding: IMSProject, original: IssueRecord, session: GitLabClient.Session) {
         var record = registry.record(original.binding, original.syncId)!!

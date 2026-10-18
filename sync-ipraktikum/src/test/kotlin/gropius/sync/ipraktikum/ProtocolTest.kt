@@ -4,6 +4,15 @@ import kotlin.test.*
 import org.junit.jupiter.api.Test
 
 class ProtocolTest {
+    @Test fun `ordinary label membership merges independent additions and removals`() {
+        val b = IssueValue("Title", "Body", "template", "bug", "open", labels = setOf("Old"))
+        val merged = Merge.reconcile(b, b.copy(labels = setOf("Old", "UI")), b.copy(labels = setOf("Accessibility")))
+        assertEquals(setOf("UI", "Accessibility"), merged.labels)
+        validateOrdinaryLabel("UI")
+        assertFails { validateOrdinaryLabel("workflow/ready") }
+        assertFails { validateOrdinaryLabel("a,b") }
+    }
+
     @Test fun `component aliases preserve stable keys and reject ambiguous labels`() {
         val catalog = Catalog(entries = listOf(
             CatalogEntry("one", "frontend-abc", "Frontend", "component"),

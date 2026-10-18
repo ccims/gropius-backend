@@ -105,6 +105,9 @@ class DatabaseIntegrationTest {
         savedBinding.templatedFields["sync-profile"] = syncJson.encodeToString(syncJson.encodeToString(profile))
         savedBinding = neo.save(savedBinding).awaitSingle()
         val remote = fake.create("Incoming issue", "Student description")
+        fake.addLabel("Reported", "#123456", "Imported label")
+        fake.issues[remote] = JsonObject(fake.issues.getValue(remote) +
+            ("labels" to JsonArray(listOf(JsonPrimitive("Reported")))))
         coordinator.cycle(neo.findById<IMSProject>(savedBinding.rawId!!)!!)
         var records = registry.records(savedBinding.rawId!!)
         assertEquals(1, records.size)
@@ -112,6 +115,7 @@ class DatabaseIntegrationTest {
         assertNull(record.error, record.error)
         assertNotNull(record.gropiusId)
         assertEquals("Incoming issue", domain.issue(record.gropiusId!!).title)
+        assertEquals("#123456", domain.issue(record.gropiusId!!).labels().single().color)
         assertEquals(1, fake.issues.size)
 
         // GitLab title and workflow edits reach Gropius, preserving identity.
@@ -174,6 +178,59 @@ class DatabaseIntegrationTest {
         verifyComments(savedBinding.rawId!!, created.gropiusId!!, next.syncId, exported.iid!!)
         verifyNativeLinks(savedBinding.rawId!!, created.gropiusId!!, next.syncId, record, catalog, templateKey, policy, profile)
         verifyCopiedIdentity(savedBinding.rawId!!, exported.iid!!)
+        verifyLabels(savedBinding.rawId!!, created.gropiusId!!, next.syncId, exported.iid!!, catalog, policy)
+    }
+
+    private suspend fun verifyLabels(bindingId: String, localId: String, syncId: String, iid: Long,
+        catalog: Catalog, policy: TemplatePolicy) {
+        suspend fun localLabels(names: Set<String>) {
+            val binding = domain.binding(bindingId)
+            val records = registry.records(bindingId)
+            val record = records.single { it.syncId == syncId }
+            val value = domain.snapshot(domain.issue(localId), record, catalog, binding, records)
+            domain.apply(binding, record, value, value.copy(labels = names), catalog, records, policy,
+                labelDetails = mapOf("UI" to LabelDetails("UI", "#abcdef", "UI defects")))
+            coordinator.cycle(domain.binding(bindingId))
+            assertNull(registry.record(bindingId, syncId)!!.error)
+        }
+        fun remoteLabels(names: Set<String>) {
+            val issue = fake.issues.getValue(iid)
+            val semantic = issue.getValue("labels").jsonArray.map { it.jsonPrimitive.content }.filter { semanticLabel(it) }
+            fake.issues[iid] = JsonObject(issue + ("labels" to JsonArray((semantic + names).map { JsonPrimitive(it) })))
+        }
+        localLabels(setOf("UI"))
+        assertTrue("UI" in fake.issues.getValue(iid).getValue("labels").jsonArray.map { it.jsonPrimitive.content })
+        assertEquals("#abcdef", fake.labelData.getValue("UI").getValue("color").jsonPrimitive.content)
+        fake.addLabel("Accessibility", "#112233", "Keyboard support")
+        remoteLabels(setOf("UI", "Accessibility"))
+        coordinator.cycle(domain.binding(bindingId))
+        assertNull(registry.record(bindingId, syncId)!!.error)
+        assertEquals(setOf("UI", "Accessibility"), domain.issue(localId).labels().map { it.name }.toSet())
+        val imported = domain.issue(localId).labels().single { it.name == "Accessibility" }
+        assertEquals("#112233", imported.color)
+        assertEquals("Keyboard support", imported.description)
+        val component = configuration.discover(domain.binding(bindingId), SyncProfile()).second.single()
+        val owner = neo.findById<IMS>(domain.binding(bindingId).ims().value.rawId!!)!!.users().first()
+        val now = java.time.OffsetDateTime.now()
+        val scoped = gropius.model.issue.Label(now, now, "Component-only", "Shared cohort label", "#445566")
+        scoped.createdBy().value = owner; scoped.lastModifiedBy().value = owner
+        scoped.trackables() += component
+        val scopedId = neo.save(scoped).awaitSingle().rawId!!
+        fake.addLabel("Component-only", "#445566", "Shared cohort label")
+        remoteLabels(setOf("UI", "Component-only"))
+        fake.issues[iid] = JsonObject(fake.issues.getValue(iid) + ("labels" to JsonArray(
+            fake.issues.getValue(iid).getValue("labels").jsonArray.filter { !it.jsonPrimitive.content.startsWith("component/") })))
+        coordinator.cycle(domain.binding(bindingId))
+        assertNull(registry.record(bindingId, syncId)!!.error)
+        assertEquals(scopedId, domain.issue(localId).labels().single { it.name == "Component-only" }.rawId)
+        remoteLabels(setOf("UI"))
+        coordinator.cycle(domain.binding(bindingId))
+        assertEquals(setOf("UI"), domain.issue(localId).labels().map { it.name }.toSet())
+        localLabels(emptySet())
+        assertTrue(fake.issues.getValue(iid).getValue("labels").jsonArray.all { semanticLabel(it.jsonPrimitive.content) })
+        val writes = fake.writes
+        coordinator.cycle(domain.binding(bindingId))
+        assertEquals(writes, fake.writes)
     }
 
     private suspend fun verifyEmptyPrimary(bindingId: String, iid: Long, localId: String) {
@@ -264,6 +321,7 @@ private class FakeGitLab {
     val notes = linkedMapOf<Long, MutableMap<Long, JsonObject>>()
     val links = linkedMapOf<Long, Pair<Long, Long>>()
     private val labels = linkedMapOf<String, Long>()
+    val labelData = linkedMapOf<String, JsonObject>()
     var writes = 0
     private val user = buildJsonObject { put("id", 1); put("username", "bot"); put("name", "Bot") }
     private val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
@@ -283,10 +341,11 @@ private class FakeGitLab {
                     path == "/api/v4/projects/42" -> buildJsonObject { put("id", 42) }
                     path.endsWith("/labels") && method == "POST" -> {
                         val name = body.getValue("name").jsonPrimitive.content
-                        labels[name] = (labels.size + 1).toLong()
-                        buildJsonObject { put("id", labels.getValue(name)); put("name", name) }
+                        addLabel(name, body["color"]?.jsonPrimitive?.content ?: "#6699cc",
+                            body["description"]?.jsonPrimitive?.content ?: "")
+                        labelData.getValue(name)
                     }
-                    path.endsWith("/labels") -> JsonArray(labels.map { (name, id) -> buildJsonObject { put("id", id); put("name", name) } })
+                    path.endsWith("/labels") -> JsonArray(labelData.values.toList())
                     path.matches(Regex("/api/v4/projects/42/issues/\\d+/notes(/\\d+)?")) -> {
                         val parts = path.split('/')
                         val iid = parts[6].toLong()
@@ -357,6 +416,12 @@ private class FakeGitLab {
             put("author", user)
         }
         return id
+    }
+    fun addLabel(name: String, color: String, description: String) {
+        labels.getOrPut(name) { (labels.size + 1).toLong() }
+        labelData[name] = buildJsonObject {
+            put("id", labels.getValue(name)); put("name", name); put("color", color); put("description", description)
+        }
     }
     fun addNote(iid: Long, body: String, author: Int): Long {
         val values = notes.getOrPut(iid) { linkedMapOf() }

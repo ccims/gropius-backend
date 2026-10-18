@@ -3,6 +3,7 @@ package gropius.sync.ipraktikum
 import gropius.dto.input.common.JSONFieldInput
 import gropius.model.architecture.*
 import gropius.model.issue.Issue
+import gropius.model.issue.Label
 import gropius.model.issue.timeline.*
 import gropius.model.template.*
 import gropius.model.user.*
@@ -112,18 +113,27 @@ class DomainBridge(
             RelationValue(id, identity.syncId, it.type().value?.let { type -> catalog.key("relation", type.rawId!!) })
         }.sortedBy { it.id }
         val componentIds = catalog.entries.filter { it.kind == "component" }.associate { it.id to it.key }
+        val labels = issue.labels().filter { !semanticLabel(it.name) }
+        labels.forEach { validateOrdinaryLabel(it.name) }
+        require(labels.map { it.name }.distinct().size == labels.size) { "Issue has multiple labels with the same name" }
         return IssueValue(issue.title, issue.bodyBody, catalog.key("template", issue.template().value.rawId!!),
             catalog.key("type", issue.type().value.rawId!!), catalog.key("state", issue.state().value.rawId!!),
             issue.priority().value?.let { catalog.key("priority", it.rawId!!) },
             issue.trackables().mapNotNull { componentIds[it.rawId] }.toSet(),
             binding.profile().let { p -> if (record.syncId in p.primary) p.primary[record.syncId]
-                else if (record.baseline != null) record.baseline.primary else "auto" }, assignments, relations)
+                else if (record.baseline != null) record.baseline.primary else "auto" }, assignments, relations,
+            labels.map { it.name }.toSet())
+    }
+
+    suspend fun labelDetails(issueId: String, name: String): LabelDetails {
+        val label = issue(issueId).labels().single { it.name == name }
+        return LabelDetails(label.name, label.color, label.description)
     }
 
     suspend fun apply(
         binding: IMSProject, original: IssueRecord, expected: IssueValue?, target: IssueValue,
         catalog: Catalog, records: List<IssueRecord>, policy: TemplatePolicy,
-        fields: Map<String, JsonElement> = emptyMap()
+        fields: Map<String, JsonElement> = emptyMap(), labelDetails: Map<String, LabelDetails> = emptyMap()
     ): IssueRecord = transactions.executeAndAwait {
         registry.lock("issue:${binding.rawId}:${original.syncId}")
         val record = registry.record(original.binding, original.syncId) ?: original
@@ -184,6 +194,34 @@ class DomainBridge(
         }
         for (component in currentComponents) if (catalog.key("component", component.rawId!!) !in target.components)
             service.removeIssueFromTrackable(issue, component, time(), actor, context)
+
+        val trackables = issue.trackables(context.cache).toList()
+        val cohortScope = catalog.entries.filter { it.kind == "component" }.map { it.id }.toSet() + binding.trackable().value.rawId!!
+        val currentLabels = issue.labels(context.cache).filter { !semanticLabel(it.name) }
+        for (label in currentLabels) if (label.name !in target.labels)
+            service.removeLabelFromIssue(issue, label, time(), actor)
+        for (name in target.labels.sorted()) {
+            validateOrdinaryLabel(name)
+            if (currentLabels.any { it.name == name }) continue
+            registry.lock("label:${binding.rawId}:${fingerprint(name)}")
+            val candidates = neo.findAll<Label>().toList().filter { label ->
+                label.name == name && label.trackables(context.cache).any { it.rawId in cohortScope }
+            }
+            require(candidates.size <= 1) { "Multiple accessible Gropius labels named $name; choose a unique cohort label name" }
+            val label = candidates.singleOrNull() ?: run {
+                val details = labelDetails[name] ?: LabelDetails(name)
+                Label(time(), at, name, details.description, details.color).also {
+                    it.createdBy().value = actor; it.lastModifiedBy().value = actor
+                    it.trackables() += trackables.single { t -> t.rawId == binding.trackable().value.rawId }
+                }
+            }
+            if (label.trackables(context.cache).none { t -> trackables.any { it.rawId == t.rawId } }) {
+                // A GitLab project has one shared namespace: reuse a component label across the cohort.
+                label.trackables() += trackables.single { it.rawId == binding.trackable().value.rawId }
+                label.lastModifiedAt = time(); label.lastModifiedBy().value = actor
+            }
+            service.addLabelToIssue(issue, label, time(), actor)
+        }
 
         val assignmentNodes = issue.assignments().associateBy {
             record.assignmentIds.entries.firstOrNull { e -> e.value == it.rawId }?.key ?: "a-${it.rawId}"

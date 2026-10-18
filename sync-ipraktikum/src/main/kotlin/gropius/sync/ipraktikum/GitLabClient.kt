@@ -132,8 +132,8 @@ class GitLabClient(
         }
         suspend fun unlink(iid: Long, id: Long) { request("DELETE", "projects/$project/issues/$iid/links/$id") }
         suspend fun labels(): List<JsonObject> = pages("projects/$project/labels").map { it.jsonObject }
-        suspend fun label(name: String) { request("POST", "projects/$project/labels", buildJsonObject {
-            put("name", name); put("color", "#6699cc")
+        suspend fun label(name: String, color: String = "#6699cc", description: String = "") { request("POST", "projects/$project/labels", buildJsonObject {
+            put("name", name); put("color", color); put("description", description)
         }) }
     }
 }
