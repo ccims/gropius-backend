@@ -8,10 +8,16 @@ import graphql.schema.DataFetchingEnvironment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.future
+import kotlinx.coroutines.future.await
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import io.github.graphglue.model.Node
 import org.springframework.context.ApplicationContext
 import org.springframework.dao.TransientDataAccessException
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
+import java.util.IdentityHashMap
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
@@ -37,11 +43,40 @@ class GropiusFunctionDataFetcher(
 ) : SpringDataFetcher(target, function, applicationContext) {
 
     override fun get(environment: DataFetchingEnvironment): Any? {
+        val source = environment.getSource<Any>()
+        if (source is Node && function.name == "getFromGraphQL") {
+            return loadNodeField(environment, source)
+        }
         return if (target is Mutation) {
             runMutationFunction(environment)
         } else {
             super.get(environment)
         }
+    }
+
+    /** Graphglue 8 caches lazy field results in an ordinary mutable map on each node.
+     * Mutation result fields are resolved concurrently, unlike prefetched query results.
+     * Serialize lazy loads for the same instance, keeping unrelated nodes parallel.
+     */
+    private fun loadNodeField(environment: DataFetchingEnvironment, source: Node): CompletableFuture<Any?> {
+        val context = environment.graphQlContext
+        val locks = synchronized(context) {
+            context.get<NodeFieldLocks>(NodeFieldLocks::class.java) ?: NodeFieldLocks().also {
+                context.put(NodeFieldLocks::class.java, it)
+            }
+        }
+        val mutex = locks.forNode(source)
+        return context.getOrDefault(CoroutineScope(EmptyCoroutineContext)).future {
+            mutex.withLock {
+                val result = super.get(environment)
+                if (result is CompletionStage<*>) result.await() else result
+            }
+        }
+    }
+
+    private class NodeFieldLocks {
+        private val locks = IdentityHashMap<Node, Mutex>()
+        @Synchronized fun forNode(node: Node): Mutex = locks.getOrPut(node) { Mutex() }
     }
 
     override fun mapParameterToValue(param: KParameter, environment: DataFetchingEnvironment): Pair<KParameter, Any?>? {
