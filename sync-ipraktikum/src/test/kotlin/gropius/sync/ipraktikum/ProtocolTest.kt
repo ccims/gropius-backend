@@ -4,6 +4,22 @@ import kotlin.test.*
 import org.junit.jupiter.api.Test
 
 class ProtocolTest {
+    @Test fun `component aliases preserve stable keys and reject ambiguous labels`() {
+        val catalog = Catalog(entries = listOf(
+            CatalogEntry("one", "frontend-abc", "Frontend", "component"),
+            CatalogEntry("two", "backend-def", "Backend", "component")))
+        val profile = SyncProfile(componentLabels = mapOf("frontend-abc" to "frontend", "backend-def" to "backend"))
+        val labels = ComponentLabels(catalog, profile)
+        assertEquals("component/frontend", labels.label("frontend-abc"))
+        assertEquals("frontend-abc", labels.component("component/frontend"))
+        assertEquals("frontend-abc", labels.component("component/frontend-abc"))
+        assertEquals("component/frontend-abc", ComponentLabels(catalog, SyncProfile()).label("frontend-abc"))
+        assertFails { ComponentLabels(catalog, profile.copy(componentLabels = mapOf("frontend-abc" to "backend-def"))) }
+        assertFails { ComponentLabels(catalog, profile.copy(componentLabels = mapOf("frontend-abc" to "same", "backend-def" to "same"))) }
+        assertFails { ComponentLabels(catalog, profile.copy(componentLabels = mapOf("frontend-abc" to "bad/name"))) }
+        assertFails { labels.component("component/unknown") }
+    }
+
     private val base = IssueValue("Title", "Description\n", "template", "bug", "testing")
     private val metadata = EditableMetadata(template = "template", issue_type = "bug", state = "testing",
         assignments = listOf(AssignmentValue("a-1", "gitlab:12", "reviewer")),

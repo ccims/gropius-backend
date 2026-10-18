@@ -98,7 +98,9 @@ class DatabaseIntegrationTest {
         val relationType = catalog.entries.single { it.kind == "relation" && it.template == templateKey && it.name.startsWith("Depends on") }.key
         val policy = TemplatePolicy(type, state("Ready"), state("Done"), state("Ready"),
             nativeAssignmentEnabled = true, nativeAssignmentRole = role)
-        val profile = SyncProfile(enabled = true, dryRun = false, defaultTemplate = templateKey, templates = mapOf(templateKey to policy))
+        val profile = SyncProfile(enabled = true, dryRun = false, defaultTemplate = templateKey,
+            templates = mapOf(templateKey to policy),
+            componentLabels = mapOf(catalog.entries.single { it.kind == "component" }.key to "booking"))
         savedBinding = neo.findById<IMSProject>(savedBinding.rawId!!)!!
         savedBinding.templatedFields["sync-profile"] = syncJson.encodeToString(syncJson.encodeToString(profile))
         savedBinding = neo.save(savedBinding).awaitSingle()
@@ -124,6 +126,7 @@ class DatabaseIntegrationTest {
         assertEquals("Testing", domain.issue(record.gropiusId!!).state().value.name)
         assertEquals("Changed by student", domain.issue(record.gropiusId!!).title)
         assertEquals(2, domain.issue(record.gropiusId!!).trackables().size)
+        assertTrue("component/booking" in fake.issues.getValue(remote).getValue("labels").jsonArray.map { it.jsonPrimitive.content })
 
         // An unchanged cycle is an identity/semantic no-op, including all HTTP writes.
         val before = fake.writes

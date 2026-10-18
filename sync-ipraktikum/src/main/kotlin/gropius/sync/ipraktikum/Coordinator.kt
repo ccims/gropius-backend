@@ -154,7 +154,8 @@ class Coordinator(
     }
 
     private suspend fun ensureLabels(session: GitLabClient.Session, catalog: Catalog, profile: SyncProfile, messages: MutableList<String>) {
-        val desired = catalog.entries.filter { it.kind == "component" }.map { "component/${it.key}" }.toMutableSet()
+        val componentLabels = ComponentLabels(catalog, profile)
+        val desired = catalog.entries.filter { it.kind == "component" }.map { componentLabels.label(it.key) }.toMutableSet()
         for ((template, policy) in profile.templates) {
             try { Workflow.validate(policy, catalog, template) } catch (e: Exception) {
                 messages += "Template $template awaiting setup: ${e.message}"; continue
@@ -256,7 +257,8 @@ class Coordinator(
         val template = metadata?.template ?: profile.defaultTemplate ?: error("Choose the default incoming issue template")
         val policy = policy(profile, catalog, template)
         val labels = remote.labels.toSet()
-        val components = labels.filter { it.startsWith("component/") }.map { it.removePrefix("component/") }.toSet()
+        val componentLabels = ComponentLabels(catalog, profile)
+        val components = labels.filter { it.startsWith("component/") }.map { componentLabels.component(it) }.toSet()
         components.forEach { catalog.entry("component", it) }
         fun label(kind: String, fallback: String?): String? {
             val values = labels.filter { it.startsWith("$kind/") }.map { it.removePrefix("$kind/") }
@@ -350,7 +352,8 @@ class Coordinator(
         val state = catalog.entry("state", target.state, target.template)
         val selected = selectedAssignment(target, policy, record.lastAssignee)
         if (policy.nativeAssignmentEnabled && target.primary != null && target.primary != "auto") require(selected != null) { "Primary assignment must reference an eligible GitLab user" }
-        val labels = target.components.map { "component/$it" }.toSet() + "workflow/${Workflow.bucket(target.state, policy)}" +
+        val componentLabels = ComponentLabels(catalog, profile)
+        val labels = target.components.map { componentLabels.label(it) }.toSet() + "workflow/${Workflow.bucket(target.state, policy)}" +
             "type/${target.type}" + target.priority?.let { setOf("priority/$it") }.orEmpty()
         val metadata = EditableMetadata(revision = profile.revision, template = target.template,
             issue_type = target.type, state = target.state, priority = target.priority, primary_assignment = target.primary,
