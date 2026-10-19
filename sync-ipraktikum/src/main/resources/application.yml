@@ -1,0 +1,16 @@
+graphql:
+  packages: [gropius]
+spring:
+  mongodb:
+    authentication-database: admin
+management:
+  endpoints:
+    web:
+      base-path: /
+gropius:
+  ipraktikum:
+    interval: 60000
+    max-writes: 100
+logging:
+  level:
+    org.springframework.data.neo4j: ERROR

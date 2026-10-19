@@ -11,6 +11,7 @@ jjwt = "0.13.0"
 kotlinxSerialization = "1.11.0"
 dokka = "2.2.0"
 dokkaGraphqlDescriptionPlugin = "2.0.0"
+snakeyamlEngine = "2.10"
 
 [libraries]
 springBoot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "springBoot" }
@@ -40,6 +41,8 @@ jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt" }
 koson = { module = "com.lectra:koson", version.ref = "koson" }
 
 dokka-graphqlDescriptionPlugin = { module = "io.github.graphglue:dokka-graphql-description-plugin", version.ref = "dokkaGraphqlDescriptionPlugin" }
+
+snakeyaml-engine = { module = "org.snakeyaml:snakeyaml-engine", version.ref = "snakeyamlEngine" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

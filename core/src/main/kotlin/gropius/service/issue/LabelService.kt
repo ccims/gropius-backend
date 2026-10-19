@@ -155,8 +155,11 @@ class LabelService(
             )
         }
         removeLabelFromIssues(label, label.issues(), getUser(authorizationContext))
-        label.trackables().clear()
-        repository.save(label).awaitSingle()
+        // Saving the issues above can also save their label references. Reload before
+        // mutating the label again, as Graphglue allows each instance to be saved once.
+        val currentLabel = repository.findById(input.id)
+        currentLabel.trackables().clear()
+        repository.save(currentLabel).awaitSingle()
     }
 
     /**
