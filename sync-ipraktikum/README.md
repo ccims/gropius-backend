@@ -114,3 +114,7 @@ From login-service `backend/`: `npm ci && npm run build && node --test test/gitl
 From frontend: `npm ci && npm run build --workspace @gropius/graph-editor && npx vue-tsc --noEmit && npm run build`.
 
 The fixture verifies the actual Gropius domain transactions, metadata protocol, merge rules, HTTP client, enrollment, and repeated-cycle behavior. It is not a substitute for testing against the target GitLab version/permissions. For collaborative testing, start with an empty disposable monorepo and cohort, perform a dry run, then exercise issue creation from both sides, multi-component routing, coarse/fine states and boards, multiple roles, directed relations, comments, worker restart, and copied/malformed metadata.
+
+## Example issue icons
+
+[Robot-car issue icons](examples/issue-icons/README.md) provide bug, feature, uncategorized/task and matching documentation paths for Gropius issue templates. Icon selection is project configuration and independent of synchronization.
