@@ -73,6 +73,8 @@ The `sync-profile` field is a JSON-encoded string in the IMSProject's templated 
   },
   "excludedComponents": [],
   "componentLabels": {},
+  "typeLabels": {},
+  "priorityLabels": {},
   "primary": {},
   "resolutions": {},
   "detached": [],
@@ -83,6 +85,8 @@ The `sync-profile` field is a JSON-encoded string in the IMSProject's templated 
 ```
 
 `componentLabels` maps discovered component keys to GitLab label suffixes (without `component/`). Changing a profile migrates issue label assignments to the configured alias. Legacy stable-key labels remain readable during migration; labels no longer used by any issue may remain in the GitLab project. Existing GitLab labels with the alias name are reused. Renaming a managed label directly in GitLab still requires an administrator-controlled catalog repair; set the alias in the profile first.
+
+`typeLabels` and `priorityLabels` work the same way for their respective catalog keys, for example `{ "bug-report-<stable-suffix>": "bug-report" }` produces `type/bug-report`. Aliases must be unique within their kind, including across issue templates, and cannot equal another entry's canonical key. Metadata continues to store canonical keys; changing a readable label still edits the corresponding Gropius type or priority. Without an alias, existing stable-key labels remain the default.
 
 `primary` maps sync issue IDs to an assignment ID, `"auto"`, or null. `resolutions` maps a sync ID to `{ "fingerprint": "<reported-conflict-hash>", "side": "gropius" }` or `"gitlab"`; an intervening edit invalidates that fingerprint. `detached` contains issue sync IDs to stop syncing permanently. `adoptCopies` contains GitLab **IIDs** explicitly approved as new issues after copying an existing identity marker. These operations are binding-scoped; issue identities are never inferred from titles or names.
 

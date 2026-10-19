@@ -5,6 +5,32 @@ import org.junit.jupiter.api.Test
 
 class ProtocolTest {
     @Test
+    fun `type and priority aliases round trip without changing canonical identity`() {
+        for (kind in listOf("type", "priority")) {
+            val catalog =
+                Catalog(
+                    entries =
+                        listOf(
+                            CatalogEntry("one", "first-abc", "First", kind, "template"),
+                            CatalogEntry("two", "second-def", "Second", kind, "template"),
+                        )
+                )
+            val labels = VocabularyLabels(catalog, kind, mapOf("first-abc" to "First"))
+            assertEquals("$kind/First", labels.label("first-abc"))
+            assertEquals("first-abc", labels.key("$kind/First"))
+            assertEquals("first-abc", labels.key("$kind/first-abc"))
+            assertEquals("$kind/second-def", labels.label("second-def"))
+            assertFails { labels.key("$kind/unknown") }
+            assertFails { labels.key("component/First") }
+            assertFails { VocabularyLabels(catalog, kind, mapOf("first-abc" to "second-def")) }
+            assertFails {
+                VocabularyLabels(catalog, kind, mapOf("first-abc" to "same", "second-def" to "same"))
+            }
+            assertFails { VocabularyLabels(catalog, kind, mapOf("first-abc" to "bad/name")) }
+        }
+    }
+
+    @Test
     fun `ordinary label membership merges independent additions and removals`() {
         val b = IssueValue("Title", "Body", "template", "bug", "open", labels = setOf("Old"))
         val merged =

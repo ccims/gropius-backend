@@ -19,6 +19,8 @@ data class SyncProfile(
     val templates: Map<String, TemplatePolicy> = emptyMap(),
     val excludedComponents: Set<String> = emptySet(),
     val componentLabels: Map<String, String> = emptyMap(),
+    val typeLabels: Map<String, String> = emptyMap(),
+    val priorityLabels: Map<String, String> = emptyMap(),
     val primary: Map<String, String?> = emptyMap(),
     val resolutions: Map<String, Resolution> = emptyMap(),
     val detached: Set<String> = emptySet(),
