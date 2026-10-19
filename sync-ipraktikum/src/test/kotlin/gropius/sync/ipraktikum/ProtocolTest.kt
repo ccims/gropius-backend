@@ -35,6 +35,9 @@ class ProtocolTest {
             )
         val labels = ComponentLabels(catalog, profile)
         assertEquals("component/frontend", labels.label("frontend-abc"))
+        val mixedCase = ComponentLabels(catalog, profile.copy(componentLabels = mapOf("frontend-abc" to "iOS-Client")))
+        assertEquals("component/iOS-Client", mixedCase.label("frontend-abc"))
+        assertEquals("frontend-abc", mixedCase.component("component/iOS-Client"))
         assertEquals("frontend-abc", labels.component("component/frontend"))
         assertEquals("frontend-abc", labels.component("component/frontend-abc"))
         assertEquals(
