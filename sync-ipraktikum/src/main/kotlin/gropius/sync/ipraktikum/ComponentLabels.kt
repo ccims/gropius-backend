@@ -10,8 +10,8 @@ class ComponentLabels(catalog: Catalog, profile: SyncProfile) {
             }
 
     init {
-        require(names.values.all { it.matches(Regex("[a-z0-9][a-z0-9-]{0,63}")) }) {
-            "Component label aliases must contain lowercase letters, digits and hyphens (1–64 characters)"
+        require(names.values.all { it.matches(Regex("[a-zA-Z0-9][a-zA-Z0-9-]{0,63}")) }) {
+            "Component label aliases must contain letters, digits and hyphens (1–64 characters)"
         }
         require(names.values.toSet().size == names.size) {
             "Component label aliases must be unique"

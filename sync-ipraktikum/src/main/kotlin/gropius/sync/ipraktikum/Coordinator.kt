@@ -345,11 +345,11 @@ class Coordinator(
             desired +=
                 catalog.entries
                     .filter { it.template == template && it.kind == "type" }
-                    .map { "type/${it.key}" }
+                    .map { VocabularyLabels(catalog, "type", profile.typeLabels).label(it.key) }
             desired +=
                 catalog.entries
                     .filter { it.template == template && it.kind == "priority" }
-                    .map { "priority/${it.key}" }
+                    .map { VocabularyLabels(catalog, "priority", profile.priorityLabels).label(it.key) }
         }
         val actual =
             session.labels().associate {
@@ -559,7 +559,9 @@ class Coordinator(
                 .toSet()
         components.forEach { catalog.entry("component", it) }
         fun label(kind: String, fallback: String?): String? {
-            val values = labels.filter { it.startsWith("$kind/") }.map { it.removePrefix("$kind/") }
+            val aliases = if (kind == "type") profile.typeLabels else profile.priorityLabels
+            val vocabulary = VocabularyLabels(catalog, kind, aliases)
+            val values = labels.filter { it.startsWith("$kind/") }.map { vocabulary.key(it) }
             require(values.size <= 1) { "Choose at most one $kind label" }
             values.forEach { catalog.entry(kind, it, template) }
             return values.singleOrNull() ?: fallback
@@ -779,8 +781,10 @@ class Coordinator(
         val labels =
             target.components.map { componentLabels.label(it) }.toSet() +
                 "workflow/${Workflow.bucket(target.state, policy)}" +
-                "type/${target.type}" +
-                target.priority?.let { setOf("priority/$it") }.orEmpty() +
+                VocabularyLabels(catalog, "type", profile.typeLabels).label(target.type) +
+                target.priority?.let {
+                    setOf(VocabularyLabels(catalog, "priority", profile.priorityLabels).label(it))
+                }.orEmpty() +
                 target.labels
         val metadata =
             EditableMetadata(

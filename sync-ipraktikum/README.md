@@ -35,7 +35,7 @@ The normal IMSProject permission checks protect profile updates. Status/catalog 
 
 ## Mapping and everyday use
 
-* Component labels default to `component/<stable-key>`. Use `componentLabels` in the advanced profile to give them readable aliases, e.g. `{ "frontend-<stable-suffix>": "frontend" }` produces `component/frontend`. The discovered stable key remains the internal identity. Aliases must be unique lowercase slugs; two components with the same name need distinct aliases. Several labels map the **same issue** to several Gropius components. Unclassified issues remain on the cohort project.
+* Component labels default to `component/<stable-key>`. Use `componentLabels` in the advanced profile to give them readable aliases, e.g. `{ "frontend-<stable-suffix>": "frontend" }` produces `component/frontend`. The discovered stable key remains the internal identity. Aliases must be unique alphanumeric/hyphen aliases; two components with the same name need distinct aliases. Several labels map the **same issue** to several Gropius components. Unclassified issues remain on the cohort project.
 * Discovery follows `Project → ComponentVersion → Component`. Adding another version of an enrolled component does not create another component label. Renames retain existing keys; excluded/removed components are not deleted from issue history.
 * State labels are ordinary `workflow/<key>` labels. Create GitLab board label lists for the desired workflow buckets. Gropius boards can group their finer states independently. Closed states close the GitLab issue, which appears in its built-in Closed list.
 * With `autoStates: true`, each discovered state has its own workflow label. To use a coarser GitLab board, configure `states` as `{ "exact-state-key": "bucket-key" }` and `bucketDefaults` as `{ "bucket-key": "default-exact-state-key" }`. A bucket cannot mix open/closed states. Unchanged coarse labels preserve the exact state. A move to another bucket chooses its configured default.
@@ -73,6 +73,8 @@ The `sync-profile` field is a JSON-encoded string in the IMSProject's templated 
   },
   "excludedComponents": [],
   "componentLabels": {},
+  "typeLabels": {},
+  "priorityLabels": {},
   "primary": {},
   "resolutions": {},
   "detached": [],
@@ -83,6 +85,8 @@ The `sync-profile` field is a JSON-encoded string in the IMSProject's templated 
 ```
 
 `componentLabels` maps discovered component keys to GitLab label suffixes (without `component/`). Changing a profile migrates issue label assignments to the configured alias. Legacy stable-key labels remain readable during migration; labels no longer used by any issue may remain in the GitLab project. Existing GitLab labels with the alias name are reused. Renaming a managed label directly in GitLab still requires an administrator-controlled catalog repair; set the alias in the profile first.
+
+`typeLabels` and `priorityLabels` work the same way for their respective catalog keys, for example `{ "bug-report-<stable-suffix>": "bug-report" }` produces `type/bug-report`. Aliases must be unique within their kind, including across issue templates, and cannot equal another entry's canonical key. Metadata continues to store canonical keys; changing a readable label still edits the corresponding Gropius type or priority. Without an alias, existing stable-key labels remain the default.
 
 `primary` maps sync issue IDs to an assignment ID, `"auto"`, or null. `resolutions` maps a sync ID to `{ "fingerprint": "<reported-conflict-hash>", "side": "gropius" }` or `"gitlab"`; an intervening edit invalidates that fingerprint. `detached` contains issue sync IDs to stop syncing permanently. `adoptCopies` contains GitLab **IIDs** explicitly approved as new issues after copying an existing identity marker. These operations are binding-scoped; issue identities are never inferred from titles or names.
 
@@ -110,3 +114,7 @@ From login-service `backend/`: `npm ci && npm run build && node --test test/gitl
 From frontend: `npm ci && npm run build --workspace @gropius/graph-editor && npx vue-tsc --noEmit && npm run build`.
 
 The fixture verifies the actual Gropius domain transactions, metadata protocol, merge rules, HTTP client, enrollment, and repeated-cycle behavior. It is not a substitute for testing against the target GitLab version/permissions. For collaborative testing, start with an empty disposable monorepo and cohort, perform a dry run, then exercise issue creation from both sides, multi-component routing, coarse/fine states and boards, multiple roles, directed relations, comments, worker restart, and copied/malformed metadata.
+
+## Example issue icons
+
+[Robot-car issue icons](examples/issue-icons/README.md) provide bug, feature, uncategorized/task and matching documentation paths for Gropius issue templates. Icon selection is project configuration and independent of synchronization.
