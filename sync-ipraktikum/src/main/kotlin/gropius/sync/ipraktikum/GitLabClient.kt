@@ -41,6 +41,7 @@ data class GitLabIssue(
     val author: GitLabUser,
     val web_url: String = "",
     val issue_type: String = "issue",
+    val weight: Int? = null,
 )
 
 @Serializable

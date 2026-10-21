@@ -33,6 +33,8 @@ class DomainBridge(
     private val transactions: TransactionalOperator,
     private val registry: Registry,
 ) {
+    private val fieldMapper = tools.jackson.databind.json.JsonMapper.builder().build()
+
     suspend fun issue(id: String): Issue =
         neo.findById<Issue>(id) ?: error("Gropius issue is no longer accessible")
 
@@ -162,7 +164,9 @@ class DomainBridge(
                 .sortedBy { it.id }
         val componentIds =
             catalog.entries.filter { it.kind == "component" }.associate { it.id to it.key }
-        val labels = issue.labels().filter { !semanticLabel(it.name) }
+        val enumFields = EnumFields(binding.profile(), catalog)
+        val labels =
+            issue.labels().filter { !semanticLabel(it.name) && !enumFields.ownsLabel(it.name) }
         labels.forEach { validateOrdinaryLabel(it.name) }
         require(labels.map { it.name }.distinct().size == labels.size) {
             "Issue has multiple labels with the same name"
@@ -182,6 +186,10 @@ class DomainBridge(
             assignments,
             relations,
             labels.map { it.name }.toSet(),
+            enumFields.values(
+                catalog.key("template", issue.template().value.rawId!!),
+                issue.templatedFields.mapValues { Json.parseToJsonElement(it.value) },
+            ),
         )
     }
 
@@ -198,7 +206,6 @@ class DomainBridge(
         catalog: Catalog,
         records: List<IssueRecord>,
         policy: TemplatePolicy,
-        fields: Map<String, JsonElement> = emptyMap(),
         labelDetails: Map<String, LabelDetails> = emptyMap(),
     ): IssueRecord = transactions.executeAndAwait {
         registry.lock("issue:${binding.rawId}:${original.syncId}")
@@ -224,7 +231,7 @@ class DomainBridge(
             return at
         }
         val fieldValues =
-            (policy.requiredFields + fields).map { (name, value) ->
+            (policy.requiredFields + target.fields).map { (name, value) ->
                 JSONFieldInput(name, jsonValue(value))
             }
         var issue = record.gropiusId?.let { issue(it) }
@@ -288,6 +295,17 @@ class DomainBridge(
                 service.changeIssueType(issue, issue.type().value, type, time(), actor, context)
             if (issue.state().value.rawId != state.rawId)
                 service.changeIssueState(issue, issue.state().value, state, time(), actor, context)
+        }
+        for ((name, value) in target.fields) {
+            val oldValue = issue.templatedFields[name]
+            if (oldValue?.let { Json.parseToJsonElement(it) } != value)
+                service.changeIssueTemplatedField(
+                    issue,
+                    JSONFieldInput(name, jsonValue(value)),
+                    oldValue,
+                    time(),
+                    actor,
+                )
         }
         if (issue.priority().value?.rawId != priority?.rawId)
             service.changeIssuePriority(
@@ -557,13 +575,6 @@ class DomainBridge(
             neo.save(node).awaitSingle()
         }
 
-    fun jsonValue(value: JsonElement): Any? =
-        when (value) {
-            JsonNull -> null
-            is JsonObject -> value.mapValues { jsonValue(it.value) }
-            is JsonArray -> value.map { jsonValue(it) }
-            is JsonPrimitive ->
-                if (value.isString) value.content
-                else value.booleanOrNull ?: value.longOrNull ?: value.doubleOrNull
-        }
+    fun jsonValue(value: JsonElement): tools.jackson.databind.JsonNode =
+        fieldMapper.readTree(value.toString())
 }
