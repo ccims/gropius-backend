@@ -83,6 +83,7 @@ class Coordinator(
         try {
             val profile = binding.profile()
             val (catalog, components) = configuration.discover(binding, profile)
+            EnumFields(profile, catalog) // Validate mappings before any issue or label mutations.
             if (!profile.enabled) {
                 configuration.publish(
                     binding,
@@ -386,6 +387,7 @@ class Coordinator(
                 .filter { it.kind == "component" }
                 .map { componentLabels.label(it.key) }
                 .toMutableSet()
+        desired += EnumFields(profile, catalog).labels()
         for ((template, policy) in profile.templates) {
             try {
                 Workflow.validate(policy, catalog, template, profile.nativeRelationLinks)
@@ -516,6 +518,10 @@ class Coordinator(
                     }
             }
         val selectedPolicy = policy(profile, catalog, target.template)
+        target =
+            target.copy(
+                fields = EnumFields(profile, catalog).values(target.template, target.fields)
+            )
         // Initial endpoint creation must not depend on a relation target that has not yet been
         // created.
         val initialImport = record.gropiusId == null && remote != null && firstPass
@@ -550,7 +556,6 @@ class Coordinator(
                     catalog,
                     records,
                     selectedPolicy,
-                    parsed?.metadata?.fields.orEmpty(),
                     labelDetails,
                 )
             if (initialImport) {
@@ -564,6 +569,7 @@ class Coordinator(
                         lastLabels = remote.labels.toSet(),
                         lastAssignee = remote.assignees.singleOrNull()?.id,
                         lastOpen = remote.state == "opened",
+                        lastWeight = remote.weight,
                     )
                 )
                 return
@@ -607,6 +613,7 @@ class Coordinator(
                 ?: profile.defaultTemplate
                 ?: error("Choose the default incoming issue template")
         val policy = policy(profile, catalog, template)
+        val enumFields = EnumFields(profile, catalog)
         val labels = remote.labels.toSet()
         val componentLabels = ComponentLabels(catalog, profile)
         val components =
@@ -787,9 +794,10 @@ class Coordinator(
             assignments.sortedBy { it.id },
             relations.sortedBy { it.id },
             remote.labels
-                .filter { !semanticLabel(it) }
+                .filter { !semanticLabel(it) && !enumFields.ownsLabel(it) }
                 .onEach { validateOrdinaryLabel(it) }
                 .toSet(),
+            enumFields.incoming(template, metadata?.fields.orEmpty(), remote, record, configHash),
         )
     }
 
@@ -821,6 +829,7 @@ class Coordinator(
         var record = original
         val target = record.pending ?: return record
         val policy = policy(profile, catalog, target.template)
+        val enumFields = EnumFields(profile, catalog)
         val state = catalog.entry("state", target.state, target.template)
         val selected = selectedAssignment(target, policy, record.lastAssignee)
         if (policy.nativeAssignmentEnabled && target.primary != null && target.primary != "auto")
@@ -829,6 +838,9 @@ class Coordinator(
             }
         val componentLabels = ComponentLabels(catalog, profile)
         target.labels.forEach { validateOrdinaryLabel(it) }
+        require(target.labels.none { enumFields.ownsLabel(it) }) {
+            "Mapped enum labels cannot be ordinary Gropius labels"
+        }
         if (target.labels.isNotEmpty()) {
             val existingLabels =
                 session.labels().map { it.getValue("name").jsonPrimitive.content }.toMutableSet()
@@ -853,7 +865,8 @@ class Coordinator(
                         )
                     }
                     .orEmpty() +
-                target.labels
+                target.labels +
+                enumFields.labels(target)
         val metadata =
             EditableMetadata(
                 revision = profile.revision,
@@ -873,6 +886,12 @@ class Coordinator(
                                     ?.let { "#$it" } ?: "sync:${relation.target}"
                         )
                     },
+                fields =
+                    existing
+                        ?.description
+                        ?.let { MetadataCodec.parse(it).metadata?.fields }
+                        .orEmpty()
+                        .filterKeys { it !in policy.enumFields } + target.fields,
             )
         val assignmentSummary =
             target.assignments.map {
@@ -930,6 +949,12 @@ class Coordinator(
                                 put("title", target.title)
                                 put("description", description)
                                 put("labels", labels.joinToString(","))
+                                if (enumFields.hasWeight(target.template))
+                                    put(
+                                        "weight",
+                                        enumFields.weight(target)?.let { JsonPrimitive(it) }
+                                            ?: JsonNull,
+                                    )
                             }
                         )
                     } catch (e: RemoteFailure) {
@@ -983,6 +1008,8 @@ class Coordinator(
                 put("remove_labels", (oldLabels - labels).joinToString(","))
             if ((fresh.state == "opened") != state.open)
                 put("state_event", if (state.open == true) "reopen" else "close")
+            if (enumFields.hasWeight(target.template) && fresh.weight != enumFields.weight(target))
+                put("weight", enumFields.weight(target)?.let { JsonPrimitive(it) } ?: JsonNull)
         }
         if (payload.isNotEmpty()) session.update(fresh.iid, payload)
         val selection = selected?.user ?: "unassigned"
@@ -1086,7 +1113,9 @@ class Coordinator(
             verified.title == target.title &&
                 verified.description == description &&
                 verified.labels.toSet() == labels &&
-                (verified.state == "opened") == state.open
+                (verified.state == "opened") == state.open &&
+                (!enumFields.hasWeight(target.template) ||
+                    verified.weight == enumFields.weight(target))
         ) {
             "GitLab changed during export; pending operation retained"
         }
@@ -1099,6 +1128,7 @@ class Coordinator(
                 lastLabels = verified.labels.toSet(),
                 lastAssignee = verified.assignees.singleOrNull()?.id,
                 lastOpen = verified.state == "opened",
+                lastWeight = verified.weight,
                 configHash = configHash,
                 error = null,
             )

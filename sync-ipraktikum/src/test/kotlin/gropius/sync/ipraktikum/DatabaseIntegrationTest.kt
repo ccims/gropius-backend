@@ -311,7 +311,186 @@ class DatabaseIntegrationTest {
                 catalog,
                 policy,
             )
+            verifyEnumFields(savedBinding.rawId!!, next.syncId, exported.iid, catalog, templateKey)
         }
+
+    private suspend fun verifyEnumFields(
+        bindingId: String,
+        syncId: String,
+        iid: Long,
+        oldCatalog: Catalog,
+        templateKey: String,
+    ) {
+        val template = neo.findById<IssueTemplate>(oldCatalog.entry("template", templateKey).id)!!
+        template.templateFieldSpecifications["estimate"] =
+            """{"enum":["XS","S","M","L","XL"],"nullable":true}"""
+        template.templateFieldSpecifications["sprint"] = """{"type":"int32","nullable":true}"""
+        neo.save(template).awaitSingle()
+        val binding = domain.binding(bindingId)
+        val original = binding.profile()
+        val sizes = listOf("XS", "S", "M", "L", "XL")
+        val mapping =
+            EnumFieldMapping(
+                "effort/",
+                sizes.associateWith { "effort/$it" },
+                sizes.zip(listOf(1, 2, 3, 5, 8)).toMap(),
+            )
+        val policy =
+            original.templates.getValue(templateKey).copy(enumFields = mapOf("estimate" to mapping))
+        val profile =
+            original.copy(
+                templates = original.templates + (templateKey to policy),
+                revision = original.revision + 1,
+            )
+        configuration.publish(binding, "sync-profile", syncJson.encodeToString(profile))
+        val (catalog) = configuration.discover(domain.binding(bindingId), profile)
+        suspend fun local(value: JsonElement) {
+            val record = registry.record(bindingId, syncId)!!
+            val issue = domain.issue(record.gropiusId!!)
+            val snapshot =
+                domain.snapshot(
+                    issue,
+                    record,
+                    catalog,
+                    domain.binding(bindingId),
+                    registry.records(bindingId),
+                )
+            domain.apply(
+                domain.binding(bindingId),
+                record,
+                snapshot,
+                snapshot.copy(fields = mapOf("estimate" to value)),
+                catalog,
+                registry.records(bindingId),
+                policy,
+            )
+        }
+        suspend fun estimate() =
+            domain
+                .issue(registry.record(bindingId, syncId)!!.gropiusId!!)
+                .templatedFields["estimate"]
+                ?.let { Json.parseToJsonElement(it) }
+        suspend fun cycle() = coordinator.cycle(domain.binding(bindingId))
+        fun update(vararg entries: Pair<String, JsonElement>) {
+            fake.issues[iid] = JsonObject(fake.issues.getValue(iid) + entries.toMap())
+        }
+        fun labels(value: String?) {
+            val others =
+                fake.issues.getValue(iid).getValue("labels").jsonArray.filter {
+                    !it.jsonPrimitive.content.startsWith("effort/")
+                }
+            update(
+                "labels" to
+                    JsonArray(others + listOfNotNull(value?.let { JsonPrimitive("effort/$it") }))
+            )
+        }
+        val issue = domain.issue(registry.record(bindingId, syncId)!!.gropiusId!!)
+        issue.templatedFields["sprint"] = "3"
+        neo.save(issue).awaitSingle()
+        local(JsonPrimitive("M"))
+        cycle()
+        assertEquals(JsonPrimitive(3), fake.issues.getValue(iid)["weight"])
+        assertTrue(
+            fake.issues
+                .getValue(iid)
+                .getValue("labels")
+                .jsonArray
+                .contains(JsonPrimitive("effort/M"))
+        )
+        assertEquals(
+            JsonPrimitive("M"),
+            MetadataCodec.parse(
+                    fake.issues.getValue(iid).getValue("description").jsonPrimitive.content
+                )
+                .metadata!!
+                .fields["estimate"],
+        )
+        update("weight" to JsonPrimitive(5))
+        cycle()
+        assertEquals(JsonPrimitive("L"), estimate())
+        labels("XS")
+        cycle()
+        assertEquals(JsonPrimitive("XS"), estimate())
+        assertEquals(JsonPrimitive(1), fake.issues.getValue(iid)["weight"])
+        val parsed =
+            MetadataCodec.parse(
+                fake.issues.getValue(iid).getValue("description").jsonPrimitive.content
+            )
+        update(
+            "description" to
+                JsonPrimitive(
+                    MetadataCodec.render(
+                        parsed.body,
+                        parsed.identity!!,
+                        parsed.metadata!!.copy(fields = mapOf("estimate" to JsonPrimitive("S"))),
+                    )
+                )
+        )
+        cycle()
+        assertEquals(JsonPrimitive("S"), estimate())
+        assertEquals(JsonPrimitive(2), fake.issues.getValue(iid)["weight"])
+        update("weight" to JsonPrimitive(4))
+        cycle()
+        assertEquals(JsonPrimitive("S"), estimate())
+        assertNotNull(registry.record(bindingId, syncId)!!.error)
+        update("weight" to JsonNull)
+        cycle()
+        assertEquals(JsonNull, estimate())
+        assertFalse(
+            fake.issues.getValue(iid).getValue("labels").jsonArray.any {
+                it.jsonPrimitive.content.startsWith("effort/")
+            }
+        )
+        assertEquals("3", domain.issue(issue.rawId!!).templatedFields["sprint"])
+        val writes = fake.writes
+        cycle()
+        assertEquals(writes, fake.writes)
+        val importedIid = fake.create("New estimated GitLab issue", "Remote report")
+        fake.issues[importedIid] =
+            JsonObject(
+                fake.issues.getValue(importedIid) +
+                    mapOf(
+                        "labels" to JsonArray(listOf(JsonPrimitive("effort/XL"))),
+                        "weight" to JsonPrimitive(8),
+                    )
+            )
+        cycle()
+        val imported = registry.records(bindingId).single { it.iid == importedIid }
+        assertNull(imported.error, imported.error)
+        assertEquals("\"XL\"", domain.issue(imported.gropiusId!!).templatedFields["estimate"])
+        assertEquals("null", domain.issue(imported.gropiusId).templatedFields["sprint"])
+        // Label-only mappings work without touching native weight, even when it is unmapped.
+        configuration.publish(
+            domain.binding(bindingId),
+            "sync-profile",
+            syncJson.encodeToString(
+                profile.copy(
+                    revision = profile.revision + 1,
+                    templates =
+                        profile.templates +
+                            (templateKey to
+                                policy.copy(
+                                    enumFields =
+                                        mapOf("estimate" to mapping.copy(weights = emptyMap()))
+                                )),
+                )
+            ),
+        )
+        update("weight" to JsonPrimitive(99))
+        local(JsonPrimitive("M"))
+        cycle()
+        assertEquals(JsonPrimitive(99), fake.issues.getValue(iid)["weight"])
+        assertEquals(JsonPrimitive("M"), estimate())
+        // Disabling the mapping leaves Gropius fields and GitLab weight alone.
+        configuration.publish(
+            domain.binding(bindingId),
+            "sync-profile",
+            syncJson.encodeToString(original.copy(revision = profile.revision + 2)),
+        )
+        cycle()
+        assertEquals("\"M\"", domain.issue(issue.rawId!!).templatedFields["estimate"])
+        assertEquals(JsonPrimitive(99), fake.issues.getValue(iid)["weight"])
+    }
 
     private suspend fun verifyAllRelationLinks(
         bindingId: String,
@@ -793,9 +972,10 @@ private class FakeGitLab {
                             val id = path.substringAfterLast('/').toLong()
                             if (method == "PUT") {
                                 val current = issues.getValue(id).toMutableMap()
-                                for (key in listOf("title", "description")) body[key]?.let {
-                                    current[key] = it
-                                }
+                                for (key in listOf("title", "description", "weight")) body[key]
+                                    ?.let {
+                                        current[key] = it
+                                    }
                                 var ls =
                                     current
                                         .getValue("labels")
@@ -853,6 +1033,7 @@ private class FakeGitLab {
             put("labels", JsonArray(emptyList()))
             put("assignees", JsonArray(emptyList()))
             put("author", user)
+            put("weight", JsonNull)
         }
         return id
     }

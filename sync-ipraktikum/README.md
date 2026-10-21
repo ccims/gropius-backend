@@ -45,6 +45,28 @@ The normal IMSProject permission checks protect profile updates. Status/catalog 
 * Use the generated **iPraktikum** description section for exact state/template/type, multiple assignment roles, and typed relations. The JSON initially rendered inside the YAML fence is valid YAML; students may edit it using ordinary YAML syntax. The runtime catalog in the setup panel supplies valid keys. Keep the identity marker and delimiters intact. Remove an entry or use an empty list to remove semantics intentionally; deleting/corrupting the entire section pauses that issue instead of clearing its data.
 * Comments retain identity and attribution. Imported human-owned notes receive linked corrections when edited in Gropius; the bot does not impersonate users. Deletes retain the counterpart and a local tombstone. System/internal/control notes are excluded from normal comment import.
 
+## Optional enum fields
+
+Each template policy may define `enumFields`, keyed by the **actual templated field name**. The field must exist in that template and have a root string-enum schema. No field is inferred from a name such as effort or complexity. Without a rule, templated fields and native weight remain unmanaged.
+
+For a nullable enum field `Effort estimate` with values XS, S, M, L and XL:
+
+```json
+"enumFields": {
+  "Effort estimate": {
+    "labelPrefix": "effort/",
+    "labels": {"XS":"effort/XS", "S":"effort/S", "M":"effort/M", "L":"effort/L", "XL":"effort/XL"},
+    "weights": {"XS":1, "S":2, "M":3, "L":5, "XL":8}
+  }
+}
+```
+
+Labels and weights must map every allowed value uniquely. Omit `weights` (or use `{}`) for label-only synchronization on GitLab Free; native weight is opt-in and needs GitLab support and permission. Only one template field per repository may own native weight. Another project's `complexity` field can use entirely different values, labels, and weights. Multiple label-only fields are supported; their prefixes must not overlap within a template. Configured prefixes are reserved for projections rather than ordinary Gropius labels.
+
+The configured field participates in the same three-way merge as other issue data. Edit it in Gropius, the description's `fields` map, its GitLab label, or optionally native weight. Clearing any representation clears all projections when the schema is nullable. Unknown values, multiple labels, unmapped weights and inconsistent simultaneous edits pause the issue without guessing. Removed/renamed fields or incompatible schemas fail profile validation before mutations. Configuration changes preserve existing exact/local values and re-project them instead of interpreting old labels or weights under a new scale.
+
+Unmapped templated fields stay local, and unrelated existing description fields are preserved. For example, a nullable integer `Sprint number` can be used in Gropius without an enum mapping. Integer-field synchronization is not implied by this feature.
+
 ## Runtime profile reference
 
 The `sync-profile` field is a JSON-encoded string in the IMSProject's templated fields; the setup panel handles this encoding. Keys and choices come from the discovered catalog.

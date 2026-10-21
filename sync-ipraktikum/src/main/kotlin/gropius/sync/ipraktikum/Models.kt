@@ -44,6 +44,14 @@ data class TemplatePolicy(
     val genericRelationEnabled: Boolean = false,
     val genericRelationType: String? = null,
     val requiredFields: Map<String, JsonElement> = emptyMap(),
+    val enumFields: Map<String, EnumFieldMapping> = emptyMap(),
+)
+
+@Serializable
+data class EnumFieldMapping(
+    val labelPrefix: String,
+    val labels: Map<String, String>,
+    val weights: Map<String, Int> = emptyMap(),
 )
 
 @Serializable data class Resolution(val fingerprint: String, val side: String)
@@ -111,6 +119,7 @@ data class IssueValue(
     val assignments: List<AssignmentValue> = emptyList(),
     val relations: List<RelationValue> = emptyList(),
     val labels: Set<String> = emptySet(),
+    val fields: Map<String, JsonElement> = emptyMap(),
 )
 
 @Serializable
@@ -133,6 +142,7 @@ data class IssueRecord(
     val lastLabels: Set<String> = emptySet(),
     val lastAssignee: Long? = null,
     val lastOpen: Boolean? = null,
+    val lastWeight: Int? = null,
     val blockedAssignee: String? = null,
     val warnings: List<String> = emptyList(),
     val detached: Boolean = false,
@@ -243,6 +253,14 @@ object Merge {
                 },
                 entries("relations", base.relations, local.relations, remote.relations) { it.id },
                 labels,
+                (local.fields.keys + remote.fields.keys).associateWith { key ->
+                    field(
+                        "fields/$key",
+                        base.fields[key] ?: kotlinx.serialization.json.JsonNull,
+                        local.fields[key] ?: kotlinx.serialization.json.JsonNull,
+                        remote.fields[key] ?: kotlinx.serialization.json.JsonNull,
+                    )
+                },
             )
         if (conflicts.isNotEmpty())
             throw SyncConflict(
