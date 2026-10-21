@@ -293,6 +293,15 @@ class DatabaseIntegrationTest {
                 policy,
                 profile,
             )
+            verifyAllRelationLinks(
+                savedBinding.rawId!!,
+                next.syncId,
+                record.syncId,
+                catalog,
+                templateKey,
+                policy,
+                profile,
+            )
             verifyCopiedIdentity(savedBinding.rawId!!, exported.iid)
             verifyLabels(
                 savedBinding.rawId!!,
@@ -303,6 +312,104 @@ class DatabaseIntegrationTest {
                 policy,
             )
         }
+
+    private suspend fun verifyAllRelationLinks(
+        bindingId: String,
+        sourceId: String,
+        targetId: String,
+        catalog: Catalog,
+        templateKey: String,
+        policy: TemplatePolicy,
+        profile: SyncProfile,
+    ) {
+        val configured = domain.binding(bindingId)
+        val allLinksProfile =
+            profile.copy(
+                revision = 10,
+                nativeRelationLinks = true,
+                templates = mapOf(templateKey to policy.copy(genericRelationEnabled = false)),
+            )
+        configured.templatedFields["sync-profile"] =
+            syncJson.encodeToString(syncJson.encodeToString(allLinksProfile))
+        neo.save(configured).awaitSingle()
+        suspend fun setRelations(source: String, relations: List<RelationValue>) {
+            val records = registry.records(bindingId)
+            val record = records.single { it.syncId == source }
+            val snapshot =
+                domain.snapshot(
+                    domain.issue(record.gropiusId!!),
+                    record,
+                    catalog,
+                    domain.binding(bindingId),
+                    records,
+                )
+            domain.apply(
+                domain.binding(bindingId),
+                record,
+                snapshot,
+                snapshot.copy(relations = relations),
+                catalog,
+                records,
+                policy,
+            )
+        }
+        suspend fun cycle() {
+            coordinator.cycle(domain.binding(bindingId))
+            registry.records(bindingId).forEach { assertNull(it.error, it.error) }
+        }
+        val types = catalog.entries.filter { it.kind == "relation" && it.template == templateKey }
+        val first = RelationValue("native-first", targetId, types.first().key)
+        val second = RelationValue("native-second", targetId, types.last().key)
+        setRelations(sourceId, listOf(first, second))
+        setRelations(targetId, listOf(RelationValue("native-reverse", sourceId)))
+        cycle()
+        assertEquals(1, fake.links.size)
+        val receipts = registry.records(bindingId).flatMap { it.relationLinks.values }
+        assertEquals(3, receipts.single().members.size)
+        // A native unlink cannot erase a parallel or reverse relation.
+        fake.links.clear()
+        cycle()
+        assertEquals(1, fake.links.size)
+        assertEquals(2, registry.record(bindingId, sourceId)!!.baseline!!.relations.size)
+        assertEquals(1, registry.record(bindingId, targetId)!!.baseline!!.relations.size)
+        val settledWrites = fake.writes
+        cycle()
+        assertEquals(settledWrites, fake.writes)
+        val restoredLink = fake.links.keys.single()
+        setRelations(sourceId, listOf(first))
+        setRelations(targetId, emptyList())
+        cycle()
+        assertEquals(setOf(restoredLink), fake.links.keys)
+        fake.links.clear()
+        cycle()
+        assertTrue(registry.record(bindingId, sourceId)!!.baseline!!.relations.isEmpty())
+        assertTrue(fake.links.isEmpty())
+        // A GitLab-only relates_to link imports without choosing any Gropius template type.
+        val source = registry.record(bindingId, sourceId)!!
+        val target = registry.record(bindingId, targetId)!!
+        fake.links[900] = source.iid!! to target.iid!!
+        cycle()
+        val imported =
+            registry
+                .records(bindingId)
+                .filter { it.syncId in setOf(sourceId, targetId) }
+                .flatMap { it.baseline!!.relations }
+        assertEquals(1, imported.size)
+        assertNull(imported.single().type)
+        val owner = minOf(sourceId, targetId)
+        setRelations(owner, emptyList())
+        fake.denyLinkDeletion = true
+        try {
+            cycle()
+            assertEquals(1, fake.links.size)
+            assertTrue(registry.record(bindingId, owner)!!.baseline!!.relations.isEmpty())
+            assertEquals(1, registry.record(bindingId, owner)!!.relationLinks.size)
+        } finally {
+            fake.denyLinkDeletion = false
+        }
+        cycle()
+        assertTrue(fake.links.isEmpty())
+    }
 
     private suspend fun verifyLabels(
         bindingId: String,
@@ -555,6 +662,7 @@ private class FakeGitLab {
     private val labels = linkedMapOf<String, Long>()
     val labelData = linkedMapOf<String, JsonObject>()
     var writes = 0
+    var denyLinkDeletion = false
     private val user = buildJsonObject {
         put("id", 1)
         put("username", "bot")
@@ -615,6 +723,12 @@ private class FakeGitLab {
                                     buildJsonObject { put("id", id) }
                                 }
                                 "DELETE" -> {
+                                    if (denyLinkDeletion) {
+                                        val denied = "{\"message\":\"403 Forbidden\"}".toByteArray()
+                                        exchange.sendResponseHeaders(403, denied.size.toLong())
+                                        exchange.responseBody.use { it.write(denied) }
+                                        return@createContext
+                                    }
                                     links.remove(parts[8].toLong())
                                     JsonNull
                                 }

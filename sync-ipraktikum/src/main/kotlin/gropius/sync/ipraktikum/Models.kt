@@ -21,6 +21,7 @@ data class SyncProfile(
     val componentLabels: Map<String, String> = emptyMap(),
     val typeLabels: Map<String, String> = emptyMap(),
     val priorityLabels: Map<String, String> = emptyMap(),
+    val nativeRelationLinks: Boolean = false,
     val primary: Map<String, String?> = emptyMap(),
     val resolutions: Map<String, Resolution> = emptyMap(),
     val detached: Set<String> = emptySet(),
@@ -126,6 +127,7 @@ data class IssueRecord(
     val assignmentIds: Map<String, String> = emptyMap(),
     val relationIds: Map<String, String> = emptyMap(),
     val nativeLinks: Map<String, Long> = emptyMap(),
+    val relationLinks: Map<String, NativeRelationReceipt> = emptyMap(),
     val comments: Map<String, CommentRecord> = emptyMap(),
     val configHash: String? = null,
     val lastLabels: Set<String> = emptySet(),
@@ -136,6 +138,8 @@ data class IssueRecord(
     val detached: Boolean = false,
     val error: String? = null,
 )
+
+@Serializable data class NativeRelationReceipt(val linkId: Long, val members: Set<String>)
 
 @Serializable
 data class CommentRecord(

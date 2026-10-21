@@ -296,6 +296,7 @@ class Coordinator(
                         }
                     }
                 }
+                if (profile.nativeRelationLinks) projectRelationLinks(id, session, messages)
                 writes = session.writes
             }
             val all = registry.records(id)
@@ -316,6 +317,60 @@ class Coordinator(
             configuration.publish(binding, "sync-status", syncJson.encodeToString(status))
         } finally {
             registry.release(id)
+        }
+    }
+
+    private suspend fun projectRelationLinks(
+        binding: String,
+        session: GitLabClient.Session,
+        messages: MutableList<String>,
+    ) {
+        val records = registry.records(binding)
+        val desired = NativeRelations.desired(records)
+        val receipts = records.flatMap { owner ->
+            owner.relationLinks.keys.map { NativeRelations.pair(owner.syncId, it) }
+        }
+        for (pair in desired.keys + receipts) {
+            val owner = registry.record(binding, pair.owner) ?: continue
+            val target = registry.record(binding, pair.target) ?: continue
+            // Keep links for paused/detached endpoints; never infer deletions from partial state.
+            if (
+                owner.detached ||
+                    target.detached ||
+                    owner.error != null ||
+                    target.error != null ||
+                    owner.pending != null ||
+                    target.pending != null
+            )
+                continue
+            val ownerIid = owner.iid ?: continue
+            val targetIid = target.iid ?: continue
+            val members = desired[pair].orEmpty()
+            val receipt = owner.relationLinks[pair.target]
+            try {
+                val links = session.links(ownerIid)
+                val existing = links.singleOrNull {
+                    it.iid == targetIid &&
+                        it.project_id == session.project &&
+                        it.link_type == "relates_to"
+                }
+                val updated = owner.relationLinks.toMutableMap()
+                if (members.isEmpty()) {
+                    // Only remove the exact native link whose ownership was recorded.
+                    if (receipt != null && existing?.issue_link_id == receipt.linkId)
+                        session.unlink(ownerIid, receipt.linkId)
+                    updated.remove(pair.target)
+                } else {
+                    if (existing == null && receipt != null && receipt.members.size > 1)
+                        messages +=
+                            "#$ownerIid / #$targetIid: Removed native link represented multiple Gropius relations; preserved the metadata and restored the link. Edit the body metadata to remove specific relations."
+                    val linkId = existing?.issue_link_id ?: session.link(ownerIid, targetIid)
+                    updated[pair.target] = NativeRelationReceipt(linkId, members)
+                }
+                registry.save(owner.copy(relationLinks = updated))
+            } catch (e: Exception) {
+                messages += "#$ownerIid / #$targetIid native relation projection: ${e.message}"
+            }
         }
     }
 
@@ -349,7 +404,9 @@ class Coordinator(
             desired +=
                 catalog.entries
                     .filter { it.template == template && it.kind == "priority" }
-                    .map { VocabularyLabels(catalog, "priority", profile.priorityLabels).label(it.key) }
+                    .map {
+                        VocabularyLabels(catalog, "priority", profile.priorityLabels).label(it.key)
+                    }
         }
         val actual =
             session.labels().associate {
@@ -634,7 +691,7 @@ class Coordinator(
                 primary = value.id
             }
         }
-        val relations =
+        var relations =
             metadata
                 ?.relations
                 .orEmpty()
@@ -657,38 +714,45 @@ class Coordinator(
                 .toMutableList()
         val links =
             session.links(remote.iid).filter {
-                it.project_id == session.project && it.link_type == "relates_to"
+                it.project_id == session.project &&
+                    (profile.nativeRelationLinks || it.link_type == "relates_to")
             }
-        for ((relationId, linkId) in record.nativeLinks) if (
-            links.none { it.issue_link_id == linkId }
-        ) {
-            val current = relations.firstOrNull { it.id == relationId }
-            val before = record.baseline?.relations?.firstOrNull { it.id == relationId }
-            require(current == null || current == before) {
-                "Native relation removed while its metadata changed"
+        if (profile.nativeRelationLinks) {
+            relations = NativeRelations.incoming(record, relations, records, links).toMutableList()
+        } else {
+            for ((relationId, linkId) in record.nativeLinks) if (
+                links.none { it.issue_link_id == linkId }
+            ) {
+                val current = relations.firstOrNull { it.id == relationId }
+                val before = record.baseline?.relations?.firstOrNull { it.id == relationId }
+                require(current == null || current == before) {
+                    "Native relation removed while its metadata changed"
+                }
+                relations.removeAll { it.id == relationId }
             }
-            relations.removeAll { it.id == relationId }
+            if (policy.genericRelationEnabled)
+                for (link in links) {
+                    if (records.any { link.issue_link_id in it.nativeLinks.values }) continue
+                    val target =
+                        records.singleOrNull { it.remoteId == link.id && !it.detached } ?: continue
+                    val otherPolicy = target.baseline?.template?.let { profile.templates[it] }
+                    if (
+                        otherPolicy?.genericRelationEnabled == true && record.syncId > target.syncId
+                    )
+                        continue
+                    if (
+                        relations.none {
+                            it.target == target.syncId && it.type == policy.genericRelationType
+                        }
+                    )
+                        relations +=
+                            RelationValue(
+                                "gl-link-${link.issue_link_id}",
+                                target.syncId,
+                                policy.genericRelationType,
+                            )
+                }
         }
-        if (policy.genericRelationEnabled)
-            for (link in links) {
-                if (records.any { link.issue_link_id in it.nativeLinks.values }) continue
-                val target =
-                    records.singleOrNull { it.remoteId == link.id && !it.detached } ?: continue
-                val otherPolicy = target.baseline?.template?.let { profile.templates[it] }
-                if (otherPolicy?.genericRelationEnabled == true && record.syncId > target.syncId)
-                    continue
-                if (
-                    relations.none {
-                        it.target == target.syncId && it.type == policy.genericRelationType
-                    }
-                )
-                    relations +=
-                        RelationValue(
-                            "gl-link-${link.issue_link_id}",
-                            target.syncId,
-                            policy.genericRelationType,
-                        )
-            }
         catalog.entry("type", exactType, template)
         val priorityLabelsChanged =
             labels.filter { it.startsWith("priority/") }.toSet() !=
@@ -782,9 +846,13 @@ class Coordinator(
             target.components.map { componentLabels.label(it) }.toSet() +
                 "workflow/${Workflow.bucket(target.state, policy)}" +
                 VocabularyLabels(catalog, "type", profile.typeLabels).label(target.type) +
-                target.priority?.let {
-                    setOf(VocabularyLabels(catalog, "priority", profile.priorityLabels).label(it))
-                }.orEmpty() +
+                target.priority
+                    ?.let {
+                        setOf(
+                            VocabularyLabels(catalog, "priority", profile.priorityLabels).label(it)
+                        )
+                    }
+                    .orEmpty() +
                 target.labels
         val metadata =
             EditableMetadata(
@@ -954,58 +1022,65 @@ class Coordinator(
                     )
             }
         }
-        val native = record.nativeLinks.toMutableMap()
-        val links = session.links(fresh.iid)
-        val currentRecords = registry.records(record.binding)
-        val desiredGeneric =
-            if (policy.genericRelationEnabled)
-                target.relations
-                    .filter { it.type == policy.genericRelationType }
-                    .groupBy { it.target }
-                    .values
-                    .map { group -> group.firstOrNull { it.id in native } ?: group.minBy { it.id } }
-                    .filter { relation ->
-                        val opposite = currentRecords.singleOrNull { it.syncId == relation.target }
-                        val oppositeValue = opposite?.pending ?: opposite?.baseline
-                        val oppositePolicy = oppositeValue?.template?.let { profile.templates[it] }
-                        val oppositeCandidates =
-                            if (oppositePolicy?.genericRelationEnabled == true)
-                                oppositeValue.relations.filter {
-                                    it.target == record.syncId &&
-                                        it.type == oppositePolicy.genericRelationType
-                                }
-                            else emptyList()
-                        val otherOwns =
-                            opposite?.nativeLinks?.keys?.any { key ->
-                                oppositeValue?.relations?.any {
-                                    it.id == key && it.target == record.syncId
+        if (!profile.nativeRelationLinks) {
+            val native = record.nativeLinks.toMutableMap()
+            val links = session.links(fresh.iid)
+            val currentRecords = registry.records(record.binding)
+            val desiredGeneric =
+                if (policy.genericRelationEnabled)
+                    target.relations
+                        .filter { it.type == policy.genericRelationType }
+                        .groupBy { it.target }
+                        .values
+                        .map { group ->
+                            group.firstOrNull { it.id in native } ?: group.minBy { it.id }
+                        }
+                        .filter { relation ->
+                            val opposite = currentRecords.singleOrNull {
+                                it.syncId == relation.target
+                            }
+                            val oppositeValue = opposite?.pending ?: opposite?.baseline
+                            val oppositePolicy =
+                                oppositeValue?.template?.let { profile.templates[it] }
+                            val oppositeCandidates =
+                                if (oppositePolicy?.genericRelationEnabled == true)
+                                    oppositeValue.relations.filter {
+                                        it.target == record.syncId &&
+                                            it.type == oppositePolicy.genericRelationType
+                                    }
+                                else emptyList()
+                            val otherOwns =
+                                opposite?.nativeLinks?.keys?.any { key ->
+                                    oppositeValue?.relations?.any {
+                                        it.id == key && it.target == record.syncId
+                                    } == true
                                 } == true
-                            } == true
-                        !otherOwns &&
-                            (relation.id in native ||
-                                oppositeCandidates.isEmpty() ||
-                                record.syncId < relation.target)
-                    }
-            else emptyList()
-        for ((relationId, linkId) in native.toMap()) if (
-            desiredGeneric.none { it.id == relationId }
-        ) {
-            if (links.any { it.issue_link_id == linkId }) session.unlink(fresh.iid, linkId)
-            native.remove(relationId)
+                            !otherOwns &&
+                                (relation.id in native ||
+                                    oppositeCandidates.isEmpty() ||
+                                    record.syncId < relation.target)
+                        }
+                else emptyList()
+            for ((relationId, linkId) in native.toMap()) if (
+                desiredGeneric.none { it.id == relationId }
+            ) {
+                if (links.any { it.issue_link_id == linkId }) session.unlink(fresh.iid, linkId)
+                native.remove(relationId)
+            }
+            for (relation in desiredGeneric) {
+                val destination =
+                    registry.records(record.binding).single { it.syncId == relation.target }
+                val targetIid = destination.iid ?: continue
+                native[relation.id] =
+                    links
+                        .firstOrNull { it.iid == targetIid && it.project_id == session.project }
+                        ?.issue_link_id ?: session.link(fresh.iid, targetIid)
+            }
+            record = record.copy(nativeLinks = native)
+            registry.save(
+                record
+            ) // Keep link receipts before verifying and acknowledging the final projection.
         }
-        for (relation in desiredGeneric) {
-            val destination =
-                registry.records(record.binding).single { it.syncId == relation.target }
-            val targetIid = destination.iid ?: continue
-            native[relation.id] =
-                links
-                    .firstOrNull { it.iid == targetIid && it.project_id == session.project }
-                    ?.issue_link_id ?: session.link(fresh.iid, targetIid)
-        }
-        record = record.copy(nativeLinks = native)
-        registry.save(
-            record
-        ) // Keep link receipts before verifying and acknowledging the final projection.
         val verified = session.issue(fresh.iid)
         check(
             verified.title == target.title &&
