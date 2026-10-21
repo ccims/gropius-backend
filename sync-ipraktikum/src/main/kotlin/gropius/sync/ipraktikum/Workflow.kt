@@ -20,7 +20,12 @@ object Workflow {
         return state
     }
 
-    fun validate(policy: TemplatePolicy, catalog: Catalog, template: String) {
+    fun validate(
+        policy: TemplatePolicy,
+        catalog: Catalog,
+        template: String,
+        nativeRelationLinks: Boolean = false,
+    ) {
         catalog.entry("type", policy.defaultType, template)
         for (state in listOf(policy.initialState, policy.closedState, policy.reopenState)) catalog
             .entry("state", state, template)
@@ -44,7 +49,11 @@ object Workflow {
             }
         if (policy.nativeAssignmentEnabled && policy.nativeAssignmentRole != null)
             catalog.entry("role", policy.nativeAssignmentRole, template)
-        if (policy.genericRelationEnabled && policy.genericRelationType != null)
+        if (
+            !nativeRelationLinks &&
+                policy.genericRelationEnabled &&
+                policy.genericRelationType != null
+        )
             catalog.entry("relation", policy.genericRelationType, template)
     }
 
