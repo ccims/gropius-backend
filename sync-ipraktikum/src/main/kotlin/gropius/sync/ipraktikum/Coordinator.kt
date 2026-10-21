@@ -260,7 +260,7 @@ class Coordinator(
                     messages += "#${remote.iid} awaiting setup: ${e.message}"
                 }
                 for ((key, policy) in profile.templates) try {
-                    Workflow.validate(policy, catalog, key)
+                    Workflow.validate(policy, catalog, key, profile.nativeRelationLinks)
                 } catch (e: Exception) {
                     messages += "Template $key: ${e.message}"
                 }
@@ -388,7 +388,7 @@ class Coordinator(
                 .toMutableSet()
         for ((template, policy) in profile.templates) {
             try {
-                Workflow.validate(policy, catalog, template)
+                Workflow.validate(policy, catalog, template, profile.nativeRelationLinks)
             } catch (e: Exception) {
                 messages += "Template $template awaiting setup: ${e.message}"
                 continue
@@ -437,7 +437,7 @@ class Coordinator(
     private fun policy(profile: SyncProfile, catalog: Catalog, template: String): TemplatePolicy {
         val policy =
             profile.templates[template] ?: error("Configure defaults for template $template")
-        Workflow.validate(policy, catalog, template)
+        Workflow.validate(policy, catalog, template, profile.nativeRelationLinks)
         return policy
     }
 

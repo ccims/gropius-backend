@@ -327,7 +327,15 @@ class DatabaseIntegrationTest {
             profile.copy(
                 revision = 10,
                 nativeRelationLinks = true,
-                templates = mapOf(templateKey to policy.copy(genericRelationEnabled = false)),
+                // The repository-wide mode must ignore a removed legacy relation-template key.
+                templates =
+                    mapOf(
+                        templateKey to
+                            policy.copy(
+                                genericRelationEnabled = true,
+                                genericRelationType = "removed-legacy-relation-type",
+                            )
+                    ),
             )
         configured.templatedFields["sync-profile"] =
             syncJson.encodeToString(syncJson.encodeToString(allLinksProfile))
